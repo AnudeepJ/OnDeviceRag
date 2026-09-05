@@ -2,6 +2,7 @@ package com.example.pdfgemmarag.inference.llm
 
 import com.example.pdfgemmarag.core.model.Citation
 import com.example.pdfgemmarag.inference.ocr.ScriptDetector
+import com.example.pdfgemmarag.inference.store.HybridQuery
 
 /**
  * Builds the grounded prompt from ranked chunks under a hard token budget.
@@ -17,7 +18,14 @@ class ContextAssembler(
     data class Assembled(val prompt: String, val citations: List<Citation>, val approxTokens: Int)
 
     fun assemble(question: String, ranked: List<Citation>): Assembled {
-        val deduped = dedupe(ranked)
+        val terms = HybridQuery.keywordTerms(question)
+        val meaty = ranked.filter { it.text.length >= 60 || it.text.contains('|') }
+        val pool = if (meaty.size >= 2) meaty else ranked
+        val ordered = pool.sortedByDescending { c ->
+            val lower = c.text.lowercase()
+            terms.count { term -> lower.contains(term) } * 10.0 + c.score
+        }
+        val deduped = dedupe(ordered)
         val selected = ArrayList<Citation>()
         var used = 0
         for (c in deduped) {

@@ -169,7 +169,8 @@ private fun StreamingBubble(chat: RagViewModel.ChatState, elapsedSec: Int, onCit
                 when {
                     chat.streamingText.isNotEmpty() -> chat.streamingText + "▍"
                     chat.streamingCitations.isEmpty() -> "Searching document…"
-                    else -> "Generating answer… ${elapsedSec}s (first token can take 30–90s on GPU)"
+                    elapsedSec < 15 -> "Waiting for Gemma… ${elapsedSec}s"
+                    else -> "Still waiting for Gemma… ${elapsedSec}s. You can tap Stop and ask again."
                 },
                 style = MaterialTheme.typography.bodyMedium,
             )

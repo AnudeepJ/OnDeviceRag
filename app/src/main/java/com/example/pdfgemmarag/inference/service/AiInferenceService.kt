@@ -236,10 +236,12 @@ class AiInferenceService : Service() {
         override fun cancelGeneration(generationId: Long) {
             Log.i(TAG, "cancel requested id=$generationId active=${generations.keys}")
             cancelledGenerations.add(generationId)
-            generations.remove(generationId)?.cancel()
-            generations.values.forEach { it.cancel() }
-            generations.clear()
-            gemma?.cancelActive()
+            val handle = generations.remove(generationId)
+            if (handle != null) {
+                handle.cancel()
+            } else if (generations.isEmpty()) {
+                gemma?.cancelActive()
+            }
         }
 
         override fun indexDocument(docHash: String, pdfPath: String, displayName: String, callback: IIndexingCallback) {

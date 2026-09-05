@@ -38,6 +38,14 @@ class ContextAssemblerTest {
     }
 
     @Test
+    fun `keyword overlap outranks a high-score off-topic header`() {
+        val junk = c(0, 1, "FORMWORK AND CONCRETE DIVISION 3 TECHNICAL SPECIFICATIONS HEADER ONLY REPEATED", 0.99)
+        val hit = c(1, 3, "C. Plywood: Conform to PS 1, Class 1. D. Lumber: Conform to PS 20.", 0.20)
+        val assembled = ContextAssembler().assemble("What plywood standard and class is required for formwork?", listOf(junk, hit))
+        assertTrue(assembled.citations.first().text.contains("PS 1"))
+    }
+
+    @Test
     fun `token estimate scales by script`() {
         val latin = ContextAssembler.estimateTokens("a".repeat(400))
         val cjk = ContextAssembler.estimateTokens("東".repeat(400))

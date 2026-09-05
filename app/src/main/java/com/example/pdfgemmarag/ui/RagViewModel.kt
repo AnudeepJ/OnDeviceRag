@@ -316,8 +316,54 @@ class RagViewModel(app: Application) : AndroidViewModel(app) {
         try {
             val id = connection.await().ask(docHash, q, history, streamCallback)
             _chat.update { it.copy(generationId = id) }
+            watchIdleComplete(id)
         } catch (t: RemoteException) {
             _chat.update { it.copy(generating = false, error = "Inference service unavailable: ${t.message}") }
+        }
+    }
+
+    /** LiteRT-LM sometimes never delivers onDone after the last token. Unlock the composer. */
+    private fun watchIdleComplete(generationId: Long) = viewModelScope.launch {
+        var last = ""
+        var quiet = 0
+        while (_chat.value.generating && _chat.value.generationId == generationId) {
+            delay(1000)
+            val text = _chat.value.streamingText
+            if (text.isNotBlank() && text == last) {
+                quiet++
+                val need = if (text.trim().endsWith('.') || text.contains("[Page")) 4 else 10
+                if (quiet >= need) {
+                    Log.i(TAG, "UI idle-complete after ${quiet}s")
+                    finishTurn(generationId, cancelled = false)
+                    return@launch
+                }
+            } else {
+                quiet = 0
+                last = text
+            }
+        }
+    }
+
+    private fun finishTurn(generationId: Long, stats: GenerationStats? = null, cancelled: Boolean = false) {
+        val state = _chat.value
+        if (!state.generating) return
+        if (state.generationId != generationId && state.generationId != -1L) return
+        viewModelScope.launch {
+            val latest = _chat.value
+            if (!latest.generating) return@launch
+            latest.docHash?.let { doc ->
+                db.messages().insert(
+                    MessageEntity(
+                        docHash = doc, role = "model",
+                        text = latest.streamingText.ifBlank { if (cancelled) "(stopped)" else "(no answer)" },
+                        citationIds = latest.streamingCitations.joinToString(",") { it.chunkId },
+                        backend = stats?.backend ?: "",
+                        tokensPerSecond = stats?.approxTokensPerSecond ?: 0.0,
+                        cancelled = cancelled || (stats?.cancelled == true),
+                    ),
+                )
+            }
+            _chat.update { it.copy(generating = false, streamingText = "", streamingCitations = emptyList(), lastStats = stats, generationId = -1) }
         }
     }
 
@@ -329,23 +375,15 @@ class RagViewModel(app: Application) : AndroidViewModel(app) {
             _chat.update { if (it.generationId == generationId || it.generationId == -1L) it.copy(streamingText = it.streamingText + token) else it }
         }
         override fun onDone(generationId: Long, stats: GenerationStats) {
-            val state = _chat.value
-            if (state.generationId != generationId && state.generationId != -1L) return
-            viewModelScope.launch {
-                state.docHash?.let { doc ->
-                    db.messages().insert(
-                        MessageEntity(
-                            docHash = doc, role = "model", text = state.streamingText.ifBlank { if (stats.cancelled) "(stopped)" else "(no answer)" },
-                            citationIds = state.streamingCitations.joinToString(",") { it.chunkId },
-                            backend = stats.backend, tokensPerSecond = stats.approxTokensPerSecond, cancelled = stats.cancelled,
-                        ),
-                    )
-                }
-                _chat.update { it.copy(generating = false, streamingText = "", streamingCitations = emptyList(), lastStats = stats, generationId = -1) }
-            }
+            finishTurn(generationId, stats, stats.cancelled)
         }
         override fun onError(generationId: Long, message: String) {
-            _chat.update { it.copy(generating = false, error = message, generationId = -1) }
+            val state = _chat.value
+            if (state.generating && state.streamingText.isNotBlank()) {
+                finishTurn(generationId, cancelled = false)
+            } else {
+                _chat.update { it.copy(generating = false, error = message, generationId = -1) }
+            }
         }
     }
 

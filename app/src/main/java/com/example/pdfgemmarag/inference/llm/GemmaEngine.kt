@@ -18,8 +18,10 @@ import com.google.ai.edge.litertlm.ThinkingConfig
 import java.io.Closeable
 import java.io.File
 import java.util.concurrent.CancellationException
-import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -41,6 +43,7 @@ class GemmaEngine(
     val backendName: String
     private val engine: Engine
     private val active = AtomicReference<Conversation?>(null)
+    private val closer = Executors.newSingleThreadExecutor { r -> Thread(r, "gemma-close").apply { isDaemon = true } }
 
     init {
         val gpuDisabled = gpuMarker(context).exists()
@@ -81,8 +84,10 @@ class GemmaEngine(
 
         fun cancel() {
             cancelled = true
-            runCatching { conversation.cancelProcess() }.onFailure { Log.w(TAG, "cancelProcess: ${it.message}") }
-            runCatching { conversation.close() }.onFailure { Log.w(TAG, "close after cancel: ${it.message}") }
+            closer.execute {
+                runCatching { conversation.cancelProcess() }.onFailure { Log.w(TAG, "cancelProcess: ${it.message}") }
+                runCatching { conversation.close() }.onFailure { Log.w(TAG, "close after cancel: ${it.message}") }
+            }
         }
     }
 
@@ -98,7 +103,7 @@ class GemmaEngine(
         temperature: Double = 0.2,
     ): Generation {
         check(engine.isInitialized()) { "engine not initialised" }
-        active.getAndSet(null)?.let { old -> runCatching { old.cancelProcess() }; runCatching { old.close() } }
+        active.getAndSet(null)?.let { old -> closer.execute { runCatching { old.close() } } }
 
         val initial = ArrayList<Message>()
         for (qa in history.takeLast(MAX_HISTORY_TURNS)) {
@@ -111,79 +116,128 @@ class GemmaEngine(
             samplerConfig = SamplerConfig(topK = 40, topP = 0.95, temperature = temperature, seed = 0),
             thinkingConfig = ThinkingConfig(false, 0),
         )
+        val tCreate = SystemClock.elapsedRealtime()
         val conversation = engine.createConversation(config)
+        Log.i(TAG, "createConversation ${SystemClock.elapsedRealtime() - tCreate} ms")
         active.set(conversation)
         val generation = Generation(conversation)
-        val done = CountDownLatch(1)
+        val finished = AtomicBoolean(false)
         Log.i(TAG, "generate start backend=$backendName promptChars=${userMessage.length} history=${history.size}")
 
-        val watchdog = java.util.concurrent.Executors.newSingleThreadScheduledExecutor { r ->
+        val watchdog = Executors.newSingleThreadScheduledExecutor { r ->
             Thread(r, "gemma-watchdog").apply { isDaemon = true }
         }
-        val firstTokenMs = java.util.concurrent.atomic.AtomicLong(-1)
+        val firstTokenMs = AtomicLong(-1)
+        val lastTokenMs = AtomicLong(-1)
+        val assembled = StringBuilder()
+
+        fun complete(cancelled: Boolean) {
+            if (!finished.compareAndSet(false, true)) return
+            watchdog.shutdownNow()
+            active.compareAndSet(conversation, null)
+            sink.onDone(cancelled)
+        }
+
+        fun fail(t: Throwable) {
+            if (!finished.compareAndSet(false, true)) return
+            watchdog.shutdownNow()
+            active.compareAndSet(conversation, null)
+            sink.onError(t)
+        }
+
         watchdog.schedule({
-            if (firstTokenMs.get() < 0 && !generation.cancelled && done.count > 0) {
-                Log.w(TAG, "no first token after ${FIRST_TOKEN_TIMEOUT_SEC}s — cancelling")
+            if (firstTokenMs.get() < 0 && !finished.get()) {
+                Log.w(TAG, "no first token after ${FIRST_TOKEN_TIMEOUT_SEC}s — unlocking UI (async cancel)")
+                if (backendName == "GPU") GpuMarker.write(context, "first-token timeout on GPU")
+                fail(IllegalStateException("Gemma did not start in time. The model will use CPU next. Tap Stop if needed, then ask again."))
                 generation.cancel()
-                sink.onError(IllegalStateException("Generation timed out waiting for the first token. Tap Stop and try a shorter question."))
-                done.countDown()
             }
         }, FIRST_TOKEN_TIMEOUT_SEC, TimeUnit.SECONDS)
+
+        // LiteRT-LM often delivers the full answer via onMessage and never calls onDone.
+        watchdog.scheduleAtFixedRate({
+            val last = lastTokenMs.get()
+            if (last < 0 || finished.get()) return@scheduleAtFixedRate
+            val idle = SystemClock.elapsedRealtime() - last
+            val text = synchronized(assembled) { assembled.toString() }
+            val need = if (looksComplete(text)) IDLE_COMPLETE_MS else IDLE_CONTINUE_MS
+            if (idle >= need) {
+                Log.i(TAG, "idle ${idle}ms after last token (complete=${looksComplete(text)}) — closing turn")
+                // Do not cancelProcess() here: that wedges the GPU engine so the next
+                // question never emits a first token.
+                complete(cancelled = false)
+            }
+        }, 1, 1, TimeUnit.SECONDS)
 
         conversation.sendMessageAsync(
             Message.user(userMessage),
             object : MessageCallback {
                 override fun onMessage(message: Message) {
-                    val text = message.contents.toString()
-                    if (text.isNotEmpty() && !generation.cancelled) {
-                        firstTokenMs.compareAndSet(-1, SystemClock.elapsedRealtime())
-                        sink.onToken(text)
+                    val full = message.contents.toString()
+                    if (full.isEmpty() || generation.cancelled || finished.get()) return
+                    val delta = synchronized(assembled) {
+                        val soFar = assembled.toString()
+                        val piece = when {
+                            full.startsWith(soFar) -> full.substring(soFar.length)
+                            soFar.endsWith(full) -> ""
+                            else -> full
+                        }
+                        if (piece.isNotEmpty()) {
+                            if (!full.startsWith(soFar) && soFar.isNotEmpty()) assembled.clear()
+                            assembled.append(piece)
+                        }
+                        piece
                     }
+                    if (delta.isEmpty()) return
+                    firstTokenMs.compareAndSet(-1, SystemClock.elapsedRealtime())
+                    lastTokenMs.set(SystemClock.elapsedRealtime())
+                    Log.i(TAG, "token +${delta.length} total=${assembled.length}")
+                    sink.onToken(delta)
                 }
 
                 override fun onDone() {
-                    watchdog.shutdownNow()
-                    finish(conversation)
-                    if (done.count > 0) {
-                        done.countDown()
-                        sink.onDone(generation.cancelled)
-                    }
+                    Log.i(TAG, "sdk onDone cancelled=${generation.cancelled}")
+                    complete(generation.cancelled)
                 }
 
                 override fun onError(throwable: Throwable) {
-                    watchdog.shutdownNow()
-                    finish(conversation)
-                    if (done.count == 0L) return
-                    done.countDown()
-                    if (throwable is CancellationException || generation.cancelled) sink.onDone(cancelled = true)
-                    else sink.onError(throwable)
+                    Log.w(TAG, "sdk onError", throwable)
+                    if (throwable is CancellationException || generation.cancelled) complete(cancelled = true)
+                    else fail(throwable)
                 }
             },
         )
         return generation
     }
 
-    private fun finish(conversation: Conversation) {
-        active.compareAndSet(conversation, null)
-        runCatching { conversation.close() }
-    }
-
     fun cancelActive() {
         active.getAndSet(null)?.let { conv ->
-            runCatching { conv.cancelProcess() }
-            runCatching { conv.close() }
+            closer.execute {
+                runCatching { conv.cancelProcess() }
+                runCatching { conv.close() }
+            }
         }
     }
 
-    override fun close() {
-        active.getAndSet(null)?.let { runCatching { it.cancelProcess() }; runCatching { it.close() } }
-        runCatching { if (engine.isInitialized()) engine.close() }
+        override fun close() {
+        active.getAndSet(null)?.let { conv -> closer.execute { runCatching { conv.close() } } }
+        closer.execute { runCatching { if (engine.isInitialized()) engine.close() } }
+        closer.shutdown()
     }
 
     companion object {
         private const val TAG = "GemmaEngine"
         const val MAX_HISTORY_TURNS = 4
-        const val FIRST_TOKEN_TIMEOUT_SEC = 60L
+        const val FIRST_TOKEN_TIMEOUT_SEC = 45L
+        const val IDLE_COMPLETE_MS = 2500L
+        const val IDLE_CONTINUE_MS = 8000L
+
+        internal fun looksComplete(text: String): Boolean {
+            val t = text.trim()
+            if (t.length < 12) return false
+            return t.endsWith('.') || t.endsWith('!') || t.endsWith('?') ||
+                t.endsWith(']') || t.endsWith("].") || t.contains("[Page")
+        }
         fun gpuMarker(context: Context): File = GpuMarker.file(context)
 
         /** Warm-cache detection: LiteRT-LM writes compiled GPU kernels under cacheDir. */
