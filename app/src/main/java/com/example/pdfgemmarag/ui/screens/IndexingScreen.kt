@@ -32,14 +32,14 @@ fun IndexingScreen(
             Text(
                 buildString {
                     append(progress.stage.name.lowercase().replaceFirstChar { it.uppercase() })
-                    if (progress.total > 1) append(" ${progress.current}/${progress.total}")
+                    if (progress.total > 0) append(" ${progress.current}/${progress.total}")
                     if (progress.detail.isNotEmpty()) append(" · ${progress.detail}")
                     if (progress.paused) append(" · paused (device too hot)")
                 },
                 style = MaterialTheme.typography.bodySmall,
             )
             Spacer(Modifier.height(8.dp))
-            if (progress.total > 1) LinearProgressIndicator(progress = { progress.fraction }, modifier = Modifier.fillMaxWidth())
+            if (progress.total > 0) LinearProgressIndicator(progress = { progress.fraction }, modifier = Modifier.fillMaxWidth())
             else LinearProgressIndicator(Modifier.fillMaxWidth())
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 TextButton(onClick = onCancel) { Text("Cancel") }

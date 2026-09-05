@@ -34,6 +34,7 @@ import com.example.pdfgemmarag.inference.llm.GemmaEngine
 import com.example.pdfgemmarag.inference.ocr.MlKitOcr
 import com.example.pdfgemmarag.inference.pdf.AprysePdfExtractor
 import com.example.pdfgemmarag.inference.store.AppSearchVectorStore
+import com.example.pdfgemmarag.inference.store.RetrievalProbe
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -72,6 +73,7 @@ class AiInferenceService : Service() {
 
     private val generationIds = AtomicLong(System.currentTimeMillis())
     private val generations = ConcurrentHashMap<Long, GemmaEngine.Generation>()
+    private val cancelledGenerations = ConcurrentHashMap.newKeySet<Long>()
     @Volatile private var indexingJob: Job? = null
     @Volatile private var installJob: Job? = null
 
@@ -208,10 +210,19 @@ class AiInferenceService : Service() {
                         override fun onError(message: String) { generations.remove(id); safe { callback.onError(id, message) } }
                     }
                     // Empty docHash = plain chat: no embedder or AppSearch needed, so it works before any model beyond Gemma is installed.
+                    if (cancelledGenerations.contains(id)) {
+                        safe { callback.onError(id, "Stopped") }
+                        return@launch
+                    }
                     val handle = if (docHash == PlainChatUseCase.PLAIN_CHAT_DOC_HASH) {
                         PlainChatUseCase(e).start(id, question, history, listener)
                     } else {
                         AnswerQuestionUseCase(requireEmbedder(), requireStore(), e).start(id, docHash, question, history, listener)
+                    }
+                    if (cancelledGenerations.remove(id)) {
+                        handle?.cancel()
+                        safe { callback.onError(id, "Stopped") }
+                        return@launch
                     }
                     if (handle != null) generations[id] = handle
                 } catch (t: Throwable) {
@@ -223,7 +234,12 @@ class AiInferenceService : Service() {
         }
 
         override fun cancelGeneration(generationId: Long) {
-            generations.remove(generationId)?.cancel() ?: gemma?.cancelActive()
+            Log.i(TAG, "cancel requested id=$generationId active=${generations.keys}")
+            cancelledGenerations.add(generationId)
+            generations.remove(generationId)?.cancel()
+            generations.values.forEach { it.cancel() }
+            generations.clear()
+            gemma?.cancelActive()
         }
 
         override fun indexDocument(docHash: String, pdfPath: String, displayName: String, callback: IIndexingCallback) {
@@ -275,6 +291,15 @@ class AiInferenceService : Service() {
         override fun runSelfTest(): String = runBlocking {
             SelfTest(this@AiInferenceService, { requireEmbedder() }, { requireStore() }).run()
         }
+
+        override fun probeRetrieval(docHash: String): String = runBlocking {
+            val store = requireStore()
+            val embedder = if (ModelPaths.embeddingReady(this@AiInferenceService)) requireEmbedder() else null
+            if (embedder == null) Log.w(TAG, "probe without embedder; keyword path only")
+            val report = RetrievalProbe.run(store, { q -> embedder?.embedQuery(q) ?: FloatArray(512) }, docHash.ifBlank { null })
+            runCatching { File(filesDir, "retrieval_probe.txt").writeText(report) }
+            report
+        }
     }
 
     private fun onClientGone(generationId: Long) {
@@ -324,6 +349,12 @@ class AiInferenceService : Service() {
         runCatching { requireStore() }.onSuccess { s ->
             sb.appendLine("appsearch features (hybridOk=${s.features.hybridOk}):")
             sb.appendLine(s.features.toString().prependIndent("  "))
+            val docs = runCatching { s.listDocuments() }.getOrDefault(emptyList())
+            sb.appendLine("indexed docs=${docs.size}")
+            docs.forEach { d ->
+                sb.appendLine("  ${d.displayName} hash=${d.docHash.take(12)} pages=${d.pageCount} chunks=${d.chunkCount}")
+            }
+            if (docs.isEmpty()) sb.appendLine("  INDEX EMPTY — if the UI still lists a PDF, AppSearch was wiped or never finished")
         }.onFailure { sb.appendLine("appsearch: ${it.message}") }
         return sb.toString()
     }

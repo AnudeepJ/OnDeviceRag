@@ -26,11 +26,15 @@ class HeaderFooterStripper(
         val threshold = maxOf(minOccurrences, (pages.size * minPageFraction).toInt())
         val repeated = counts.filterValues { it >= threshold }.keys
 
-        return pages.map { page ->
+        return pages.mapIndexed { idx, page ->
             val edges = edgeCandidates(page).toSet()
             val kept = page.lines.filter { line ->
                 val isEdge = line in edges
-                !(isEdge && (normalize(line.text) in repeated || pageNumberPattern.matches(line.text)))
+                val isPageNum = pageNumberPattern.matches(line.text)
+                // Title page often uses the running header as the document title ("CITY OF BAYTOWN").
+                // Strip it from later pages only so agency/date still get indexed.
+                val isRepeatedHeader = idx > 0 && normalize(line.text) in repeated
+                !(isEdge && (isRepeatedHeader || isPageNum))
             }
             page.copy(lines = kept)
         }

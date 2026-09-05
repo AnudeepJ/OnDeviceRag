@@ -40,12 +40,23 @@ class AppSearchVectorStore private constructor(private val session: AppSearchSes
     }
 
     suspend fun setSchema() {
-        val request = SetSchemaRequest.Builder()
+        val compatible = SetSchemaRequest.Builder()
             .addDocumentClasses(PdfChunkDocument::class.java)
-            .setForceOverride(true) // schema is fully owned by us; re-index on incompatible change
             .build()
-        session.setSchemaAsync(request).await()
-        Log.i(TAG, "schema set; features:\n$features")
+        try {
+            session.setSchemaAsync(compatible).await()
+            Log.i(TAG, "schema set (compatible, index preserved); features:\n$features")
+        } catch (t: Throwable) {
+            // Incompatible change only: forceOverride deletes every document. Never do this on
+            // a matching schema — that is what wiped the index after :inference restarted.
+            Log.w(TAG, "schema incompatible (${t.message}); force-override (index will be empty)")
+            val forced = SetSchemaRequest.Builder()
+                .addDocumentClasses(PdfChunkDocument::class.java)
+                .setForceOverride(true)
+                .build()
+            session.setSchemaAsync(forced).await()
+            Log.i(TAG, "schema set (forced); features:\n$features")
+        }
     }
 
     /** Batched put; every [flushEvery] documents a flush is requested so a crash loses at most that many. */
@@ -80,9 +91,33 @@ class AppSearchVectorStore private constructor(private val session: AppSearchSes
         similarityFloor: Double = 0.3,
         keywordWeight: Double = 0.05,
     ): List<Citation> {
+        val terms = HybridQuery.keywordTerms(queryText)
+        var hits = executeSearch(docHash, HybridQuery.build(terms, similarityFloor, topK), terms, queryVec, topK, keywordWeight)
+        Log.i(TAG, "search ns=${docHash.take(8)} q='${queryText.take(80)}' terms=$terms floor=$similarityFloor -> ${hits.size} hits " +
+            hits.take(5).joinToString { "p${it.pageNumber}@${"%.3f".format(it.score)}" })
+        if (hits.isEmpty()) {
+            Log.w(TAG, "hybrid empty; retrying semantic-only floor=0")
+            hits = executeSearch(docHash, HybridQuery.build(emptyList(), 0.0, topK), emptyList(), queryVec, topK, keywordWeight)
+            Log.i(TAG, "semantic-only fallback -> ${hits.size} hits " +
+                hits.take(5).joinToString { "p${it.pageNumber}@${"%.3f".format(it.score)}" })
+        }
+        hits.forEachIndexed { i, c ->
+            if (i < 5) Log.i(TAG, "  #$i p${c.pageNumber} c${c.chunkIndex} score=${"%.3f".format(c.score)} '${c.text.take(120).replace('\n', ' ')}'")
+        }
+        return hits
+    }
+
+    private suspend fun executeSearch(
+        docHash: String,
+        query: String,
+        terms: List<String>,
+        queryVec: FloatArray,
+        topK: Int,
+        keywordWeight: Double,
+    ): List<Citation> {
         val spec = SearchSpec.Builder()
             .setListFilterQueryLanguageEnabled(true)
-            .addSearchStringParameters(listOf(queryText))
+            .apply { if (terms.isNotEmpty()) addSearchStringParameters(terms) }
             .addEmbeddingParameters(listOf(EmbeddingVector(queryVec, EmbeddingGemmaEmbedder.MODEL_SIGNATURE)))
             .setDefaultEmbeddingSearchMetricType(SearchSpec.EMBEDDING_SEARCH_METRIC_TYPE_COSINE)
             .setRankingStrategy(
@@ -93,7 +128,7 @@ class AppSearchVectorStore private constructor(private val session: AppSearchSes
             .setResultCountPerPage(topK)
             .addProjection(PdfChunkDocument.SCHEMA_TYPE, listOf("text", "pageNumber", "chunkIndex"))
             .build()
-        val query = "getSearchStringParameter(0) OR semanticSearch(getEmbeddingParameter(0), $similarityFloor, 1)"
+        Log.d(TAG, "query=$query")
         val results = session.search(query, spec)
         try {
             val page = results.nextPageAsync.await()
@@ -106,6 +141,31 @@ class AppSearchVectorStore private constructor(private val session: AppSearchSes
                     chunkIndex = g.getPropertyLong("chunkIndex").toInt(),
                     score = r.rankingSignal,
                     text = g.getPropertyString("text") ?: "",
+                )
+            }
+        } finally {
+            results.close()
+        }
+    }
+
+    /** A few stored chunks, no ranking — used to prove the namespace is not empty. */
+    suspend fun sampleChunks(docHash: String, limit: Int = 3): List<Citation> {
+        val spec = SearchSpec.Builder()
+            .addFilterNamespaces(docHash)
+            .addFilterSchemas(PdfChunkDocument.SCHEMA_TYPE)
+            .setRankingStrategy(SearchSpec.RANKING_STRATEGY_CREATION_TIMESTAMP)
+            .setResultCountPerPage(limit)
+            .addProjection(PdfChunkDocument.SCHEMA_TYPE, listOf("text", "pageNumber", "chunkIndex"))
+            .build()
+        val results = session.search("", spec)
+        try {
+            return results.nextPageAsync.await().map { r ->
+                val g = r.genericDocument
+                Citation(
+                    chunkId = g.id, docHash = g.namespace,
+                    pageNumber = g.getPropertyLong("pageNumber").toInt(),
+                    chunkIndex = g.getPropertyLong("chunkIndex").toInt(),
+                    score = 0.0, text = g.getPropertyString("text") ?: "",
                 )
             }
         } finally {

@@ -66,6 +66,7 @@ class RagViewModel(app: Application) : AndroidViewModel(app) {
         val notice: String? = null,
         val diagnostics: String? = null,
         val selfTest: String? = null,
+        val probe: String? = null,
         val busy: Boolean = false,
     )
 
@@ -348,9 +349,27 @@ class RagViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun stopGeneration() = viewModelScope.launch {
-        val id = _chat.value.generationId
-        runCatching { connection.await().cancelGeneration(id) }
+    fun stopGeneration() {
+        val state = _chat.value
+        if (!state.generating) return
+        // Unlock the composer immediately. LiteRT-LM cancelProcess() often does not return
+        // during GPU prefill, so waiting for onDone left the UI stuck.
+        _chat.update { it.copy(generating = false, error = "Stopped.", generationId = -1) }
+        viewModelScope.launch {
+            val partial = state.streamingText
+            state.docHash?.let { doc ->
+                db.messages().insert(
+                    MessageEntity(
+                        docHash = doc, role = "model",
+                        text = partial.ifBlank { "(stopped)" },
+                        citationIds = state.streamingCitations.joinToString(",") { it.chunkId },
+                        cancelled = true,
+                    ),
+                )
+            }
+            runCatching { connection.await().cancelGeneration(state.generationId) }
+                .onFailure { Log.w(TAG, "cancelGeneration failed", it) }
+        }
     }
 
     suspend fun citation(chunkId: String): Citation? = withContext(Dispatchers.IO) {
@@ -404,6 +423,13 @@ class RagViewModel(app: Application) : AndroidViewModel(app) {
         _ui.update { it.copy(selfTest = "Running…") }
         val result = runCatching { withContext(Dispatchers.IO) { connection.await().runSelfTest() } }.getOrElse { "failed: ${it.message}" }
         _ui.update { it.copy(selfTest = result) }
+    }
+
+    fun probeRetrieval() = viewModelScope.launch {
+        _ui.update { it.copy(probe = "Probing live index…") }
+        val result = runCatching { withContext(Dispatchers.IO) { connection.await().probeRetrieval("") } }
+            .getOrElse { "failed: ${it.message}" }
+        _ui.update { it.copy(probe = result) }
     }
 
     fun notice(text: String) = _ui.update { it.copy(notice = text) }

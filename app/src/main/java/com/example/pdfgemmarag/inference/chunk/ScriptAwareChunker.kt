@@ -31,6 +31,10 @@ class ScriptAwareChunker(
     private val overlapFraction: Double = 0.12,
     /** Table rows are packed until the chunk reaches this many chars; headers repeat per chunk. */
     private val tableTarget: Int = 1000,
+    /** Adjacent same-page fragments shorter than this are concatenated (spec PDFs emit one-line segments). */
+    private val minMergeChars: Int = 160,
+    /** After merging, drop leftovers this short (running labels like "FORMWORK" / "03600-6"). */
+    private val minKeepChars: Int = 40,
 ) {
 
     fun chunk(pages: List<PageContent>): List<Chunk> {
@@ -52,7 +56,34 @@ class ScriptAwareChunker(
                 }
             }
         }
-        return out
+        return mergeTiny(out)
+    }
+
+    internal fun mergeTiny(chunks: List<Chunk>): List<Chunk> {
+        if (chunks.isEmpty()) return chunks
+        val merged = ArrayList<Chunk>()
+        var acc: Chunk? = null
+        fun flush() { acc?.let { merged += it }; acc = null }
+        for (c in chunks) {
+            if (c.isTable) {
+                flush()
+                merged += c
+                continue
+            }
+            val cur = acc
+            if (cur == null) {
+                acc = c
+            } else if (cur.pageNumber == c.pageNumber && cur.text.length < minMergeChars) {
+                acc = cur.copy(text = cur.text.trimEnd() + "\n" + c.text.trim())
+            } else {
+                merged += cur
+                acc = c
+            }
+        }
+        flush()
+        return merged
+            .filter { it.isTable || it.text.length >= minKeepChars }
+            .mapIndexed { i, c -> c.copy(chunkIndex = i) }
     }
 
     internal fun chunkParagraph(text: String): List<String> {

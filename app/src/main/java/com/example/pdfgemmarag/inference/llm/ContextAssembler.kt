@@ -10,8 +10,8 @@ import com.example.pdfgemmarag.inference.ocr.ScriptDetector
  * CJK ~1.1 tokens/char, everything else ~0.28 tokens/char (4 chars/token) with a safety margin.
  */
 class ContextAssembler(
-    private val contextTokenBudget: Int = 4000,
-    private val maxChunks: Int = 8,
+    private val contextTokenBudget: Int = 1600,
+    private val maxChunks: Int = 4,
 ) {
 
     data class Assembled(val prompt: String, val citations: List<Citation>, val approxTokens: Int)

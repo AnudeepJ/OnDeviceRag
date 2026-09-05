@@ -40,4 +40,7 @@ interface IAiInferenceService {
 
     /** Runs the Phase 0 spike checks on-device (tokenizer, embedder, AppSearch hybrid) and returns a report. */
     String runSelfTest();
+
+    /** Retrieval-only probe of the live AppSearch index (no Gemma). Empty docHash = every document. */
+    String probeRetrieval(String docHash);
 }

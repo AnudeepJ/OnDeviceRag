@@ -82,6 +82,7 @@ class GemmaEngine(
         fun cancel() {
             cancelled = true
             runCatching { conversation.cancelProcess() }.onFailure { Log.w(TAG, "cancelProcess: ${it.message}") }
+            runCatching { conversation.close() }.onFailure { Log.w(TAG, "close after cancel: ${it.message}") }
         }
     }
 
@@ -114,23 +115,45 @@ class GemmaEngine(
         active.set(conversation)
         val generation = Generation(conversation)
         val done = CountDownLatch(1)
+        Log.i(TAG, "generate start backend=$backendName promptChars=${userMessage.length} history=${history.size}")
+
+        val watchdog = java.util.concurrent.Executors.newSingleThreadScheduledExecutor { r ->
+            Thread(r, "gemma-watchdog").apply { isDaemon = true }
+        }
+        val firstTokenMs = java.util.concurrent.atomic.AtomicLong(-1)
+        watchdog.schedule({
+            if (firstTokenMs.get() < 0 && !generation.cancelled && done.count > 0) {
+                Log.w(TAG, "no first token after ${FIRST_TOKEN_TIMEOUT_SEC}s — cancelling")
+                generation.cancel()
+                sink.onError(IllegalStateException("Generation timed out waiting for the first token. Tap Stop and try a shorter question."))
+                done.countDown()
+            }
+        }, FIRST_TOKEN_TIMEOUT_SEC, TimeUnit.SECONDS)
 
         conversation.sendMessageAsync(
             Message.user(userMessage),
             object : MessageCallback {
                 override fun onMessage(message: Message) {
                     val text = message.contents.toString()
-                    if (text.isNotEmpty() && !generation.cancelled) sink.onToken(text)
+                    if (text.isNotEmpty() && !generation.cancelled) {
+                        firstTokenMs.compareAndSet(-1, SystemClock.elapsedRealtime())
+                        sink.onToken(text)
+                    }
                 }
 
                 override fun onDone() {
+                    watchdog.shutdownNow()
                     finish(conversation)
-                    done.countDown()
-                    sink.onDone(generation.cancelled)
+                    if (done.count > 0) {
+                        done.countDown()
+                        sink.onDone(generation.cancelled)
+                    }
                 }
 
                 override fun onError(throwable: Throwable) {
+                    watchdog.shutdownNow()
                     finish(conversation)
+                    if (done.count == 0L) return
                     done.countDown()
                     if (throwable is CancellationException || generation.cancelled) sink.onDone(cancelled = true)
                     else sink.onError(throwable)
@@ -146,7 +169,10 @@ class GemmaEngine(
     }
 
     fun cancelActive() {
-        active.get()?.let { runCatching { it.cancelProcess() } }
+        active.getAndSet(null)?.let { conv ->
+            runCatching { conv.cancelProcess() }
+            runCatching { conv.close() }
+        }
     }
 
     override fun close() {
@@ -157,6 +183,7 @@ class GemmaEngine(
     companion object {
         private const val TAG = "GemmaEngine"
         const val MAX_HISTORY_TURNS = 4
+        const val FIRST_TOKEN_TIMEOUT_SEC = 60L
         fun gpuMarker(context: Context): File = GpuMarker.file(context)
 
         /** Warm-cache detection: LiteRT-LM writes compiled GPU kernels under cacheDir. */

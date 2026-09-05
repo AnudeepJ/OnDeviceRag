@@ -4,6 +4,7 @@ import com.example.pdfgemmarag.inference.ocr.Script
 import com.example.pdfgemmarag.inference.pdf.PageContent
 import com.example.pdfgemmarag.inference.pdf.Segment
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -56,6 +57,28 @@ class ScriptAwareChunkerTest {
         }
         val emitted = chunks.flatMap { it.lines().drop(2) }
         assertEquals(rows, emitted)
+    }
+
+    @Test
+    fun `tiny same-page fragments merge and labels are dropped`() {
+        val pages = listOf(
+            PageContent(
+                1,
+                listOf(
+                    Segment.Paragraph(1, "FORMWORK"),
+                    Segment.Paragraph(1, "A. No separate payment will be made for concrete formwork."),
+                    Segment.Paragraph(1, "CITY OF BAYTOWN"),
+                    Segment.Paragraph(1, "03/2020"),
+                ),
+            ),
+            PageContent(2, listOf(Segment.Paragraph(2, "03600-6"))),
+        )
+        val chunks = chunker.chunk(pages)
+        assertEquals(1, chunks.size)
+        assertTrue(chunks[0].text.contains("No separate payment"))
+        assertTrue(chunks[0].text.contains("BAYTOWN"))
+        assertTrue(chunks[0].text.contains("03/2020"))
+        assertFalse(chunks.any { it.text == "03600-6" })
     }
 
     @Test

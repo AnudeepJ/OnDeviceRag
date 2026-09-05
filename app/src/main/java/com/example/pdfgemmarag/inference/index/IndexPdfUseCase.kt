@@ -90,9 +90,16 @@ class IndexPdfUseCase(
             }
 
             // 3. Layout analysis
-            onProgress(IndexingProgress(docHash, Stage.CHUNKING, 0, 1))
+            onProgress(IndexingProgress(docHash, Stage.CHUNKING, 0, layouts.size))
             val stripped = stripper.strip(layouts)
-            val contents: List<PageContent> = stripped.map { tables.analyse(it) }
+            val contents = stripped.mapIndexed { i, layout ->
+                currentCoroutineContext().ensureActive()
+                tables.analyse(layout).also {
+                    if ((i + 1) % 2 == 0 || i + 1 == stripped.size) {
+                        onProgress(IndexingProgress(docHash, Stage.CHUNKING, i + 1, stripped.size))
+                    }
+                }
+            }
             val chunks = chunker.chunk(contents)
             val allText = contents.joinToString("\n") { pc ->
                 pc.segments.joinToString("\n") {

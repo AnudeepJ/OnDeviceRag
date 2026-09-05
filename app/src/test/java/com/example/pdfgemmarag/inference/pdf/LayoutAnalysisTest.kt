@@ -78,7 +78,9 @@ class LayoutAnalysisTest {
             )
         }
         val stripped = HeaderFooterStripper().strip(pages)
-        stripped.forEach { pg ->
+        assertTrue("title page keeps the running header as the document title", stripped[0].lines.any { it.text.contains("ACME") })
+        assertFalse(stripped[0].lines.any { it.text.startsWith("Page") })
+        stripped.drop(1).forEach { pg ->
             assertEquals(2, pg.lines.size)
             assertFalse(pg.lines.any { it.text.contains("ACME") || it.text.startsWith("Page") })
         }

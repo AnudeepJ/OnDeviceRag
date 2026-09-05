@@ -9,6 +9,7 @@ import com.example.pdfgemmarag.inference.embed.EmbeddingGemmaEmbedder
 import com.example.pdfgemmarag.inference.llm.ContextAssembler
 import com.example.pdfgemmarag.inference.llm.GemmaEngine
 import com.example.pdfgemmarag.inference.store.AppSearchVectorStore
+import com.example.pdfgemmarag.inference.store.HybridQuery
 
 /** Retrieve -> assemble -> generate for one question against one document. */
 class AnswerQuestionUseCase(
@@ -32,13 +33,19 @@ class AnswerQuestionUseCase(
     suspend fun start(generationId: Long, docHash: String, question: String, history: List<QaPair>, listener: Listener): GemmaEngine.Generation? {
         val t0 = SystemClock.elapsedRealtime()
         val queryVec = embedder.embedQuery(question)
+        val terms = HybridQuery.keywordTerms(question)
+        Log.i(TAG, "ask hash=${docHash.take(12)} q='${question.take(120)}' terms=$terms dim=${queryVec.size}")
         val ranked = store.search(docHash, question, queryVec, topK, similarityFloor, keywordWeight)
         val assembled = assembler.assemble(question, ranked)
         Log.i(TAG, "retrieved ${ranked.size} -> ${assembled.citations.size} chunks (~${assembled.approxTokens} tokens) in ${SystemClock.elapsedRealtime() - t0} ms")
+        assembled.citations.forEachIndexed { i, c ->
+            Log.i(TAG, "  cite[$i] p${c.pageNumber} c${c.chunkIndex} score=${"%.3f".format(c.score)} '${c.text.take(80).replace('\n', ' ')}'")
+        }
         // Citations cross Binder without text; the UI fetches text on demand by chunkId.
         listener.onRetrieved(assembled.citations.map { it.copy(text = "") })
 
         if (assembled.citations.isEmpty()) {
+            Log.w(TAG, "EMPTY retrieval — returning canned refusal (index empty or query matched nothing)")
             val msg = "The document does not appear to contain information about that."
             listener.onToken(msg)
             listener.onDone(
@@ -49,9 +56,12 @@ class AnswerQuestionUseCase(
 
         var firstToken = -1L
         var chars = 0
+        if (history.isNotEmpty()) Log.i(TAG, "ignoring ${history.size} history turns for grounded ask")
+        // Do not replay prior Q&A into the KV cache: a wrong turn poisons the next one, and
+        // extra history plus 4k excerpts is what stalled GPU prefill so Stop never returned.
         return engine.generate(
             systemInstruction = GemmaEngine.SYSTEM_INSTRUCTION,
-            history = history,
+            history = emptyList(),
             userMessage = assembled.prompt,
             sink = object : GemmaEngine.TokenSink {
                 override fun onToken(text: String) {

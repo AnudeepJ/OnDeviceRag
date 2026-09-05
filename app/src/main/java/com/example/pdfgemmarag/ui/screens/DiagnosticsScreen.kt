@@ -49,8 +49,15 @@ fun DiagnosticsScreen(viewModel: RagViewModel, onBack: () -> Unit) {
                 OutlinedButton(onClick = { viewModel.loadDiagnostics() }) { Text("Refresh") }
                 Button(onClick = { viewModel.runSelfTest() }, enabled = ui.selfTest != "Running…") { Text("Run spike self-test") }
             }
+            Spacer(Modifier.height(8.dp))
+            Button(onClick = { viewModel.probeRetrieval() }, enabled = ui.probe != "Probing live index…") { Text("Probe live index") }
             Spacer(Modifier.height(12.dp))
             Text(ui.diagnostics ?: "Loading…", fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall)
+            ui.probe?.let {
+                Spacer(Modifier.height(16.dp))
+                Text("Live index probe", style = MaterialTheme.typography.titleMedium)
+                Text(it, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall)
+            }
             ui.selfTest?.let {
                 Spacer(Modifier.height(16.dp))
                 Text("Self-test", style = MaterialTheme.typography.titleMedium)

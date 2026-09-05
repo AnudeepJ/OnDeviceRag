@@ -31,6 +31,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -59,9 +60,19 @@ fun ChatScreen(viewModel: RagViewModel, docHash: String, title: String, onBack: 
     val listState = rememberLazyListState()
 
     LaunchedEffect(docHash) { viewModel.openChat(docHash) }
-    LaunchedEffect(messages.size, chat.streamingText.length) {
+    // Scroll on new messages or when generation starts — not on every token (that stalls the UI).
+    LaunchedEffect(messages.size, chat.generating) {
         val count = messages.size + if (chat.generating) 1 else 0
-        if (count > 0) listState.animateScrollToItem(count - 1)
+        if (count > 0) listState.scrollToItem(count - 1)
+    }
+    var elapsedSec by remember { mutableStateOf(0) }
+    LaunchedEffect(chat.generating, chat.generationId) {
+        elapsedSec = 0
+        if (!chat.generating) return@LaunchedEffect
+        while (true) {
+            kotlinx.coroutines.delay(1000)
+            elapsedSec += 1
+        }
     }
 
     val canAsk = ui.engine.state == EngineStatus.State.READY && !chat.generating &&
@@ -92,7 +103,7 @@ fun ChatScreen(viewModel: RagViewModel, docHash: String, title: String, onBack: 
                 items(messages, key = { it.id }) { m -> MessageBubble(m, onCitation = { citationToShow = it }) }
                 if (chat.generating) {
                     item(key = "streaming") {
-                        StreamingBubble(chat, onCitation = { citationToShow = it })
+                        StreamingBubble(chat, elapsedSec, onCitation = { citationToShow = it })
                     }
                 }
                 chat.error?.let { err -> item(key = "error") { Text(err, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) } }
@@ -112,7 +123,11 @@ fun ChatScreen(viewModel: RagViewModel, docHash: String, title: String, onBack: 
                 )
                 Spacer(Modifier.width(8.dp))
                 if (chat.generating) {
-                    IconButton(onClick = { viewModel.stopGeneration() }) { Icon(Icons.Default.Stop, contentDescription = "Stop") }
+                    TextButton(onClick = { viewModel.stopGeneration() }) {
+                        Icon(Icons.Default.Stop, contentDescription = null)
+                        Spacer(Modifier.width(4.dp))
+                        Text("Stop")
+                    }
                 } else {
                     IconButton(onClick = { viewModel.ask(input); input = "" }, enabled = canAsk && input.isNotBlank()) {
                         Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send")
@@ -147,10 +162,17 @@ private fun MessageBubble(m: MessageEntity, onCitation: (String) -> Unit) {
 }
 
 @Composable
-private fun StreamingBubble(chat: RagViewModel.ChatState, onCitation: (String) -> Unit) {
+private fun StreamingBubble(chat: RagViewModel.ChatState, elapsedSec: Int, onCitation: (String) -> Unit) {
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.Start) {
         Box(Modifier.widthIn(max = 340.dp).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surfaceVariant).padding(12.dp)) {
-            Text(if (chat.streamingText.isEmpty()) (if (chat.streamingCitations.isEmpty()) "Searching document…" else "Thinking…") else chat.streamingText + "▍", style = MaterialTheme.typography.bodyMedium)
+            Text(
+                when {
+                    chat.streamingText.isNotEmpty() -> chat.streamingText + "▍"
+                    chat.streamingCitations.isEmpty() -> "Searching document…"
+                    else -> "Generating answer… ${elapsedSec}s (first token can take 30–90s on GPU)"
+                },
+                style = MaterialTheme.typography.bodyMedium,
+            )
         }
         if (chat.streamingCitations.isNotEmpty()) CitationChips(chat.streamingCitations.map { it.chunkId to "p.${it.pageNumber}" }, onCitation)
     }
