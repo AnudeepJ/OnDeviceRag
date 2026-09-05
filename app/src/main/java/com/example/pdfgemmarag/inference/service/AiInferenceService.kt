@@ -47,6 +47,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 
 /**
@@ -201,16 +202,23 @@ class AiInferenceService : Service() {
                 val e = gemma
                 if (e == null || !e.isInitialized) { safe { callback.onError(id, "Model is not loaded") }; return@launch }
                 try {
+                    val terminal = AtomicBoolean(false)
                     val listener = object : AnswerQuestionUseCase.Listener {
                         override fun onRetrieved(citations: List<Citation>) { safe { callback.onRetrieved(id, citations) } }
                         override fun onToken(text: String) {
                             try { callback.onToken(id, text) } catch (e: RemoteException) { onClientGone(id) }
                         }
-                        override fun onDone(stats: GenerationStats) { generations.remove(id); safe { callback.onDone(id, stats) } }
-                        override fun onError(message: String) { generations.remove(id); safe { callback.onError(id, message) } }
+                        override fun onDone(stats: GenerationStats) {
+                            terminal.set(true); cancelledGenerations.remove(id); generations.remove(id)
+                            safe { callback.onDone(id, stats) }
+                        }
+                        override fun onError(message: String) {
+                            terminal.set(true); cancelledGenerations.remove(id); generations.remove(id)
+                            safe { callback.onError(id, message) }
+                        }
                     }
                     // Empty docHash = plain chat: no embedder or AppSearch needed, so it works before any model beyond Gemma is installed.
-                    if (cancelledGenerations.contains(id)) {
+                    if (cancelledGenerations.remove(id)) {
                         safe { callback.onError(id, "Stopped") }
                         return@launch
                     }
@@ -224,7 +232,7 @@ class AiInferenceService : Service() {
                         safe { callback.onError(id, "Stopped") }
                         return@launch
                     }
-                    if (handle != null) generations[id] = handle
+                    if (handle != null && !terminal.get()) generations[id] = handle
                 } catch (t: Throwable) {
                     Log.e(TAG, "ask failed", t)
                     safe { callback.onError(id, t.message ?: t.javaClass.simpleName) }
@@ -239,8 +247,6 @@ class AiInferenceService : Service() {
             val handle = generations.remove(generationId)
             if (handle != null) {
                 handle.cancel()
-            } else if (generations.isEmpty()) {
-                gemma?.cancelActive()
             }
         }
 
@@ -267,6 +273,7 @@ class AiInferenceService : Service() {
                 } catch (t: Throwable) {
                     safe { callback.onFailed(docHash, t.message ?: t.javaClass.simpleName) }
                 } finally {
+                    indexingJob = null
                     stopForegroundIfIdle()
                 }
             }
@@ -330,6 +337,7 @@ class AiInferenceService : Service() {
                 Log.e(TAG, "install failed", t)
                 safe { callback?.onFailed(t.message ?: t.javaClass.simpleName) }
             } finally {
+                installJob = null
                 stopForegroundIfIdle()
             }
         }

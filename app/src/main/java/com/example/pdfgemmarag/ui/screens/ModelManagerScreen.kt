@@ -147,18 +147,32 @@ private fun CatalogRow(entry: CatalogEntry, state: com.example.pdfgemmarag.ui.do
                 when {
                     installed -> Text("Installed", style = MaterialTheme.typography.labelLarge)
                     state?.running == true -> TextButton(onClick = onCancel) { Text("Cancel") }
-                    else -> Button(onClick = onDownload) { Text("Download") }
+                    else -> Button(onClick = onDownload, enabled = entry.downloadable) { Text("Download") }
                 }
             }
-            if (state != null && state.running) {
+            if (!installed && state != null && state.running) {
                 Spacer(Modifier.height(8.dp))
                 LinearProgressIndicator(progress = { state.fraction }, modifier = Modifier.fillMaxWidth())
                 Text("${state.bytesSoFar shr 20} / ${state.totalBytes shr 20} MB", style = MaterialTheme.typography.bodySmall)
-            } else if (state?.status == DownloadManager.STATUS_FAILED) {
-                Text("Download failed (reason ${state.reason})", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-            } else if (state?.status == DownloadManager.STATUS_SUCCESSFUL && !installed) {
+            } else if (!installed && state?.status == DownloadManager.STATUS_FAILED) {
+                Text("Download failed (${downloadFailure(state.reason)})", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+            } else if (!installed && state?.status == DownloadManager.STATUS_SUCCESSFUL) {
                 Text("Downloaded; verifying and installing…", style = MaterialTheme.typography.bodySmall)
+            } else if (!installed && !entry.downloadable) {
+                Text("Unavailable: configure the CDN URL and SHA-256 first.", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
             }
         }
     }
+}
+
+private fun downloadFailure(reason: Int): String = when (reason) {
+    DownloadManager.ERROR_CANNOT_RESUME -> "cannot resume"
+    DownloadManager.ERROR_DEVICE_NOT_FOUND -> "storage unavailable"
+    DownloadManager.ERROR_FILE_ALREADY_EXISTS -> "file already exists"
+    DownloadManager.ERROR_FILE_ERROR -> "file error"
+    DownloadManager.ERROR_HTTP_DATA_ERROR -> "HTTP data error"
+    DownloadManager.ERROR_INSUFFICIENT_SPACE -> "insufficient space"
+    DownloadManager.ERROR_TOO_MANY_REDIRECTS -> "too many redirects"
+    DownloadManager.ERROR_UNHANDLED_HTTP_CODE -> "HTTP error"
+    else -> "reason $reason"
 }

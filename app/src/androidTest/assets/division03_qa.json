@@ -1,0 +1,92 @@
+[
+  {
+    "question": "Is concrete formwork paid for separately?",
+    "expectedAnswer": "No separate payment is made; payment is included in the unit price for structural concrete.",
+    "page": 2,
+    "requiredPhrases": ["No separate payment", "unit price", "structural concrete"]
+  },
+  {
+    "question": "What minimum compressive strength is required before removing formwork that supports the concrete's weight?",
+    "expectedAnswer": "75 percent of the specified minimum 28-day strength for the concrete class involved.",
+    "page": 10,
+    "requiredPhrases": ["75 percent", "28-day strength"]
+  },
+  {
+    "question": "What minimum concrete cover and AZ factor are specified inside the structures?",
+    "expectedAnswer": "The AZ factor must be at least 0.54 and reinforcing steel on the inside must have at least 2 inches of concrete cover.",
+    "page": 16,
+    "requiredPhrases": ["0.54", "2"]
+  },
+  {
+    "question": "What are the 7-day and 28-day compressive strengths for the cast-in-place concrete mix?",
+    "expectedAnswer": "2,400 psi at 7 days and 4,000 psi at 28 days.",
+    "page": 17,
+    "requiredPhrases": ["2400 psi", "4000 psi"]
+  },
+  {
+    "question": "What standard and class must plywood form material meet?",
+    "expectedAnswer": "Plywood must conform to PS 1, Class 1.",
+    "page": 17,
+    "requiredPhrases": ["PS 1", "Class 1"]
+  },
+  {
+    "question": "If the reinforcement grade is not shown on the plans, which grade is required?",
+    "expectedAnswer": "Grade 60 reinforcing bars are required.",
+    "page": 20,
+    "requiredPhrases": ["Grade 60"]
+  },
+  {
+    "question": "What minimum solids content is required for membrane-forming curing compound?",
+    "expectedAnswer": "A minimum solids content of 30 percent.",
+    "page": 24,
+    "requiredPhrases": ["30 percent"]
+  },
+  {
+    "question": "What is the placement tolerance for uniform spacing of stirrups and ties?",
+    "expectedAnswer": "Plus or minus 1 inch, without reducing the required number of stirrups and ties.",
+    "page": 32,
+    "requiredPhrases": ["1", "required number"]
+  },
+  {
+    "question": "How much cover is required over principal reinforcement in beams and columns exposed to earth, water, sewage, or weather?",
+    "expectedAnswer": "2 1/2 inches.",
+    "page": 33,
+    "requiredPhrases": ["2 1/2"]
+  },
+  {
+    "question": "How many curing days are required when Type II cement is used?",
+    "expectedAnswer": "Seven curing days.",
+    "page": 44,
+    "requiredPhrases": ["7 curing days"]
+  },
+  {
+    "question": "How many compression test cylinders are tested at 7 days and at 28 days for a trial batch?",
+    "expectedAnswer": "Three cylinders at 7 days and three cylinders at 28 days.",
+    "page": 61,
+    "requiredPhrases": ["3", "7 days", "28 days"]
+  },
+  {
+    "question": "What are the maximum water-cement ratios for liquid-containing structures, brackish or salt exposure, and all other concrete?",
+    "expectedAnswer": "0.45 for liquid-containing structures, 0.40 for brackish water, salt spray or deicers, and 0.55 for all other concrete.",
+    "page": 62,
+    "requiredPhrases": ["0.45", "0.40", "0.55"]
+  },
+  {
+    "question": "When concrete temperature is at least 85 degrees F, what is the maximum time from adding cement to discharge?",
+    "expectedAnswer": "60 minutes.",
+    "page": 71,
+    "requiredPhrases": ["60 minutes"]
+  },
+  {
+    "question": "How long must concrete surfaces be saturated before cement-based grout is placed?",
+    "expectedAnswer": "24 hours, followed by removal of excess water before grouting.",
+    "page": 79,
+    "requiredPhrases": ["24 hours", "excess water"]
+  },
+  {
+    "question": "What color must the structural steel handrails be painted?",
+    "expectedAnswer": "The document does not contain that information.",
+    "page": null,
+    "requiredPhrases": ["does not"]
+  }
+]

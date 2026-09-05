@@ -40,7 +40,7 @@ fun RagNavigation(viewModel: RagViewModel) {
     Scaffold(snackbarHost = { SnackbarHost(snackbar) }) { padding ->
         NavDisplay(
             backStack = backStack,
-            onBack = { backStack.removeLastOrNull() },
+            onBack = { if (backStack.size > 1) backStack.removeLastOrNull() },
             modifier = Modifier.padding(padding),
             entryProvider = entryProvider {
                 entry<DocumentsKey> {
@@ -52,10 +52,10 @@ fun RagNavigation(viewModel: RagViewModel) {
                         onOpenDiagnostics = { backStack.add(DiagnosticsKey) },
                     )
                 }
-                entry<ModelsKey> { ModelManagerScreen(viewModel = viewModel, onBack = { backStack.removeLastOrNull() }) }
-                entry<DiagnosticsKey> { DiagnosticsScreen(viewModel = viewModel, onBack = { backStack.removeLastOrNull() }) }
+                entry<ModelsKey> { ModelManagerScreen(viewModel = viewModel, onBack = { if (backStack.size > 1) backStack.removeLastOrNull() }) }
+                entry<DiagnosticsKey> { DiagnosticsScreen(viewModel = viewModel, onBack = { if (backStack.size > 1) backStack.removeLastOrNull() }) }
                 entry<ChatKey> { key ->
-                    ChatScreen(viewModel = viewModel, docHash = key.docHash, title = key.title, onBack = { backStack.removeLastOrNull() })
+                    ChatScreen(viewModel = viewModel, docHash = key.docHash, title = key.title, onBack = { if (backStack.size > 1) backStack.removeLastOrNull() })
                 }
             },
         )

@@ -3,7 +3,6 @@ package com.example.pdfgemmarag.ui
 import android.app.Application
 import android.content.Context
 import android.net.Uri
-import android.os.RemoteException
 import android.util.Log
 import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
@@ -40,6 +39,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.security.MessageDigest
+import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.AtomicReference
 
 /** Single view model for the :ui process; all heavy work is proxied to the :inference service. */
 class RagViewModel(app: Application) : AndroidViewModel(app) {
@@ -84,6 +85,11 @@ class RagViewModel(app: Application) : AndroidViewModel(app) {
     val ui: StateFlow<UiState> = _ui
     private val _chat = MutableStateFlow(ChatState())
     val chat: StateFlow<ChatState> = _chat
+    private data class ActiveTurn(val clientToken: Long, val docHash: String, @Volatile var generationId: Long = -1)
+    private val turnIds = AtomicLong()
+    private val turnLock = Any()
+    @Volatile private var activeTurn: ActiveTurn? = null
+    private val loadingModel = AtomicReference<String?>(null)
 
     val documents: StateFlow<List<DocumentEntity>> =
         db.documents().observeAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -138,32 +144,44 @@ class RagViewModel(app: Application) : AndroidViewModel(app) {
         runCatching { connection.await().engineStatus }.onSuccess { s -> _ui.update { it.copy(engine = s) } }
     }
 
-    fun loadEngine(modelPath: String) = viewModelScope.launch {
+    fun loadEngine(modelPath: String) {
         val app = getApplication<Application>()
-        prefs.edit { putString(KEY_MODEL, modelPath) }
-        val gpuAttempt = !GpuMarker.exists(app)
-        _ui.update { it.copy(selectedModelPath = modelPath, engine = EngineStatus(EngineStatus.State.LOADING, modelName = File(modelPath).name), engineMessage = "Starting…") }
-        watchdog.onLoadStarted(gpuAttempt)
-        try {
-            connection.startService()
-            connection.await().loadEngine(modelPath, true, object : IEngineCallback.Stub() {
-                override fun onProgress(stage: String) { _ui.update { it.copy(engineMessage = stage) } }
-                override fun onReady(status: EngineStatus) {
-                    watchdog.onLoadFinished()
-                    _ui.update { it.copy(engine = status, engineMessage = "Ready on ${status.backend}", gpuDisabled = GpuMarker.exists(app)) }
-                }
-                override fun onFailed(message: String) {
-                    watchdog.onLoadFinished()
-                    _ui.update { it.copy(engine = EngineStatus(EngineStatus.State.FAILED, message = message), engineMessage = message, gpuDisabled = GpuMarker.exists(app)) }
-                }
-            })
-        } catch (t: Throwable) {
-            watchdog.onLoadFinished()
-            _ui.update { it.copy(engine = EngineStatus(EngineStatus.State.FAILED, message = t.message ?: ""), engineMessage = t.message ?: "load failed") }
+        val gpuFallbackRequired = _ui.value.engine.backend == "GPU" && GpuMarker.exists(app)
+        if (_ui.value.engine.state == EngineStatus.State.READY &&
+            _ui.value.engine.modelPath == modelPath &&
+            !gpuFallbackRequired
+        ) return
+        if (!loadingModel.compareAndSet(null, modelPath)) return
+        viewModelScope.launch {
+            prefs.edit { putString(KEY_MODEL, modelPath) }
+            val gpuAttempt = !GpuMarker.exists(app)
+            _ui.update { it.copy(selectedModelPath = modelPath, engine = EngineStatus(EngineStatus.State.LOADING, modelName = File(modelPath).name), engineMessage = "Starting…") }
+            watchdog.onLoadStarted(gpuAttempt)
+            try {
+                connection.startService()
+                connection.await().loadEngine(modelPath, true, object : IEngineCallback.Stub() {
+                    override fun onProgress(stage: String) { _ui.update { it.copy(engineMessage = stage) } }
+                    override fun onReady(status: EngineStatus) {
+                        loadingModel.compareAndSet(modelPath, null)
+                        watchdog.onLoadFinished()
+                        _ui.update { it.copy(engine = status, engineMessage = "Ready on ${status.backend}", gpuDisabled = GpuMarker.exists(app)) }
+                    }
+                    override fun onFailed(message: String) {
+                        loadingModel.compareAndSet(modelPath, null)
+                        watchdog.onLoadFinished()
+                        _ui.update { it.copy(engine = EngineStatus(EngineStatus.State.FAILED, message = message), engineMessage = message, gpuDisabled = GpuMarker.exists(app)) }
+                    }
+                })
+            } catch (t: Throwable) {
+                loadingModel.compareAndSet(modelPath, null)
+                watchdog.onLoadFinished()
+                _ui.update { it.copy(engine = EngineStatus(EngineStatus.State.FAILED, message = t.message ?: ""), engineMessage = t.message ?: "load failed") }
+            }
         }
     }
 
     fun unloadEngine() = viewModelScope.launch {
+        loadingModel.set(null)
         runCatching { connection.await().unloadEngine() }
         _ui.update { it.copy(engine = EngineStatus(EngineStatus.State.UNLOADED), engineMessage = "") }
     }
@@ -183,8 +201,11 @@ class RagViewModel(app: Application) : AndroidViewModel(app) {
         if (entry.kind == CatalogEntry.Kind.LLM && !gate.hasSpaceForModel(entry.sizeBytes)) {
             notice("Not enough free storage: need ${(entry.sizeBytes * 2) shr 20} MB for download + install."); return
         }
-        if (entry.sha256.isBlank()) notice("No SHA-256 configured for ${entry.fileName}; it will install unverified.")
-        downloads.enqueue(entry)
+        if (!entry.downloadable) {
+            notice("Download is not configured for ${entry.fileName}. Set MODEL_CDN_BASE_URL and its SHA-256, or import a complete local file.")
+            return
+        }
+        runCatching { downloads.enqueue(entry) }.onFailure { notice(it.message ?: "Could not start download") }
     }
 
     fun cancelDownload(entry: CatalogEntry) = downloads.cancel(entry)
@@ -203,6 +224,16 @@ class RagViewModel(app: Application) : AndroidViewModel(app) {
             val staged = withContext(Dispatchers.IO) {
                 val f = File(ModelPaths.stagingDir(app), targetName)
                 app.contentResolver.openInputStream(uri)!!.use { input -> f.outputStream().use { input.copyTo(it, 1 shl 20) } }
+                val minimumSize = when {
+                    targetName.endsWith(".litertlm", true) -> 100L * 1024 * 1024
+                    targetName.endsWith(".tflite", true) -> 1024L * 1024
+                    else -> 100L * 1024
+                }
+                if (f.length() < minimumSize) {
+                    val actual = f.length()
+                    f.delete()
+                    throw IllegalArgumentException("$displayName is incomplete ($actual bytes); expected at least $minimumSize bytes")
+                }
                 f
             }
             connection.startService()
@@ -302,7 +333,11 @@ class RagViewModel(app: Application) : AndroidViewModel(app) {
 
     // ------------------------------------------------------------------ chat
 
-    fun openChat(docHash: String) { if (_chat.value.docHash != docHash) _chat.value = ChatState(docHash = docHash) }
+    fun openChat(docHash: String) {
+        if (_chat.value.docHash == docHash) return
+        if (_chat.value.generating) stopGeneration()
+        _chat.value = ChatState(docHash = docHash)
+    }
 
     fun ask(question: String) = viewModelScope.launch {
         val docHash = _chat.value.docHash ?: return@launch
@@ -312,100 +347,88 @@ class RagViewModel(app: Application) : AndroidViewModel(app) {
 
         val history = db.messages().latest(docHash, 8).reversed().let { toQaPairs(it) }
         db.messages().insert(MessageEntity(docHash = docHash, role = "user", text = q))
+        val turn = ActiveTurn(turnIds.incrementAndGet(), docHash)
+        synchronized(turnLock) { activeTurn = turn }
         _chat.update { it.copy(generating = true, streamingText = "", streamingCitations = emptyList(), error = null, lastStats = null) }
         try {
-            val id = connection.await().ask(docHash, q, history, streamCallback)
-            _chat.update { it.copy(generationId = id) }
-            watchIdleComplete(id)
-        } catch (t: RemoteException) {
-            _chat.update { it.copy(generating = false, error = "Inference service unavailable: ${t.message}") }
-        }
-    }
-
-    /** LiteRT-LM sometimes never delivers onDone after the last token. Unlock the composer. */
-    private fun watchIdleComplete(generationId: Long) = viewModelScope.launch {
-        var last = ""
-        var quiet = 0
-        while (_chat.value.generating && _chat.value.generationId == generationId) {
-            delay(1000)
-            val text = _chat.value.streamingText
-            if (text.isNotBlank() && text == last) {
-                quiet++
-                val need = if (text.trim().endsWith('.') || text.contains("[Page")) 4 else 10
-                if (quiet >= need) {
-                    Log.i(TAG, "UI idle-complete after ${quiet}s")
-                    finishTurn(generationId, cancelled = false)
-                    return@launch
-                }
+            val service = connection.await()
+            val id = service.ask(docHash, q, history, callbackFor(turn))
+            turn.generationId = id
+            if (activeTurn === turn) {
+                _chat.update { it.copy(generationId = id) }
             } else {
-                quiet = 0
-                last = text
+                // Stop may have been tapped before the synchronous Binder call returned.
+                runCatching { service.cancelGeneration(id) }
             }
+        } catch (t: Throwable) {
+            completeTurn(turn, error = "Inference service unavailable: ${t.message}")
         }
     }
 
-    private fun finishTurn(generationId: Long, stats: GenerationStats? = null, cancelled: Boolean = false) {
-        val state = _chat.value
-        if (!state.generating) return
-        if (state.generationId != generationId && state.generationId != -1L) return
+    private fun completeTurn(
+        turn: ActiveTurn,
+        stats: GenerationStats? = null,
+        cancelled: Boolean = false,
+        error: String? = null,
+    ) {
+        val snapshot = synchronized(turnLock) {
+            if (activeTurn !== turn) return
+            activeTurn = null
+            val state = _chat.value
+            _chat.value = state.copy(
+                generating = false,
+                streamingText = "",
+                streamingCitations = emptyList(),
+                lastStats = stats,
+                generationId = -1,
+                error = error,
+            )
+            state
+        }
         viewModelScope.launch {
-            val latest = _chat.value
-            if (!latest.generating) return@launch
-            latest.docHash?.let { doc ->
+            if (snapshot.streamingText.isNotBlank() || cancelled) {
                 db.messages().insert(
                     MessageEntity(
-                        docHash = doc, role = "model",
-                        text = latest.streamingText.ifBlank { if (cancelled) "(stopped)" else "(no answer)" },
-                        citationIds = latest.streamingCitations.joinToString(",") { it.chunkId },
+                        docHash = turn.docHash, role = "model",
+                        text = snapshot.streamingText.ifBlank { "(stopped)" },
+                        citationIds = snapshot.streamingCitations.joinToString(",") { it.chunkId },
                         backend = stats?.backend ?: "",
                         tokensPerSecond = stats?.approxTokensPerSecond ?: 0.0,
-                        cancelled = cancelled || (stats?.cancelled == true),
+                        cancelled = cancelled || error != null || (stats?.cancelled == true),
                     ),
                 )
             }
-            _chat.update { it.copy(generating = false, streamingText = "", streamingCitations = emptyList(), lastStats = stats, generationId = -1) }
         }
     }
 
-    private val streamCallback = object : IStreamCallback.Stub() {
+    private fun callbackFor(turn: ActiveTurn) = object : IStreamCallback.Stub() {
         override fun onRetrieved(generationId: Long, citations: List<Citation>) {
-            _chat.update { if (it.generationId in listOf(-1L, generationId)) it.copy(streamingCitations = citations) else it }
+            turn.generationId = generationId
+            _chat.update { if (activeTurn === turn) it.copy(generationId = generationId, streamingCitations = citations) else it }
         }
         override fun onToken(generationId: Long, token: String) {
-            _chat.update { if (it.generationId == generationId || it.generationId == -1L) it.copy(streamingText = it.streamingText + token) else it }
+            turn.generationId = generationId
+            _chat.update { if (activeTurn === turn) it.copy(generationId = generationId, streamingText = it.streamingText + token) else it }
         }
         override fun onDone(generationId: Long, stats: GenerationStats) {
-            finishTurn(generationId, stats, stats.cancelled)
+            completeTurn(turn, stats, stats.cancelled)
         }
         override fun onError(generationId: Long, message: String) {
-            val state = _chat.value
-            if (state.generating && state.streamingText.isNotBlank()) {
-                finishTurn(generationId, cancelled = false)
-            } else {
-                _chat.update { it.copy(generating = false, error = message, generationId = -1) }
+            completeTurn(turn, cancelled = _chat.value.streamingText.isNotBlank(), error = message)
+            if (GpuMarker.exists(getApplication()) && _ui.value.engine.backend == "GPU") {
+                _ui.value.selectedModelPath?.let { loadEngine(it) }
             }
         }
     }
 
     fun stopGeneration() {
-        val state = _chat.value
-        if (!state.generating) return
+        val turn = synchronized(turnLock) { activeTurn } ?: return
         // Unlock the composer immediately. LiteRT-LM cancelProcess() often does not return
         // during GPU prefill, so waiting for onDone left the UI stuck.
-        _chat.update { it.copy(generating = false, error = "Stopped.", generationId = -1) }
+        completeTurn(turn, cancelled = true, error = "Stopped.")
         viewModelScope.launch {
-            val partial = state.streamingText
-            state.docHash?.let { doc ->
-                db.messages().insert(
-                    MessageEntity(
-                        docHash = doc, role = "model",
-                        text = partial.ifBlank { "(stopped)" },
-                        citationIds = state.streamingCitations.joinToString(",") { it.chunkId },
-                        cancelled = true,
-                    ),
-                )
-            }
-            runCatching { connection.await().cancelGeneration(state.generationId) }
+            val id = turn.generationId
+            if (id >= 0) runCatching { connection.await().cancelGeneration(id) }
                 .onFailure { Log.w(TAG, "cancelGeneration failed", it) }
         }
     }
@@ -430,6 +453,10 @@ class RagViewModel(app: Application) : AndroidViewModel(app) {
         Log.w(TAG, "inference process died")
         val wasGenerating = _chat.value.generating
         val wasIndexing = _ui.value.indexing != null
+        synchronized(turnLock) { activeTurn = null }
+        if (wasGenerating && _ui.value.engine.backend == "GPU") {
+            GpuMarker.write(getApplication(), "inference process died during GPU generation")
+        }
         _chat.update { if (wasGenerating) it.copy(generating = false, error = "The model process was restarted by the system.", generationId = -1) else it }
         _ui.update {
             it.copy(

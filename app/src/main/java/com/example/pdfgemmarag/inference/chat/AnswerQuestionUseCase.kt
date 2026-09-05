@@ -32,10 +32,11 @@ class AnswerQuestionUseCase(
     /** Runs retrieval synchronously and starts generation; returns the handle used for cancellation. */
     suspend fun start(generationId: Long, docHash: String, question: String, history: List<QaPair>, listener: Listener): GemmaEngine.Generation? {
         val t0 = SystemClock.elapsedRealtime()
-        val queryVec = embedder.embedQuery(question)
-        val terms = HybridQuery.keywordTerms(question)
+        val retrievalQuestion = rewriteForRetrieval(question, history)
+        val queryVec = embedder.embedQuery(retrievalQuestion)
+        val terms = HybridQuery.keywordTerms(retrievalQuestion)
         Log.i(TAG, "ask hash=${docHash.take(12)} q='${question.take(120)}' terms=$terms dim=${queryVec.size}")
-        val ranked = store.search(docHash, question, queryVec, topK, similarityFloor, keywordWeight)
+        val ranked = store.search(docHash, retrievalQuestion, queryVec, topK, similarityFloor, keywordWeight)
         val assembled = assembler.assemble(question, ranked)
         Log.i(TAG, "retrieved ${ranked.size} -> ${assembled.citations.size} chunks (~${assembled.approxTokens} tokens) in ${SystemClock.elapsedRealtime() - t0} ms")
         assembled.citations.forEachIndexed { i, c ->
@@ -56,9 +57,9 @@ class AnswerQuestionUseCase(
 
         var firstToken = -1L
         var chars = 0
-        if (history.isNotEmpty()) Log.i(TAG, "ignoring ${history.size} history turns for grounded ask")
-        // Do not replay prior Q&A into the KV cache: a wrong turn poisons the next one, and
-        // extra history plus 4k excerpts is what stalled GPU prefill so Stop never returned.
+        val generated = StringBuilder()
+        // History is used above to rewrite follow-up retrieval. Do not replay model answers into
+        // generation: an incorrect answer would become apparent source material on the next turn.
         return engine.generate(
             systemInstruction = GemmaEngine.SYSTEM_INSTRUCTION,
             history = emptyList(),
@@ -66,12 +67,17 @@ class AnswerQuestionUseCase(
             sink = object : GemmaEngine.TokenSink {
                 override fun onToken(text: String) {
                     if (firstToken < 0) firstToken = SystemClock.elapsedRealtime()
-                    chars += text.length
-                    listener.onToken(text)
+                    generated.append(text)
                 }
 
                 override fun onDone(cancelled: Boolean) {
                     val end = SystemClock.elapsedRealtime()
+                    val grounded = correctTruncatedDecimals(
+                        generated.toString(),
+                        assembled.citations.joinToString("\n") { it.text },
+                    )
+                    chars = grounded.length
+                    if (grounded.isNotEmpty()) listener.onToken(grounded)
                     val genMs = if (firstToken > 0) (end - firstToken).coerceAtLeast(1) else 1
                     listener.onDone(
                         GenerationStats(
@@ -90,11 +96,38 @@ class AnswerQuestionUseCase(
 
                 override fun onError(t: Throwable) {
                     Log.e(TAG, "generation failed", t)
+                    if (generated.isNotEmpty()) listener.onToken(generated.toString())
                     listener.onError(t.message ?: t.javaClass.simpleName)
                 }
             },
         )
     }
 
-    companion object { private const val TAG = "AnswerQuestionUseCase" }
+    companion object {
+        private const val TAG = "AnswerQuestionUseCase"
+        private val FOLLOW_UP_WORDS = listOf("it", "that", "this", "they", "those", "these", "there", "same")
+        private val FOLLOW_UP_PREFIXES = listOf("and ", "what about ", "how about ")
+        private val DECIMAL = Regex("(?<![\\d.])\\d+\\.\\d+(?!\\d)")
+
+        internal fun rewriteForRetrieval(question: String, history: List<QaPair>): String {
+            if (history.isEmpty()) return question
+            val lower = question.lowercase()
+            val looksLikeFollowUp = FOLLOW_UP_WORDS.any { Regex("\\b$it\\b").containsMatchIn(lower) } ||
+                FOLLOW_UP_PREFIXES.any { lower.startsWith(it) }
+            if (!looksLikeFollowUp) return question
+            return "Previous question: ${history.last().question.take(300)}\nCurrent question: $question"
+        }
+
+        /** Repairs only an unambiguous truncated decimal; never invents or rounds a source value. */
+        internal fun correctTruncatedDecimals(answer: String, source: String): String {
+            val sourceDecimals = DECIMAL.findAll(source).map { it.value }.toSet()
+            if (sourceDecimals.isEmpty()) return answer
+            return DECIMAL.replace(answer) { match ->
+                val value = match.value
+                if (value in sourceDecimals) return@replace value
+                val candidates = sourceDecimals.filter { it.startsWith(value) }
+                if (candidates.size == 1) candidates.single() else value
+            }
+        }
+    }
 }

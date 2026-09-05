@@ -19,9 +19,10 @@ import java.io.Closeable
 import java.io.File
 import java.util.concurrent.CancellationException
 import java.util.concurrent.Executors
+import java.util.concurrent.RejectedExecutionException
+import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -78,21 +79,20 @@ class GemmaEngine(
     }
 
     /** Handle for a running generation. */
-    inner class Generation internal constructor(private val conversation: Conversation) {
-        @Volatile var cancelled = false
-            private set
+    inner class Generation internal constructor(
+        private val cancelledFlag: AtomicBoolean,
+        private val cancelAction: () -> Unit,
+    ) {
+        val cancelled: Boolean get() = cancelledFlag.get()
 
         fun cancel() {
-            cancelled = true
-            closer.execute {
-                runCatching { conversation.cancelProcess() }.onFailure { Log.w(TAG, "cancelProcess: ${it.message}") }
-                runCatching { conversation.close() }.onFailure { Log.w(TAG, "close after cancel: ${it.message}") }
-            }
+            if (cancelledFlag.compareAndSet(false, true)) cancelAction()
         }
     }
 
     /**
-     * Starts a streaming turn. Only one generation runs at a time; a second call cancels the first.
+     * Starts a streaming turn. Only one generation runs at a time; callers must cancel and await
+     * the previous terminal callback before starting another.
      * The returned handle can cancel; [sink] callbacks arrive on a LiteRT-LM worker thread.
      */
     fun generate(
@@ -100,10 +100,10 @@ class GemmaEngine(
         history: List<QaPair>,
         userMessage: String,
         sink: TokenSink,
-        temperature: Double = 0.2,
+        temperature: Double = 0.0,
     ): Generation {
         check(engine.isInitialized()) { "engine not initialised" }
-        active.getAndSet(null)?.let { old -> closer.execute { runCatching { old.close() } } }
+        check(active.get() == null) { "A previous generation is still finishing" }
 
         val initial = ArrayList<Message>()
         for (qa in history.takeLast(MAX_HISTORY_TURNS)) {
@@ -119,55 +119,53 @@ class GemmaEngine(
         val tCreate = SystemClock.elapsedRealtime()
         val conversation = engine.createConversation(config)
         Log.i(TAG, "createConversation ${SystemClock.elapsedRealtime() - tCreate} ms")
-        active.set(conversation)
-        val generation = Generation(conversation)
+        if (!active.compareAndSet(null, conversation)) {
+            runCatching { conversation.close() }
+            error("A previous generation is still finishing")
+        }
         val finished = AtomicBoolean(false)
+        val cancelledFlag = AtomicBoolean(false)
         Log.i(TAG, "generate start backend=$backendName promptChars=${userMessage.length} history=${history.size}")
 
         val watchdog = Executors.newSingleThreadScheduledExecutor { r ->
             Thread(r, "gemma-watchdog").apply { isDaemon = true }
         }
-        val firstTokenMs = AtomicLong(-1)
-        val lastTokenMs = AtomicLong(-1)
+        val firstTokenSeen = AtomicBoolean(false)
+        val idleFuture = AtomicReference<ScheduledFuture<*>?>(null)
         val assembled = StringBuilder()
 
-        fun complete(cancelled: Boolean) {
+        fun terminal(cancelled: Boolean, error: Throwable? = null, cancelProcess: Boolean = false) {
             if (!finished.compareAndSet(false, true)) return
             watchdog.shutdownNow()
-            active.compareAndSet(conversation, null)
-            sink.onDone(cancelled)
+            idleFuture.getAndSet(null)?.cancel(false)
+            try {
+                closer.execute {
+                    if (cancelProcess) runCatching { conversation.cancelProcess() }.onFailure { Log.w(TAG, "cancelProcess: ${it.message}") }
+                    runCatching { conversation.close() }.onFailure { Log.w(TAG, "conversation close: ${it.message}") }
+                    active.compareAndSet(conversation, null)
+                    if (error != null) sink.onError(error) else sink.onDone(cancelled)
+                }
+            } catch (_: RejectedExecutionException) {
+                // Engine shutdown already owns conversation cleanup; never crash an SDK callback.
+                active.compareAndSet(conversation, null)
+            }
         }
 
-        fun fail(t: Throwable) {
-            if (!finished.compareAndSet(false, true)) return
-            watchdog.shutdownNow()
-            active.compareAndSet(conversation, null)
-            sink.onError(t)
+        val generation = Generation(cancelledFlag) {
+            terminal(cancelled = true, cancelProcess = true)
         }
 
         watchdog.schedule({
-            if (firstTokenMs.get() < 0 && !finished.get()) {
-                Log.w(TAG, "no first token after ${FIRST_TOKEN_TIMEOUT_SEC}s — unlocking UI (async cancel)")
+            if (!firstTokenSeen.get() && !finished.get() && !generation.cancelled) {
+                Log.w(TAG, "no first token after ${FIRST_TOKEN_TIMEOUT_SEC}s")
                 if (backendName == "GPU") GpuMarker.write(context, "first-token timeout on GPU")
-                fail(IllegalStateException("Gemma did not start in time. The model will use CPU next. Tap Stop if needed, then ask again."))
-                generation.cancel()
+                terminal(
+                    cancelled = false,
+                    error = IllegalStateException("Gemma did not start in time. Reload the model; GPU will fall back to CPU."),
+                    cancelProcess = true,
+                )
             }
         }, FIRST_TOKEN_TIMEOUT_SEC, TimeUnit.SECONDS)
-
-        // LiteRT-LM often delivers the full answer via onMessage and never calls onDone.
-        watchdog.scheduleAtFixedRate({
-            val last = lastTokenMs.get()
-            if (last < 0 || finished.get()) return@scheduleAtFixedRate
-            val idle = SystemClock.elapsedRealtime() - last
-            val text = synchronized(assembled) { assembled.toString() }
-            val need = if (looksComplete(text)) IDLE_COMPLETE_MS else IDLE_CONTINUE_MS
-            if (idle >= need) {
-                Log.i(TAG, "idle ${idle}ms after last token (complete=${looksComplete(text)}) — closing turn")
-                // Do not cancelProcess() here: that wedges the GPU engine so the next
-                // question never emits a first token.
-                complete(cancelled = false)
-            }
-        }, 1, 1, TimeUnit.SECONDS)
 
         conversation.sendMessageAsync(
             Message.user(userMessage),
@@ -189,21 +187,31 @@ class GemmaEngine(
                         piece
                     }
                     if (delta.isEmpty()) return
-                    firstTokenMs.compareAndSet(-1, SystemClock.elapsedRealtime())
-                    lastTokenMs.set(SystemClock.elapsedRealtime())
+                    firstTokenSeen.set(true)
+                    idleFuture.getAndSet(
+                        watchdog.schedule({
+                            if (!finished.get() && !generation.cancelled) {
+                                terminal(
+                                    cancelled = false,
+                                    error = IllegalStateException("Gemma stopped responding before completing the answer."),
+                                    cancelProcess = true,
+                                )
+                            }
+                        }, STALLED_GENERATION_TIMEOUT_SEC, TimeUnit.SECONDS),
+                    )?.cancel(false)
                     Log.i(TAG, "token +${delta.length} total=${assembled.length}")
                     sink.onToken(delta)
                 }
 
                 override fun onDone() {
                     Log.i(TAG, "sdk onDone cancelled=${generation.cancelled}")
-                    complete(generation.cancelled)
+                    terminal(generation.cancelled)
                 }
 
                 override fun onError(throwable: Throwable) {
                     Log.w(TAG, "sdk onError", throwable)
-                    if (throwable is CancellationException || generation.cancelled) complete(cancelled = true)
-                    else fail(throwable)
+                    if (throwable is CancellationException || generation.cancelled) terminal(cancelled = true)
+                    else terminal(cancelled = false, error = throwable)
                 }
             },
         )
@@ -211,33 +219,27 @@ class GemmaEngine(
     }
 
     fun cancelActive() {
-        active.getAndSet(null)?.let { conv ->
-            closer.execute {
+        // Cancellation must go through the generation handle so its terminal callback fires.
+        Log.w(TAG, "cancelActive ignored without a generation handle")
+    }
+
+    override fun close() {
+        val task = closer.submit {
+            active.getAndSet(null)?.let { conv ->
                 runCatching { conv.cancelProcess() }
                 runCatching { conv.close() }
             }
+            runCatching { if (engine.isInitialized()) engine.close() }
         }
-    }
-
-        override fun close() {
-        active.getAndSet(null)?.let { conv -> closer.execute { runCatching { conv.close() } } }
-        closer.execute { runCatching { if (engine.isInitialized()) engine.close() } }
-        closer.shutdown()
+        runCatching { task.get(60, TimeUnit.SECONDS) }.onFailure { Log.e(TAG, "engine close did not finish", it) }
+        closer.shutdownNow()
     }
 
     companion object {
         private const val TAG = "GemmaEngine"
         const val MAX_HISTORY_TURNS = 4
         const val FIRST_TOKEN_TIMEOUT_SEC = 45L
-        const val IDLE_COMPLETE_MS = 2500L
-        const val IDLE_CONTINUE_MS = 8000L
-
-        internal fun looksComplete(text: String): Boolean {
-            val t = text.trim()
-            if (t.length < 12) return false
-            return t.endsWith('.') || t.endsWith('!') || t.endsWith('?') ||
-                t.endsWith(']') || t.endsWith("].") || t.contains("[Page")
-        }
+        const val STALLED_GENERATION_TIMEOUT_SEC = 30L
         fun gpuMarker(context: Context): File = GpuMarker.file(context)
 
         /** Warm-cache detection: LiteRT-LM writes compiled GPU kernels under cacheDir. */
@@ -251,6 +253,7 @@ class GemmaEngine(
             - Cite every fact with its page in square brackets, e.g. [Page 12]. Cite multiple pages as [Page 3][Page 7].
             - If the excerpts do not answer the question, reply that the document does not contain that information.
             - Be concise. Keep numbers, names, dates and table values exactly as written.
+            - Never round, normalize, or infer a numeric value. Copy every number exactly from an excerpt.
             - Answer in the same language as the question.
         """.trimIndent()
     }

@@ -2,7 +2,6 @@ package com.example.pdfgemmarag.inference.llm
 
 import com.example.pdfgemmarag.core.model.Citation
 import com.example.pdfgemmarag.inference.ocr.ScriptDetector
-import com.example.pdfgemmarag.inference.store.HybridQuery
 
 /**
  * Builds the grounded prompt from ranked chunks under a hard token budget.
@@ -13,23 +12,21 @@ import com.example.pdfgemmarag.inference.store.HybridQuery
 class ContextAssembler(
     private val contextTokenBudget: Int = 1600,
     private val maxChunks: Int = 4,
+    private val relativeScoreFloor: Double = 0.60,
 ) {
 
     data class Assembled(val prompt: String, val citations: List<Citation>, val approxTokens: Int)
 
     fun assemble(question: String, ranked: List<Citation>): Assembled {
-        val terms = HybridQuery.keywordTerms(question)
-        val meaty = ranked.filter { it.text.length >= 60 || it.text.contains('|') }
-        val pool = if (meaty.size >= 2) meaty else ranked
-        val ordered = pool.sortedByDescending { c ->
-            val lower = c.text.lowercase()
-            terms.count { term -> lower.contains(term) } * 10.0 + c.score
-        }
-        val deduped = dedupe(ordered)
+        // AppSearch already combines semantic and lexical ranking. Preserve that order here;
+        // re-ranking again with broad domain words ("concrete", "material") promoted distractors.
+        val deduped = dedupe(ranked)
         val selected = ArrayList<Citation>()
         var used = 0
+        val bestScore = deduped.firstOrNull()?.score ?: 0.0
         for (c in deduped) {
             if (selected.size >= maxChunks) break
+            if (selected.isNotEmpty() && bestScore > 0.0 && c.score < bestScore * relativeScoreFloor) continue
             val cost = estimateTokens(c.text) + 12 // header overhead per chunk
             if (used + cost > contextTokenBudget) continue // drop lowest-ranked-first: list is already ranked
             selected += c

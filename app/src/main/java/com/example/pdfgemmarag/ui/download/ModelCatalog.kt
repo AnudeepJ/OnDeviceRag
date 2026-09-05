@@ -6,7 +6,8 @@ import com.example.pdfgemmarag.core.model.ModelPaths
 /**
  * Downloadable artifacts. The Gemma and EmbeddingGemma weights are gated on Hugging Face, so they
  * must be mirrored on a CDN you control; set `MODEL_CDN_BASE_URL` (and the SHA-256 of each file)
- * in `~/.gradle/gradle.properties` or CI secrets. Files with an empty SHA install with a warning.
+ * in `~/.gradle/gradle.properties` or CI secrets. Catalog downloads are disabled until both the
+ * base URL and a valid SHA-256 are configured.
  */
 data class CatalogEntry(
     val id: String,
@@ -23,9 +24,14 @@ data class CatalogEntry(
 
     val url: String get() = BuildConfig.MODEL_CDN_BASE_URL.trimEnd('/') + "/" + fileName
     val sizeMb: Long get() = sizeBytes shr 20
+    val downloadable: Boolean get() = ModelCatalog.baseUrlConfigured && sha256.matches(Regex("[0-9a-fA-F]{64}"))
 }
 
 object ModelCatalog {
+    val baseUrlConfigured: Boolean
+        get() = BuildConfig.MODEL_CDN_BASE_URL.startsWith("https://") &&
+            !BuildConfig.MODEL_CDN_BASE_URL.contains("example.invalid")
+
     val entries: List<CatalogEntry> = listOf(
         CatalogEntry(
             id = "gemma4-e2b",

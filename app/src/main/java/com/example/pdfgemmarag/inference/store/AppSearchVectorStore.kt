@@ -3,6 +3,7 @@ package com.example.pdfgemmarag.inference.store
 import android.content.Context
 import android.util.Log
 import androidx.appsearch.app.AppSearchSession
+import androidx.appsearch.app.ExperimentalAppSearchApi
 import androidx.appsearch.app.EmbeddingVector
 import androidx.appsearch.app.Features
 import androidx.appsearch.app.GenericDocument
@@ -27,6 +28,7 @@ import java.util.concurrent.Executors
  * Search is hybrid: exact cosine over 8-bit quantised embeddings (`semanticSearch`, brute force, no
  * ANN) OR'ed with a prefix keyword match, ranked by summed semantic score plus a small BM25 term.
  */
+@androidx.annotation.OptIn(markerClass = [ExperimentalAppSearchApi::class])
 class AppSearchVectorStore private constructor(private val session: AppSearchSession) : Closeable {
 
     data class FeatureReport(val supported: Map<String, Boolean>) {
@@ -40,23 +42,16 @@ class AppSearchVectorStore private constructor(private val session: AppSearchSes
     }
 
     suspend fun setSchema() {
+        check(features.hybridOk) {
+            "This device's AppSearch implementation is missing required RAG features:\n$features"
+        }
         val compatible = SetSchemaRequest.Builder()
             .addDocumentClasses(PdfChunkDocument::class.java)
             .build()
-        try {
-            session.setSchemaAsync(compatible).await()
-            Log.i(TAG, "schema set (compatible, index preserved); features:\n$features")
-        } catch (t: Throwable) {
-            // Incompatible change only: forceOverride deletes every document. Never do this on
-            // a matching schema — that is what wiped the index after :inference restarted.
-            Log.w(TAG, "schema incompatible (${t.message}); force-override (index will be empty)")
-            val forced = SetSchemaRequest.Builder()
-                .addDocumentClasses(PdfChunkDocument::class.java)
-                .setForceOverride(true)
-                .build()
-            session.setSchemaAsync(forced).await()
-            Log.i(TAG, "schema set (forced); features:\n$features")
-        }
+        // Never force-override here. A catch-all override turns transient storage failures into
+        // silent data loss. Explicit schema migrations must be versioned and user-visible.
+        session.setSchemaAsync(compatible).await()
+        Log.i(TAG, "schema set (compatible, index preserved); features:\n$features")
     }
 
     /** Batched put; every [flushEvery] documents a flush is requested so a crash loses at most that many. */
@@ -92,15 +87,9 @@ class AppSearchVectorStore private constructor(private val session: AppSearchSes
         keywordWeight: Double = 0.05,
     ): List<Citation> {
         val terms = HybridQuery.keywordTerms(queryText)
-        var hits = executeSearch(docHash, HybridQuery.build(terms, similarityFloor, topK), terms, queryVec, topK, keywordWeight)
+        val hits = executeSearch(docHash, HybridQuery.build(terms, similarityFloor, topK), terms, queryVec, topK, keywordWeight)
         Log.i(TAG, "search ns=${docHash.take(8)} q='${queryText.take(80)}' terms=$terms floor=$similarityFloor -> ${hits.size} hits " +
             hits.take(5).joinToString { "p${it.pageNumber}@${"%.3f".format(it.score)}" })
-        if (hits.isEmpty()) {
-            Log.w(TAG, "hybrid empty; retrying semantic-only floor=0")
-            hits = executeSearch(docHash, HybridQuery.build(emptyList(), 0.0, topK), emptyList(), queryVec, topK, keywordWeight)
-            Log.i(TAG, "semantic-only fallback -> ${hits.size} hits " +
-                hits.take(5).joinToString { "p${it.pageNumber}@${"%.3f".format(it.score)}" })
-        }
         hits.forEachIndexed { i, c ->
             if (i < 5) Log.i(TAG, "  #$i p${c.pageNumber} c${c.chunkIndex} score=${"%.3f".format(c.score)} '${c.text.take(120).replace('\n', ' ')}'")
         }
@@ -244,12 +233,12 @@ class AppSearchVectorStore private constructor(private val session: AppSearchSes
 
         val REQUIRED = listOf(
             Features.SCHEMA_EMBEDDING_PROPERTY_CONFIG,
+            Features.SCHEMA_EMBEDDING_QUANTIZATION,
             Features.SEARCH_SPEC_SEARCH_STRING_PARAMETERS,
             Features.SEARCH_SPEC_ADVANCED_RANKING_EXPRESSION,
             Features.LIST_FILTER_QUERY_LANGUAGE,
         )
         val ALL_CHECKED = REQUIRED + listOf(
-            Features.SCHEMA_EMBEDDING_QUANTIZATION,
             Features.NUMERIC_SEARCH,
             Features.VERBATIM_SEARCH,
         )

@@ -48,6 +48,9 @@ class ModelDownloadManager(private val context: Context) {
     }
 
     fun enqueue(entry: CatalogEntry): Long {
+        require(entry.downloadable) {
+            "Model download is not configured. Set an HTTPS MODEL_CDN_BASE_URL and the 64-character SHA-256 for ${entry.fileName}."
+        }
         val target = File(downloadDir(), entry.fileName)
         if (target.exists()) target.delete()
         val request = DownloadManager.Request(Uri.parse(entry.url))
@@ -93,6 +96,12 @@ class ModelDownloadManager(private val context: Context) {
     fun onDownloadComplete(downloadId: Long) {
         val entryId = prefs.getString(keyFor(downloadId), null) ?: return
         val entry = ModelCatalog.entries.firstOrNull { it.id == entryId } ?: return
+        if (!entry.downloadable) {
+            Log.e(TAG, "refusing unverified catalog install for ${entry.fileName}")
+            prefs.edit { remove(keyFor(downloadId)) }
+            refresh()
+            return
+        }
         var success = false
         var localUri: String? = null
         dm.query(DownloadManager.Query().setFilterById(downloadId))?.use { c ->

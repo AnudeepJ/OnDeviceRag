@@ -9,6 +9,22 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ScriptAwareChunkerTest {
+    @Test
+    fun `oversized table is split under actual token window and repeats header`() {
+        val chunker = ScriptAwareChunker()
+        val chunk = Chunk(
+            chunkIndex = 0,
+            pageNumber = 7,
+            text = "Column A | Column B\n| --- | --- |\n" + (1..30).joinToString("\n") { "row $it | " + "value ".repeat(12) },
+            isTable = true,
+            script = Script.LATIN,
+        )
+        val pieces = chunker.fitToTokenWindow(chunk, maxTokens = 80) { text -> text.length / 4 + 2 }
+        assertTrue(pieces.size > 1)
+        assertTrue(pieces.all { it.text.startsWith("Column A | Column B") })
+        assertTrue(pieces.all { it.text.length / 4 + 2 <= 80 })
+        assertTrue(pieces.all { it.pageNumber == 7 })
+    }
     private val chunker = ScriptAwareChunker()
 
     private fun latinParagraph(sentences: Int) =

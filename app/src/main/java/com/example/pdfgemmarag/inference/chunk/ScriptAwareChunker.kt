@@ -59,6 +59,47 @@ class ScriptAwareChunker(
         return mergeTiny(out)
     }
 
+    /**
+     * Enforces the embedder's real tokenizer window. Character targets are only an estimate, and
+     * tables/mixed scripts can otherwise be silently truncated by the model input encoder.
+     */
+    fun fitToTokenWindow(chunk: Chunk, maxTokens: Int, tokenCount: (String) -> Int): List<Chunk> {
+        if (tokenCount(chunk.text) <= maxTokens) return listOf(chunk)
+        val lines = chunk.text.lines()
+        val header = if (chunk.isTable && lines.size > 2) lines.take(2).joinToString("\n") + "\n" else ""
+        val body = if (header.isEmpty()) chunk.text else lines.drop(2).joinToString("\n")
+        val out = ArrayList<Chunk>()
+        var offset = 0
+        while (offset < body.length) {
+            var low = offset + 1
+            var high = body.length
+            var best = -1
+            while (low <= high) {
+                val mid = (low + high) ushr 1
+                if (tokenCount(header + body.substring(offset, mid)) <= maxTokens) {
+                    best = mid
+                    low = mid + 1
+                } else {
+                    high = mid - 1
+                }
+            }
+            check(best > offset) { "A table header exceeds the embedding token window" }
+            var end = best
+            if (best < body.length) {
+                val newline = body.lastIndexOf('\n', best - 1)
+                val space = body.lastIndexOf(' ', best - 1)
+                val boundary = maxOf(newline, space)
+                if (boundary > offset + (best - offset) / 2) end = boundary + 1
+            }
+            val text = (header + body.substring(offset, end).trim()).trim()
+            check(tokenCount(text) <= maxTokens) { "Chunk split still exceeds embedding token window" }
+            if (text.isNotEmpty()) out += chunk.copy(text = text, script = ScriptDetector.detect(text))
+            offset = end
+            while (offset < body.length && body[offset].isWhitespace()) offset++
+        }
+        return out
+    }
+
     internal fun mergeTiny(chunks: List<Chunk>): List<Chunk> {
         if (chunks.isEmpty()) return chunks
         val merged = ArrayList<Chunk>()

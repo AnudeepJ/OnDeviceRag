@@ -38,11 +38,12 @@ class ContextAssemblerTest {
     }
 
     @Test
-    fun `keyword overlap outranks a high-score off-topic header`() {
+    fun `short exact match is retained without overriding store rank`() {
         val junk = c(0, 1, "FORMWORK AND CONCRETE DIVISION 3 TECHNICAL SPECIFICATIONS HEADER ONLY REPEATED", 0.99)
-        val hit = c(1, 3, "C. Plywood: Conform to PS 1, Class 1. D. Lumber: Conform to PS 20.", 0.20)
+        val hit = c(1, 3, "C. Plywood: Conform to PS 1, Class 1. D. Lumber: Conform to PS 20.", 0.70)
         val assembled = ContextAssembler().assemble("What plywood standard and class is required for formwork?", listOf(junk, hit))
-        assertTrue(assembled.citations.first().text.contains("PS 1"))
+        assertEquals(junk.chunkId, assembled.citations.first().chunkId)
+        assertTrue(assembled.citations.any { it.text.contains("PS 1") })
     }
 
     @Test
@@ -51,5 +52,14 @@ class ContextAssemblerTest {
         val cjk = ContextAssembler.estimateTokens("東".repeat(400))
         assertTrue(latin in 100..130)
         assertTrue(cjk in 430..450)
+    }
+
+    @Test
+    fun `weak distractors are excluded relative to best hit`() {
+        val exact = c(0, 62, "All other concrete: 0.55.", 1.70)
+        val heading = c(1, 61, "Maximum allowable water-cement ratios follow.", 1.10)
+        val distractor = c(2, 17, "Maximum water cement ratio is 0.50.", 0.70)
+        val assembled = ContextAssembler().assemble("ratios", listOf(exact, heading, distractor))
+        assertEquals(listOf(exact.chunkId, heading.chunkId), assembled.citations.map { it.chunkId })
     }
 }

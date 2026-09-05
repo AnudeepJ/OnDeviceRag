@@ -47,7 +47,6 @@ class IndexPdfUseCase(
         displayName: String,
         onProgress: (IndexingProgress) -> Unit,
     ): DocumentInfo {
-        var wroteAny = false
         try {
             onProgress(IndexingProgress(docHash, Stage.PREPARING, 0, 1))
             // Re-indexing the same content hash replaces the previous index.
@@ -101,6 +100,8 @@ class IndexPdfUseCase(
                 }
             }
             val chunks = chunker.chunk(contents)
+                .flatMap { chunk -> chunker.fitToTokenWindow(chunk, embedder.sequenceLength - 2, embedder::tokenCount) }
+                .mapIndexed { index, chunk -> chunk.copy(chunkIndex = index) }
             val allText = contents.joinToString("\n") { pc ->
                 pc.segments.joinToString("\n") {
                     when (it) {
@@ -141,7 +142,7 @@ class IndexPdfUseCase(
                 indexed++
                 if (batch.size >= BATCH) {
                     val tPut = SystemClock.elapsedRealtime()
-                    store.putChunks(batch); wroteAny = true; batch.clear()
+                    store.putChunks(batch); batch.clear()
                     Log.i(TAG, "AppSearch put batch ending at $indexed/${chunks.size} in ${SystemClock.elapsedRealtime() - tPut} ms")
                 }
                 if (indexed % 10 == 0 || indexed == chunks.size) {
@@ -154,13 +155,14 @@ class IndexPdfUseCase(
                     onProgress(IndexingProgress(docHash, Stage.EMBEDDING, indexed, chunks.size))
                 }
             }
-            if (batch.isNotEmpty()) { store.putChunks(batch); wroteAny = true }
+            if (batch.isNotEmpty()) store.putChunks(batch)
             onProgress(IndexingProgress(docHash, Stage.FINALIZING, 1, 1))
             store.flush()
             Log.i(TAG, "indexed $displayName: $pageCount pages, ${chunks.size} chunks in ${SystemClock.elapsedRealtime() - embedStarted} ms embed+put")
             return DocumentInfo(docHash, displayName, pageCount, chunks.size, docScript.name)
         } catch (t: Throwable) {
-            if (wroteAny) runCatching { store.removeDocument(docHash) }
+            // A batch can partially succeed even when AppSearch reports an aggregate failure.
+            runCatching { store.removeDocument(docHash) }
             if (t is CancellationException) Log.i(TAG, "indexing cancelled for $displayName") else Log.e(TAG, "indexing failed", t)
             throw t
         }

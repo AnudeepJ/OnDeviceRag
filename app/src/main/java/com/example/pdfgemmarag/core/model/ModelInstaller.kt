@@ -27,6 +27,8 @@ object ModelInstaller {
         deleteSource: Boolean,
         onProgress: (Long) -> Unit = {},
     ): String {
+        if (!source.isFile || !source.canRead()) throw VerificationException("source file is missing or unreadable: ${source.name}")
+        if (source.canonicalFile == target.canonicalFile) throw VerificationException("source and target must be different files")
         if (expectedSize > 0 && source.length() != expectedSize) {
             throw VerificationException("size mismatch: expected $expectedSize, got ${source.length()}")
         }
