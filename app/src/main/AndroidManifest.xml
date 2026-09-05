@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <application
+        android:name=".RagApplication"
+        android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:largeHeap="true"
+        android:theme="@style/Theme.PdfGemmaRag"
+        tools:targetApi="34">
+
+        <!-- Required for the LiteRT-LM GPU backend (OpenCL); optional so CPU-only devices still install. -->
+        <uses-native-library android:name="libOpenCL.so" android:required="false" />
+        <uses-native-library android:name="libvndksupport.so" android:required="false" />
+
+        <!-- Apryse license key, injected from the PDFTRON_LICENSE_KEY Gradle property. -->
+        <meta-data
+            android:name="pdftron_license_key"
+            android:value="${pdftronLicenseKey}" />
+
+        <!-- Apryse's auto-init provider would load libPDFNetC.so (62 MB) into the :ui process.
+             PDFNet is initialised explicitly in :inference instead (AprysePdfExtractor). -->
+        <provider
+            android:name="com.pdftron.pdfnet.PDFNetInitializer"
+            android:authorities="${applicationId}.pdftron-pdfnet"
+            tools:node="remove" />
+
+        <!-- ML Kit: bundled recognisers, no Play Services download needed. -->
+        <meta-data
+            android:name="com.google.mlkit.vision.DEPENDENCIES"
+            android:value="ocr,ocr_chinese,ocr_japanese,ocr_korean" />
+
+        <activity
+            android:name=".ui.MainActivity"
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize"
+            android:configChanges="orientation|screenSize|keyboardHidden">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Everything heavy (Gemma, EmbeddingGemma, Apryse, AppSearch) lives in :inference. -->
+        <service
+            android:name=".inference.service.AiInferenceService"
+            android:process=":inference"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <receiver
+            android:name=".ui.download.ModelDownloadReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.DOWNLOAD_COMPLETE" />
+            </intent-filter>
+        </receiver>
+    </application>
+
+</manifest>

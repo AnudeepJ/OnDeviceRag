@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  unit-and-alignment:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Unit tests
+        run: ./gradlew :app:testDebugUnitTest --console=plain
+      - name: Debug APK
+        run: ./gradlew :app:assembleDebug --console=plain
+      - name: 16 KB ELF alignment
+        run: scripts/check_16kb_alignment.sh app/build/outputs/apk/debug/app-debug.apk
+        env:
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
+          ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
