@@ -18,8 +18,11 @@ import com.example.pdfgemmarag.inference.service.AiInferenceService
 import com.example.pdfgemmarag.inference.service.IAiInferenceService
 import com.example.pdfgemmarag.inference.service.IEngineCallback
 import com.example.pdfgemmarag.inference.service.IStreamCallback
+import com.example.pdfgemmarag.inference.service.getCitationInNamespaceAsync
+import com.example.pdfgemmarag.inference.service.listDocumentsAsync
 import com.example.pdfgemmarag.inference.store.DocumentStructureManifest
 import com.example.pdfgemmarag.inference.store.DocumentStructureManifestStore
+import kotlinx.coroutines.runBlocking
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.After
@@ -97,7 +100,7 @@ class SinglePdfBaselineDeviceTest {
     @Test
     fun captureFocusedBaseline() {
         val svc = requireNotNull(service)
-        val doc = svc.listDocuments().firstOrNull { it.pageCount >= 70 }
+        val doc = runBlocking { svc.listDocumentsAsync() }.firstOrNull { it.pageCount >= 70 }
             ?: error("The test PDF is not indexed on this device")
         val arguments = InstrumentationRegistry.getArguments()
         arguments.getString("dumpChunkRange")?.let { requested ->
@@ -105,7 +108,7 @@ class SinglePdfBaselineDeviceTest {
             val manifest = requireNotNull(DocumentStructureManifestStore(ctx).load(doc.docHash))
             for (index in bounds.first()..bounds.last()) {
                 val id = DocumentStructureManifest.chunkId(index)
-                val citation = svc.getCitationInNamespace(manifest.indexNamespace, id) ?: continue
+                val citation = runBlocking { svc.getCitationInNamespaceAsync(manifest.indexNamespace, id) } ?: continue
                 Log.i(TAG, "DUMP $id p${citation.pageNumber} kind=${citation.contentKind} section=${citation.sectionId} '${citation.text.replace('\n', ' ')}'")
             }
             return

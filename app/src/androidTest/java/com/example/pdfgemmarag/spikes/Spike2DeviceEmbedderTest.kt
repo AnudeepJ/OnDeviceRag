@@ -12,6 +12,8 @@ import com.example.pdfgemmarag.core.model.ModelPaths
 import com.example.pdfgemmarag.inference.service.AiInferenceService
 import com.example.pdfgemmarag.inference.service.IAiInferenceService
 import com.example.pdfgemmarag.inference.service.IInstallCallback
+import com.example.pdfgemmarag.inference.service.runSelfTestAsync
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.junit.Before
@@ -72,7 +74,7 @@ class Spike2DeviceEmbedderTest {
         install(File(staging, "embeddinggemma-300M_seq512_mixed-precision.tflite"), ModelPaths.EMBEDDING_MODEL_FILE)
         assertTrue(ModelPaths.embeddingReady(ctx))
 
-        val report = service!!.runSelfTest()
+        val report = runBlocking { service!!.runSelfTestAsync() }
         Log.i("SPIKE2", "\n$report")
         assertTrue(report, report.contains("round-trip 7/7"))
         assertTrue(report, report.contains("parity 50/50"))

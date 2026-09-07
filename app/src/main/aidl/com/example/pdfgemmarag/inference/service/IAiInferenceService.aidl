@@ -8,6 +8,9 @@ import com.example.pdfgemmarag.inference.service.IStreamCallback;
 import com.example.pdfgemmarag.inference.service.IIndexingCallback;
 import com.example.pdfgemmarag.inference.service.IEngineCallback;
 import com.example.pdfgemmarag.inference.service.IInstallCallback;
+import com.example.pdfgemmarag.inference.service.IDocumentsCallback;
+import com.example.pdfgemmarag.inference.service.ICitationCallback;
+import com.example.pdfgemmarag.inference.service.ITextResultCallback;
 
 interface IAiInferenceService {
     int ping();
@@ -27,21 +30,21 @@ interface IAiInferenceService {
     void cancelIndexing();
     boolean isIndexing();
     void deleteDocument(String docHash);
-    List<DocumentInfo> listDocuments();
+    void listDocuments(IDocumentsCallback callback);
 
     // ---- Citations ----
-    Citation getCitation(String chunkId);
-    Citation getCitationInNamespace(String indexNamespace, String chunkId);
+    void getCitation(String chunkId, ICitationCallback callback);
+    void getCitationInNamespace(String indexNamespace, String chunkId, ICitationCallback callback);
 
     // ---- Model install (SHA-256 verify + copy into filesDir/models) ----
     void installModel(String sourcePath, String targetFileName, String expectedSha256, long expectedSize, boolean deleteSource, IInstallCallback callback);
 
     // ---- Diagnostics (feature support, backend, versions) ----
-    String getDiagnostics();
+    void getDiagnostics(ITextResultCallback callback);
 
     /** Runs the Phase 0 spike checks on-device (tokenizer, embedder, AppSearch hybrid) and returns a report. */
-    String runSelfTest();
+    void runSelfTest(ITextResultCallback callback);
 
     /** Retrieval-only probe of the live AppSearch index (no Gemma). Empty docHash = every document. */
-    String probeRetrieval(String docHash);
+    void probeRetrieval(String docHash, ITextResultCallback callback);
 }

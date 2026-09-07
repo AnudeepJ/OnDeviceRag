@@ -6,8 +6,9 @@ import java.io.File
 
 /**
  * `filesDir/gpu_disabled.marker`: presence means "initialise Gemma on CPU". Written by the :ui
- * watchdog when :inference dies or stalls during a GPU attempt, or by the service on a clean GPU
- * exception. Written atomically (temp + rename) so a partially written file is never observed.
+ * watchdog when :inference dies or fails to initialise during a GPU attempt, or by the service on a
+ * clean GPU initialisation exception. A slow generation turn never writes this marker. Written
+ * atomically (temp + rename) so a partially written file is never observed.
  */
 object GpuMarker {
     private const val TAG = "GpuMarker"

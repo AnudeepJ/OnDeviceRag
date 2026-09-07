@@ -20,6 +20,11 @@ import com.example.pdfgemmarag.inference.service.IEngineCallback
 import com.example.pdfgemmarag.inference.service.IIndexingCallback
 import com.example.pdfgemmarag.inference.service.IInstallCallback
 import com.example.pdfgemmarag.inference.service.IStreamCallback
+import com.example.pdfgemmarag.inference.service.diagnosticsAsync
+import com.example.pdfgemmarag.inference.service.getCitationAsync
+import com.example.pdfgemmarag.inference.service.getCitationInNamespaceAsync
+import com.example.pdfgemmarag.inference.service.probeRetrievalAsync
+import com.example.pdfgemmarag.inference.service.runSelfTestAsync
 import com.example.pdfgemmarag.ui.data.DocumentEntity
 import com.example.pdfgemmarag.ui.data.MessageEntity
 import com.example.pdfgemmarag.ui.download.CatalogEntry
@@ -497,9 +502,6 @@ class RagViewModel(app: Application) : AndroidViewModel(app) {
         }
         override fun onError(generationId: Long, message: String) {
             completeTurn(turn, cancelled = _chat.value.streamingText.isNotBlank(), error = message)
-            if (GpuMarker.exists(getApplication()) && _ui.value.engine.backend == "GPU") {
-                _ui.value.selectedModelPath?.let { loadEngine(it) }
-            }
         }
     }
 
@@ -517,8 +519,8 @@ class RagViewModel(app: Application) : AndroidViewModel(app) {
 
     suspend fun citation(indexNamespace: String, chunkId: String): Citation? = withContext(Dispatchers.IO) {
         runCatching {
-            if (indexNamespace.isBlank()) connection.await().getCitation(chunkId)
-            else connection.await().getCitationInNamespace(indexNamespace, chunkId)
+            if (indexNamespace.isBlank()) connection.await().getCitationAsync(chunkId)
+            else connection.await().getCitationInNamespaceAsync(indexNamespace, chunkId)
         }.getOrNull()
     }
 
@@ -571,19 +573,19 @@ class RagViewModel(app: Application) : AndroidViewModel(app) {
 
     fun loadDiagnostics() = viewModelScope.launch {
         val local = "ui: ${gate.describe()}\n"
-        val remote = runCatching { withContext(Dispatchers.IO) { connection.await().diagnostics } }.getOrElse { "service unavailable: ${it.message}" }
+        val remote = runCatching { connection.await().diagnosticsAsync() }.getOrElse { "service unavailable: ${it.message}" }
         _ui.update { it.copy(diagnostics = local + remote) }
     }
 
     fun runSelfTest() = viewModelScope.launch {
         _ui.update { it.copy(selfTest = "Running…") }
-        val result = runCatching { withContext(Dispatchers.IO) { connection.await().runSelfTest() } }.getOrElse { "failed: ${it.message}" }
+        val result = runCatching { connection.await().runSelfTestAsync() }.getOrElse { "failed: ${it.message}" }
         _ui.update { it.copy(selfTest = result) }
     }
 
     fun probeRetrieval() = viewModelScope.launch {
         _ui.update { it.copy(probe = "Probing live index…") }
-        val result = runCatching { withContext(Dispatchers.IO) { connection.await().probeRetrieval("") } }
+        val result = runCatching { connection.await().probeRetrievalAsync("") }
             .getOrElse { "failed: ${it.message}" }
         _ui.update { it.copy(probe = result) }
     }

@@ -161,10 +161,12 @@ class GemmaEngine(
         watchdog.schedule({
             if (!firstTokenSeen.get() && !finished.get() && !generation.cancelled) {
                 Log.w(TAG, "no first token after ${FIRST_TOKEN_TIMEOUT_SEC}s")
-                if (backendName == "GPU") GpuMarker.write(context, "first-token timeout on GPU")
                 terminal(
                     cancelled = false,
-                    error = IllegalStateException("Gemma did not start in time. Reload the model; GPU will fall back to CPU."),
+                    // A slow prompt, thermal pressure, or scheduler contention is not proof of a
+                    // broken GPU backend. Persist fallback only when the inference process dies or
+                    // GPU engine initialisation itself fails.
+                    error = IllegalStateException("Gemma did not start in time. Please retry the question."),
                     cancelProcess = true,
                 )
             }

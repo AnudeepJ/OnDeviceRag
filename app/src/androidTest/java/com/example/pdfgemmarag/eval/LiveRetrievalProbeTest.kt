@@ -10,6 +10,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.pdfgemmarag.inference.service.AiInferenceService
 import com.example.pdfgemmarag.inference.service.IAiInferenceService
+import com.example.pdfgemmarag.inference.service.diagnosticsAsync
+import com.example.pdfgemmarag.inference.service.probeRetrievalAsync
+import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeFalse
@@ -52,10 +55,10 @@ class LiveRetrievalProbeTest {
     }
 
     @Test
-    fun probeIndexedBaytownPdf() {
-        val diag = service!!.diagnostics
+    fun probeIndexedBaytownPdf() = runBlocking {
+        val diag = service!!.diagnosticsAsync()
         Log.i(TAG, "diagnostics:\n$diag")
-        val report = service!!.probeRetrieval("")
+        val report = service!!.probeRetrievalAsync("")
         Log.i(TAG, "probe:\n$report")
         File(ctx.getExternalFilesDir(null), "live_probe.txt").writeText(report)
         assumeFalse("no document in AppSearch — re-index the PDF after install", report.contains("INDEX EMPTY"))

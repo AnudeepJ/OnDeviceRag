@@ -33,8 +33,8 @@ import java.util.concurrent.atomic.AtomicReference
 /**
  * Phase 2 acceptance on a device/emulator: engine load through AIDL, streaming tokens tagged with
  * the generationId, clean completion stats, and cancel mid-generation. Uses whichever `.litertlm`
- * is staged under `/data/local/tmp/ondevice-rag/` (any LiteRT-LM model; Qwen3-0.6B on the emulator,
- * Gemma 4 E2B on a phone). Skipped when nothing is staged.
+ * is already installed, or stages one from `/data/local/tmp/ondevice-rag/` when necessary (any
+ * LiteRT-LM model; Qwen3-0.6B on the emulator, Gemma 4 E2B on a phone).
  */
 @RunWith(AndroidJUnit4::class)
 class Phase2GenerationDeviceTest {
@@ -51,15 +51,17 @@ class Phase2GenerationDeviceTest {
 
     @Before
     fun bind() {
+        val installed = ModelPaths.installedLlms(ctx).firstOrNull()
         val staged = staging.listFiles { f -> f.name.endsWith(ModelPaths.LLM_EXTENSION) }?.firstOrNull()
-        assumeTrue("no staged .litertlm under $staging", staged != null)
+        assumeTrue("no installed or staged .litertlm model", installed != null || staged != null)
         ctx.bindService(Intent(ctx, AiInferenceService::class.java), connection, Context.BIND_AUTO_CREATE)
         assertTrue(connected.await(20, TimeUnit.SECONDS))
-        modelFile = File(ModelPaths.modelsDir(ctx), staged!!.name)
-        if (!(modelFile.isFile && modelFile.length() == staged.length())) {
+        modelFile = installed ?: File(ModelPaths.modelsDir(ctx), requireNotNull(staged).name)
+        if (installed == null) {
+            val source = requireNotNull(staged)
             val done = CountDownLatch(1)
             val error = AtomicReference<String?>()
-            service!!.installModel(staged.absolutePath, staged.name, "", staged.length(), true, object : IInstallCallback.Stub() {
+            service!!.installModel(source.absolutePath, source.name, "", source.length(), true, object : IInstallCallback.Stub() {
                 override fun onProgress(bytesCopied: Long, totalBytes: Long) {}
                 override fun onInstalled(targetPath: String, sha256: String) { Log.i("PHASE2", "installed $targetPath sha256=$sha256"); done.countDown() }
                 override fun onFailed(message: String) { error.set(message); done.countDown() }
@@ -137,7 +139,7 @@ class Phase2GenerationDeviceTest {
     }
 
     @Test
-    fun cancelStopsTheStreamAndReportsCancelled() {
+    fun cancelThenImmediateReaskWaitsForNativeClose() {
         val stream = Stream()
         val id = service!!.ask("", "Write a very long story about a dragon, at least 800 words.", emptyList<QaPair>(), stream.callback)
         // Wait for the first token, then cancel.
@@ -146,6 +148,12 @@ class Phase2GenerationDeviceTest {
         assertTrue("never produced a token", stream.firstTokenAt > 0)
         val lengthAtCancel = synchronized(stream.tokens) { stream.tokens.length }
         service!!.cancelGeneration(id)
+
+        // Match the UI race precisely: it unlocks the composer as soon as Stop is tapped, before
+        // LiteRT-LM's asynchronous cancelProcess()/close has delivered the first terminal callback.
+        val next = Stream()
+        val id2 = service!!.ask("", "Say OK.", emptyList<QaPair>(), next.callback)
+
         assertTrue("onDone/onError not delivered after cancel", stream.done.await(60, TimeUnit.SECONDS))
         Thread.sleep(1500) // stragglers must be suppressed
         val finalLength = synchronized(stream.tokens) { stream.tokens.length }
@@ -153,11 +161,8 @@ class Phase2GenerationDeviceTest {
         assertTrue("expected cancelled stats, got error=${stream.error}", stream.stats?.cancelled == true)
         assertTrue("stream kept growing long after cancel", finalLength - lengthAtCancel < 400)
         assertEquals(EngineStatus.State.READY, service!!.engineStatus.state)
-
-        // The engine must accept a new turn after a cancel.
-        val next = Stream()
-        val id2 = service!!.ask("", "Say OK.", emptyList<QaPair>(), next.callback)
         assertTrue(next.done.await(600, TimeUnit.SECONDS))
-        assertTrue(next.error == null && id2 != id)
+        assertTrue("immediate re-ask failed: ${next.error}", next.error == null && id2 != id)
+        assertTrue("race escaped service gate", next.error?.contains("still finishing", ignoreCase = true) != true)
     }
 }

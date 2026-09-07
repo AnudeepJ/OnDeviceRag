@@ -37,12 +37,12 @@ import com.example.pdfgemmarag.inference.store.AppSearchVectorStore
 import com.example.pdfgemmarag.inference.store.RetrievalProbe
 import com.example.pdfgemmarag.ui.download.ModelDownloadReceiver
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -75,6 +75,8 @@ class AiInferenceService : Service() {
     private val engineLock = Mutex()
 
     private val generationIds = AtomicLong(System.currentTimeMillis())
+    /** Service-side admission gate: UI state is never the authority for native conversation safety. */
+    private val generationMutex = Mutex()
     private val generations = ConcurrentHashMap<Long, GemmaEngine.Generation>()
     private val cancelledGenerations = ConcurrentHashMap.newKeySet<Long>()
     @Volatile private var indexingJob: Job? = null
@@ -223,43 +225,57 @@ class AiInferenceService : Service() {
         override fun ask(docHash: String, question: String, history: List<QaPair>, callback: IStreamCallback): Long {
             val id = generationIds.incrementAndGet()
             scope.launch {
-                val e = gemma
-                if (e == null || !e.isInitialized) { safe { callback.onError(id, "Model is not loaded") }; return@launch }
-                try {
-                    val terminal = AtomicBoolean(false)
+                generationMutex.withLock {
+                    if (cancelledGenerations.remove(id)) {
+                        safe { callback.onError(id, "Stopped") }
+                        return@withLock
+                    }
+                    val e = gemma
+                    if (e == null || !e.isInitialized) {
+                        safe { callback.onError(id, "Model is not loaded") }
+                        return@withLock
+                    }
+                    val terminal = CompletableDeferred<Unit>()
+                    val terminalDelivered = AtomicBoolean(false)
+
+                    fun finish(block: () -> Unit) {
+                        if (!terminalDelivered.compareAndSet(false, true)) return
+                        generations.remove(id)
+                        cancelledGenerations.remove(id)
+                        safe(block)
+                        terminal.complete(Unit)
+                    }
+
                     val listener = object : AnswerQuestionUseCase.Listener {
                         override fun onRetrieved(citations: List<Citation>) { safe { callback.onRetrieved(id, citations) } }
                         override fun onToken(text: String) {
                             try { callback.onToken(id, text) } catch (e: RemoteException) { onClientGone(id) }
                         }
                         override fun onDone(stats: GenerationStats) {
-                            terminal.set(true); cancelledGenerations.remove(id); generations.remove(id)
-                            safe { callback.onDone(id, stats) }
+                            finish { callback.onDone(id, stats) }
                         }
                         override fun onError(message: String) {
-                            terminal.set(true); cancelledGenerations.remove(id); generations.remove(id)
-                            safe { callback.onError(id, message) }
+                            finish { callback.onError(id, message) }
                         }
                     }
-                    // Empty docHash = plain chat: no embedder or AppSearch needed, so it works before any model beyond Gemma is installed.
-                    if (cancelledGenerations.remove(id)) {
-                        safe { callback.onError(id, "Stopped") }
-                        return@launch
+                    try {
+                        // Empty docHash = plain chat: no embedder or AppSearch needed, so it works before any model beyond Gemma is installed.
+                        val handle = if (docHash == PlainChatUseCase.PLAIN_CHAT_DOC_HASH) {
+                            PlainChatUseCase(e).start(id, question, history, listener)
+                        } else {
+                            AnswerQuestionUseCase(requireEmbedder(), requireStore(), e).start(id, docHash, question, history, listener)
+                        }
+                        if (handle != null && !terminal.isCompleted) {
+                            generations[id] = handle
+                            if (cancelledGenerations.remove(id)) handle.cancel()
+                            // GemmaEngine clears its active conversation before invoking the
+                            // terminal callback, so releasing this mutex makes the next turn safe.
+                            terminal.await()
+                        }
+                    } catch (t: Throwable) {
+                        Log.e(TAG, "ask failed", t)
+                        finish { callback.onError(id, t.message ?: t.javaClass.simpleName) }
                     }
-                    val handle = if (docHash == PlainChatUseCase.PLAIN_CHAT_DOC_HASH) {
-                        PlainChatUseCase(e).start(id, question, history, listener)
-                    } else {
-                        AnswerQuestionUseCase(requireEmbedder(), requireStore(), e).start(id, docHash, question, history, listener)
-                    }
-                    if (cancelledGenerations.remove(id)) {
-                        handle?.cancel()
-                        safe { callback.onError(id, "Stopped") }
-                        return@launch
-                    }
-                    if (handle != null && !terminal.get()) generations[id] = handle
-                } catch (t: Throwable) {
-                    Log.e(TAG, "ask failed", t)
-                    safe { callback.onError(id, t.message ?: t.javaClass.simpleName) }
                 }
             }
             return id
@@ -268,7 +284,7 @@ class AiInferenceService : Service() {
         override fun cancelGeneration(generationId: Long) {
             Log.i(TAG, "cancel requested id=$generationId active=${generations.keys}")
             cancelledGenerations.add(generationId)
-            val handle = generations.remove(generationId)
+            val handle = generations[generationId]
             if (handle != null) {
                 handle.cancel()
             }
@@ -311,37 +327,70 @@ class AiInferenceService : Service() {
             scope.launch { runCatching { requireStore().removeDocument(docHash) }.onFailure { Log.e(TAG, "delete failed", it) } }
         }
 
-        override fun listDocuments(): List<DocumentInfo> = runBlocking { runCatching { requireStore().listDocuments() }.getOrDefault(emptyList()) }
+        override fun listDocuments(callback: IDocumentsCallback) {
+            scope.launch {
+                runCatching { requireStore().listDocuments() }
+                    .onSuccess { documents -> safe { callback.onResult(documents) } }
+                    .onFailure { error -> safe { callback.onError(error.message ?: error.javaClass.simpleName) } }
+            }
+        }
 
-        override fun getCitation(chunkId: String): Citation? = runBlocking { runCatching { requireStore().getCitation(chunkId) }.getOrNull() }
+        override fun getCitation(chunkId: String, callback: ICitationCallback) {
+            getCitationAsync(callback) { requireStore().getCitation(chunkId) }
+        }
 
-        override fun getCitationInNamespace(indexNamespace: String, chunkId: String): Citation? = runBlocking {
-            runCatching { requireStore().getCitation(indexNamespace, chunkId) }.getOrNull()
+        override fun getCitationInNamespace(indexNamespace: String, chunkId: String, callback: ICitationCallback) {
+            getCitationAsync(callback) { requireStore().getCitation(indexNamespace, chunkId) }
         }
 
         override fun installModel(sourcePath: String, targetFileName: String, expectedSha256: String, expectedSize: Long, deleteSource: Boolean, callback: IInstallCallback?) {
             startInstall(File(sourcePath), targetFileName, expectedSha256, expectedSize, deleteSource, callback, downloadId = -1)
         }
 
-        override fun getDiagnostics(): String = runBlocking { diagnostics() }
-
-        override fun runSelfTest(): String = runBlocking {
-            SelfTest(this@AiInferenceService, { requireEmbedder() }, { requireStore() }).run()
+        override fun getDiagnostics(callback: ITextResultCallback) {
+            textResultAsync(callback) { diagnostics() }
         }
 
-        override fun probeRetrieval(docHash: String): String = runBlocking {
-            val store = requireStore()
-            val embedder = if (ModelPaths.embeddingReady(this@AiInferenceService)) requireEmbedder() else null
-            if (embedder == null) Log.w(TAG, "probe without embedder; keyword path only")
-            val report = RetrievalProbe.run(store, { q -> embedder?.embedQuery(q) ?: FloatArray(512) }, docHash.ifBlank { null })
-            runCatching { File(filesDir, "retrieval_probe.txt").writeText(report) }
-            report
+        override fun runSelfTest(callback: ITextResultCallback) {
+            textResultAsync(callback) {
+                SelfTest(this@AiInferenceService, { requireEmbedder() }, { requireStore() }).run()
+            }
+        }
+
+        override fun probeRetrieval(docHash: String, callback: ITextResultCallback) {
+            textResultAsync(callback) {
+                val store = requireStore()
+                val embedder = if (ModelPaths.embeddingReady(this@AiInferenceService)) requireEmbedder() else null
+                if (embedder == null) Log.w(TAG, "probe without embedder; keyword path only")
+                RetrievalProbe.run(store, { q -> embedder?.embedQuery(q) ?: FloatArray(512) }, docHash.ifBlank { null })
+                    .also { report -> runCatching { File(filesDir, "retrieval_probe.txt").writeText(report) } }
+            }
+        }
+    }
+
+    private fun getCitationAsync(callback: ICitationCallback, block: suspend () -> Citation?) {
+        scope.launch {
+            runCatching { block() }
+                .onSuccess { citation ->
+                    if (citation == null) safe { callback.onNotFound() }
+                    else safe { callback.onResult(citation) }
+                }
+                .onFailure { error -> safe { callback.onError(error.message ?: error.javaClass.simpleName) } }
+        }
+    }
+
+    private fun textResultAsync(callback: ITextResultCallback, block: suspend () -> String) {
+        scope.launch {
+            runCatching { block() }
+                .onSuccess { value -> safe { callback.onResult(value) } }
+                .onFailure { error -> safe { callback.onError(error.message ?: error.javaClass.simpleName) } }
         }
     }
 
     private fun onClientGone(generationId: Long) {
         Log.w(TAG, "client died mid-stream; cancelling generation $generationId")
-        generations.remove(generationId)?.cancel()
+        cancelledGenerations.add(generationId)
+        generations[generationId]?.cancel()
     }
 
     private fun startInstall(source: File, targetName: String, sha: String, size: Long, deleteSource: Boolean, callback: IInstallCallback?, downloadId: Long) {
