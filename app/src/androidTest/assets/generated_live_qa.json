@@ -1,0 +1,192 @@
+[
+  {
+    "id": "live-formwork-pay",
+    "intent": "FACT",
+    "question": "Is formwork paid separately under the Concrete Formwork section?",
+    "expectedPages": [2],
+    "requireAllPages": false,
+    "requiredPhrases": ["no separate payment", "structural concrete"],
+    "forbiddenPages": []
+  },
+  {
+    "id": "live-freeze-form-coat",
+    "intent": "FACT",
+    "question": "When temperatures may freeze, may unexposed forms be wetted instead of coated before placing concrete?",
+    "expectedPages": [8],
+    "requireAllPages": false,
+    "requiredPhrases": ["mandatory"],
+    "forbiddenPages": []
+  },
+  {
+    "id": "live-sewage-cement",
+    "intent": "FACT",
+    "question": "What cement type is required for concrete in contact with sewage in specification 03300 section 2.05?",
+    "expectedPages": [17],
+    "requireAllPages": false,
+    "requiredPhrases": ["Type II", "C150"],
+    "forbiddenPages": [60]
+  },
+  {
+    "id": "live-air-03300",
+    "intent": "FACT",
+    "question": "In specification 03300 section 2.05, what air content is required for trowel finished surfaces versus other concrete?",
+    "expectedPages": [17],
+    "requireAllPages": false,
+    "requiredPhrases": ["3 percent"],
+    "forbiddenPages": [62]
+  },
+  {
+    "id": "live-epoxy-hole",
+    "intent": "FACT",
+    "question": "When anchoring reinforcing to existing concrete with epoxy grout, how much larger than the bar may the drilled hole be?",
+    "expectedPages": [31],
+    "requireAllPages": false,
+    "requiredPhrases": ["1/4"],
+    "forbiddenPages": []
+  },
+  {
+    "id": "live-curing-day",
+    "intent": "FACT",
+    "question": "In specification 03300 section 3.26, what temperature and duration make a calendar day count as a curing day?",
+    "expectedPages": [44],
+    "requireAllPages": false,
+    "requiredPhrases": ["50", "19"],
+    "forbiddenPages": []
+  },
+  {
+    "id": "live-curing-coverage",
+    "intent": "FACT",
+    "question": "What minimum coverage rate applies when spraying curing compound on unformed surfaces in specification 03300 section 3.26?",
+    "expectedPages": [45],
+    "requireAllPages": false,
+    "requiredPhrases": ["1 gallon", "180"],
+    "forbiddenPages": []
+  },
+  {
+    "id": "live-03310-liquid-ratio",
+    "intent": "FACT",
+    "question": "In specification 03310, what is the maximum water-cement ratio for concrete for liquid-containing structures?",
+    "expectedPages": [62],
+    "requireAllPages": false,
+    "requiredPhrases": ["0.45"],
+    "forbiddenPhrases": ["0.50"],
+    "forbiddenPages": [17]
+  },
+  {
+    "id": "live-03310-air-shafts",
+    "intent": "FACT",
+    "question": "Which concrete is not air-entrained in specification 03310, and what total air content is required for the rest?",
+    "expectedPages": [62],
+    "requireAllPages": false,
+    "requiredPhrases": ["drilled shafts", "4 to 6"],
+    "forbiddenPages": []
+  },
+  {
+    "id": "live-grout-7000",
+    "intent": "FACT",
+    "question": "What minimum 28-day compressive strength is required for prepackaged cementitious non-shrink grout in specification 03600?",
+    "expectedPages": [77],
+    "requireAllPages": false,
+    "requiredPhrases": ["7000"],
+    "forbiddenPages": []
+  },
+  {
+    "id": "live-grout-saturate",
+    "intent": "FACT",
+    "question": "How long must a concrete surface be saturated with water before placing cement-based grout in specification 03600?",
+    "expectedPages": [79],
+    "requireAllPages": false,
+    "requiredPhrases": ["24 hours"],
+    "forbiddenPages": []
+  },
+  {
+    "id": "live-overview",
+    "intent": "DOCUMENT_OVERVIEW",
+    "question": "Summarize this document",
+    "expectedPages": [],
+    "requireAllPages": false,
+    "requiredPhrases": ["03300", "03310"],
+    "forbiddenPages": []
+  },
+  {
+    "id": "live-plywood-class",
+    "intent": "FACT",
+    "question": "In the Concrete Formwork products section, what plywood standard and class is required?",
+    "expectedPages": [3],
+    "requireAllPages": false,
+    "requiredPhrases": ["PS 1", "Class 1"],
+    "forbiddenPages": []
+  },
+  {
+    "id": "live-form-remove-75",
+    "intent": "FACT",
+    "question": "What minimum compressive strength is required before removing formwork that supports the weight of the concrete?",
+    "expectedPages": [10],
+    "requireAllPages": false,
+    "requiredPhrases": ["75 percent"],
+    "forbiddenPages": []
+  },
+  {
+    "id": "live-az-factor",
+    "intent": "FACT",
+    "question": "In specification 03300 section 2.01, what AZ factor and inside concrete cover over reinforcing steel are required?",
+    "expectedPages": [16],
+    "requireAllPages": false,
+    "requiredPhrases": ["0.54", "2"],
+    "forbiddenPages": []
+  },
+  {
+    "id": "live-rebar-grade60",
+    "intent": "FACT",
+    "question": "In specification 03300 section 2.08, which reinforcing bar grade is required when the grade is not shown on the plans?",
+    "expectedPages": [20],
+    "requireAllPages": false,
+    "requiredPhrases": ["Grade 60"],
+    "forbiddenPages": []
+  },
+  {
+    "id": "live-curing-solids",
+    "intent": "FACT",
+    "question": "In specification 03300 section 2.11, what minimum solids content applies to membrane-forming curing compound, and when must it be white-pigmented?",
+    "expectedPages": [24],
+    "requireAllPages": false,
+    "requiredPhrases": ["30 percent", "white"],
+    "forbiddenPages": [45]
+  },
+  {
+    "id": "live-stirrup-spacing",
+    "intent": "FACT",
+    "question": "What placement tolerance applies to uniform spacing of stirrups and ties for reinforcement?",
+    "expectedPages": [32],
+    "requireAllPages": false,
+    "requiredPhrases": ["1"],
+    "forbiddenPages": []
+  },
+  {
+    "id": "live-cover-exposed-beams",
+    "intent": "FACT",
+    "question": "In Table 03210B, what minimum concrete cover is required for principal reinforcement in beams and columns exposed to earth, water, sewage or weather?",
+    "expectedPages": [33],
+    "requireAllPages": false,
+    "requiredPhrases": ["2 1/2"],
+    "forbiddenPages": []
+  },
+  {
+    "id": "live-03310-hot-discharge",
+    "intent": "FACT",
+    "question": "In specification 03310 section 3.03, what is the maximum time from introducing cement to the aggregates until discharge when concrete temperature is 85 degrees F or above?",
+    "expectedPages": [71],
+    "requireAllPages": false,
+    "requiredPhrases": ["60 minutes"],
+    "forbiddenPages": []
+  },
+  {
+    "id": "live-03600-base-plates",
+    "intent": "FACT",
+    "question": "In specification 03600 section 2.01, what type of grout is required under structural member base plates?",
+    "expectedPages": [76],
+    "requireAllPages": false,
+    "requiredPhrases": ["Class II"],
+    "forbiddenPages": []
+  }
+]

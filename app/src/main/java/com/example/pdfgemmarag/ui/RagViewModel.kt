@@ -508,8 +508,8 @@ class RagViewModel(app: Application) : AndroidViewModel(app) {
 
     fun stopGeneration() {
         val turn = synchronized(turnLock) { activeTurn } ?: return
-        // Unlock the composer immediately. LiteRT-LM cancelProcess() often does not return
-        // during GPU prefill, so waiting for onDone left the UI stuck.
+        // Unlock the composer immediately. Native cancel/close is time-boxed on the inference
+        // process; waiting for onDone here still left the UI stuck when GPU prefill hung.
         completeTurn(turn, cancelled = true, error = "Stopped.")
         viewModelScope.launch {
             val id = turn.generationId

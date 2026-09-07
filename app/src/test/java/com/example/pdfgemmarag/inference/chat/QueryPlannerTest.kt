@@ -58,6 +58,53 @@ class QueryPlannerTest {
     }
 
     @Test
+    fun `fact question naming a specification does not pin to a one-word title`() {
+        val heading = section("sealant-heading", "04100", "", "SEALANT", 10)
+        val products = section("sealant-products", "04100", "2.02", "PREPACKAGED SEALANTS", 12)
+        val other = section("c", "03300", "2.05", "CONCRETE MIX", 17)
+        val fixture = DocumentStructureManifest(
+            "doc", "doc:v21:test", DocumentStructureManifest.INDEX_VERSION, "sig",
+            listOf(heading, products, other),
+        )
+
+        val plan = QueryPlanner().plan(
+            "What minimum 28-day compressive strength is required for prepackaged sealant in specification 04100?",
+            fixture,
+        )
+
+        assertEquals(QuestionIntent.FACT, plan.intent)
+        assertEquals("04100", plan.explicitSpecificationNumber)
+        assertNull(plan.resolvedSectionId)
+    }
+
+    @Test
+    fun `table number that is not a document specification is not used as a spec filter`() {
+        val plan = QueryPlanner().plan(
+            "In Table 03210B, what minimum concrete cover is required for principal reinforcement?",
+            manifest,
+        )
+
+        assertEquals(QuestionIntent.FACT, plan.intent)
+        assertNull(plan.explicitSpecificationNumber)
+        assertNull(plan.resolvedSectionId)
+    }
+
+    @Test
+    fun `summarize still resolves a unique title after a specification is stripped`() {
+        val heading = section("sealant-heading", "04100", "", "SEALANT", 10)
+        val products = section("sealant-products", "04100", "2.02", "PREPACKAGED SEALANTS", 12)
+        val fixture = DocumentStructureManifest(
+            "doc", "doc:v21:test", DocumentStructureManifest.INDEX_VERSION, "sig",
+            listOf(heading, products),
+        )
+
+        val plan = QueryPlanner().plan("Summarize sealant", fixture)
+
+        assertEquals(QuestionIntent.SECTION_SUMMARY, plan.intent)
+        assertEquals("sealant-heading", plan.resolvedSectionId)
+    }
+
+    @Test
     fun `bounded distance has no third party dependency behavior`() {
         assertEquals(1, QueryPlanner.boundedLevenshtein("concrete", "concret", 3))
         assertEquals(3, QueryPlanner.boundedLevenshtein("abc", "xyz", 2))

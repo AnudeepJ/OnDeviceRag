@@ -43,7 +43,7 @@ class QueryPlanner {
     ): QuestionPlan {
         val normalized = normalize(question)
         val summary = SUMMARY.containsMatchIn(normalized)
-        val spec = SPEC_REFERENCE.find(normalized)?.groupValues?.get(1)
+        var spec = SPEC_REFERENCE.find(normalized)?.groupValues?.get(1)
             ?: LEADING_ZERO_ID.find(normalized)?.value
         val section = SECTION_REFERENCE.find(normalized)?.groupValues?.get(1)
             ?: DOTTED_ID.find(normalized)?.value
@@ -63,6 +63,12 @@ class QueryPlanner {
         }
 
         val usable = manifest.sections.filter { it.title.isNotBlank() || it.sectionNumber.isNotBlank() }
+        // Table numbers and cross-references often look like CSI ids (03210B, 01450).
+        // Only treat a leading-zero token as a specification filter when this document
+        // actually contains that specification.
+        if (spec != null && usable.none { it.specificationNumber.equals(spec, true) }) {
+            spec = null
+        }
         val exactIdentity = usable.filter { candidate ->
             (spec == null || candidate.specificationNumber.equals(spec, true)) &&
                 (section == null || candidate.sectionNumber.equals(section, true)) &&
@@ -83,11 +89,26 @@ class QueryPlanner {
         if (exactIdentity.size > 1 && summary) return ambiguous(subject, spec, section, exactIdentity, inheritedSectionId)
 
         val exactTitle = usable.filter { normalizeTitle(it.title) == subject && subject.isNotBlank() }
-        if (exactTitle.size > 1) return ambiguous(subject, spec, section, exactTitle, inheritedSectionId)
-        if (exactTitle.size == 1) {
+        if (exactTitle.size > 1 && summary) return ambiguous(subject, spec, section, exactTitle, inheritedSectionId)
+        if (exactTitle.size == 1 && summary) {
             return QuestionPlan(
-                if (summary) QuestionIntent.SECTION_SUMMARY else QuestionIntent.FACT,
+                QuestionIntent.SECTION_SUMMARY,
                 subject, spec, section, exactTitle.single().sectionId, exactTitle, 1.0, inheritedSectionId,
+            )
+        }
+
+        // Lexical title matching is for summaries. A FACT question that happens to contain
+        // a short heading word must not pin retrieval to that heading's chunks — sibling
+        // subsections hold the requirements. Keep an explicit specification as a search
+        // filter instead.
+        if (!summary) {
+            return QuestionPlan(
+                intent = if (overview) QuestionIntent.DOCUMENT_OVERVIEW else QuestionIntent.FACT,
+                subjectText = subject,
+                explicitSpecificationNumber = spec,
+                explicitSectionNumber = section,
+                resolvedSectionId = inheritedSectionId.takeIf { looksLikeFollowUp(normalized) },
+                inheritedSectionId = inheritedSectionId,
             )
         }
 

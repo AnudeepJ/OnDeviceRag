@@ -46,6 +46,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
@@ -109,6 +110,7 @@ class AiInferenceService : Service() {
 
     override fun onDestroy() {
         Log.i(TAG, "service destroyed")
+        requestCancelAllGenerations()
         scope.cancel()
         thermal.release()
         gemma?.close()
@@ -147,63 +149,66 @@ class AiInferenceService : Service() {
 
         override fun loadEngine(modelPath: String, allowGpu: Boolean, callback: IEngineCallback) {
             scope.launch {
-                engineLock.withLock {
-                    val modelFile = File(modelPath)
-                    if (!modelFile.isFile || !modelFile.canRead()) {
-                        safe { callback.onFailed("Model file is missing or unreadable. Import the complete .litertlm file again.") }
-                        return@withLock
-                    }
-                    if (!modelFile.name.endsWith(ModelPaths.LLM_EXTENSION, ignoreCase = true) ||
-                        modelFile.length() < ModelPaths.MIN_LLM_BYTES
-                    ) {
-                        safe { callback.onFailed("Model file is incomplete or is not a .litertlm model (${modelFile.length()} bytes).") }
-                        return@withLock
-                    }
-                    gemma?.close(); gemma = null
-                    currentStatus = EngineStatus(EngineStatus.State.LOADING, modelPath = modelPath, modelName = File(modelPath).name)
-                    val useGpu = allowGpu && !GemmaEngine.gpuMarker(this@AiInferenceService).exists()
-                    safe { callback.onProgress("Creating engine (${if (useGpu) "GPU" else "CPU"})") }
-                    var candidate: GemmaEngine? = null
-                    try {
-                        val e = GemmaEngine(this@AiInferenceService, modelPath, allowGpu).also { candidate = it }
-                        safe { callback.onProgress("Initialising on ${e.backendName}. First GPU start compiles shaders and can take up to two minutes.") }
-                        withContext(Dispatchers.IO) { e.initialize() }
-                        if (e.backendName == "GPU") GpuMarker.markCacheReady(this@AiInferenceService, modelFile)
-                        gemma = e
-                        candidate = null
-                        currentStatus = EngineStatus(
-                            EngineStatus.State.READY, backend = e.backendName, modelPath = modelPath,
-                            modelName = File(modelPath).name, embedderLoaded = embedder != null, thermalStatus = thermal.status.value,
-                        )
-                        safe { callback.onReady(currentStatus) }
-                    } catch (t: Throwable) {
-                        candidate?.close(); candidate = null
-                        Log.e(TAG, "engine init failed (gpu=$useGpu)", t)
-                        if (useGpu) {
-                            // A clean exception (not a crash) on GPU: persist the decision and retry on CPU now.
-                            GpuMarker.write(this@AiInferenceService, "init exception: ${t.message}")
-                            safe { callback.onProgress("GPU initialisation failed; retrying on CPU") }
-                            try {
-                                val e = GemmaEngine(this@AiInferenceService, modelPath, allowGpu = false).also { candidate = it }
-                                withContext(Dispatchers.IO) { e.initialize() }
-                                gemma = e
-                                candidate = null
-                                currentStatus = EngineStatus(EngineStatus.State.READY, backend = "CPU", modelPath = modelPath, modelName = File(modelPath).name)
-                                safe { callback.onReady(currentStatus) }
-                                return@withLock
-                            } catch (t2: Throwable) {
-                                candidate?.close(); candidate = null
-                                Log.e(TAG, "CPU init failed too", t2)
-                                // Both backends failing points to the model/runtime, not a proven GPU
-                                // incompatibility. Do not permanently poison future valid models.
-                                GemmaEngine.gpuMarker(this@AiInferenceService).delete()
-                                currentStatus = EngineStatus(EngineStatus.State.FAILED, message = t2.message ?: "init failed")
-                                safe { callback.onFailed(t2.message ?: t2.javaClass.simpleName) }
-                                return@withLock
+                val modelFile = File(modelPath)
+                if (!modelFile.isFile || !modelFile.canRead()) {
+                    safe { callback.onFailed("Model file is missing or unreadable. Import the complete .litertlm file again.") }
+                    return@launch
+                }
+                if (!modelFile.name.endsWith(ModelPaths.LLM_EXTENSION, ignoreCase = true) ||
+                    modelFile.length() < ModelPaths.MIN_LLM_BYTES
+                ) {
+                    safe { callback.onFailed("Model file is incomplete or is not a .litertlm model (${modelFile.length()} bytes).") }
+                    return@launch
+                }
+                requestCancelAllGenerations()
+                generationMutex.withLock {
+                    engineLock.withLock {
+                        gemma?.close(); gemma = null
+                        currentStatus = EngineStatus(EngineStatus.State.LOADING, modelPath = modelPath, modelName = File(modelPath).name)
+                        val useGpu = allowGpu && !GemmaEngine.gpuMarker(this@AiInferenceService).exists()
+                        safe { callback.onProgress("Creating engine (${if (useGpu) "GPU" else "CPU"})") }
+                        var candidate: GemmaEngine? = null
+                        try {
+                            val e = GemmaEngine(this@AiInferenceService, modelPath, allowGpu).also { candidate = it }
+                            safe { callback.onProgress("Initialising on ${e.backendName}. First GPU start compiles shaders and can take up to two minutes.") }
+                            withContext(Dispatchers.IO) { e.initialize() }
+                            if (e.backendName == "GPU") GpuMarker.markCacheReady(this@AiInferenceService, modelFile)
+                            gemma = e
+                            candidate = null
+                            currentStatus = EngineStatus(
+                                EngineStatus.State.READY, backend = e.backendName, modelPath = modelPath,
+                                modelName = File(modelPath).name, embedderLoaded = embedder != null, thermalStatus = thermal.status.value,
+                            )
+                            safe { callback.onReady(currentStatus) }
+                        } catch (t: Throwable) {
+                            candidate?.close(); candidate = null
+                            Log.e(TAG, "engine init failed (gpu=$useGpu)", t)
+                            if (useGpu) {
+                                // A clean exception (not a crash) on GPU: persist the decision and retry on CPU now.
+                                GpuMarker.write(this@AiInferenceService, "init exception: ${t.message}")
+                                safe { callback.onProgress("GPU initialisation failed; retrying on CPU") }
+                                try {
+                                    val e = GemmaEngine(this@AiInferenceService, modelPath, allowGpu = false).also { candidate = it }
+                                    withContext(Dispatchers.IO) { e.initialize() }
+                                    gemma = e
+                                    candidate = null
+                                    currentStatus = EngineStatus(EngineStatus.State.READY, backend = "CPU", modelPath = modelPath, modelName = File(modelPath).name)
+                                    safe { callback.onReady(currentStatus) }
+                                    return@withLock
+                                } catch (t2: Throwable) {
+                                    candidate?.close(); candidate = null
+                                    Log.e(TAG, "CPU init failed too", t2)
+                                    // Both backends failing points to the model/runtime, not a proven GPU
+                                    // incompatibility. Do not permanently poison future valid models.
+                                    GemmaEngine.gpuMarker(this@AiInferenceService).delete()
+                                    currentStatus = EngineStatus(EngineStatus.State.FAILED, message = t2.message ?: "init failed")
+                                    safe { callback.onFailed(t2.message ?: t2.javaClass.simpleName) }
+                                    return@withLock
+                                }
                             }
+                            currentStatus = EngineStatus(EngineStatus.State.FAILED, message = t.message ?: "init failed")
+                            safe { callback.onFailed(t.message ?: t.javaClass.simpleName) }
                         }
-                        currentStatus = EngineStatus(EngineStatus.State.FAILED, message = t.message ?: "init failed")
-                        safe { callback.onFailed(t.message ?: t.javaClass.simpleName) }
                     }
                 }
             }
@@ -211,9 +216,12 @@ class AiInferenceService : Service() {
 
         override fun unloadEngine() {
             scope.launch {
-                engineLock.withLock {
-                    gemma?.close(); gemma = null
-                    currentStatus = EngineStatus(EngineStatus.State.UNLOADED)
+                requestCancelAllGenerations()
+                generationMutex.withLock {
+                    engineLock.withLock {
+                        gemma?.close(); gemma = null
+                        currentStatus = EngineStatus(EngineStatus.State.UNLOADED)
+                    }
                 }
             }
         }
@@ -278,7 +286,15 @@ class AiInferenceService : Service() {
                             if (cancelledGenerations.remove(id)) handle.cancel()
                             // GemmaEngine clears its active conversation before invoking the
                             // terminal callback, so releasing this mutex makes the next turn safe.
-                            terminal.await()
+                            val completed = withTimeoutOrNull(GENERATION_GATE_TIMEOUT_MS) { terminal.await() }
+                            if (completed == null) {
+                                Log.e(TAG, "generation $id missing terminal callback; draining cancel")
+                                generations[id]?.cancel()
+                                val drained = withTimeoutOrNull(GENERATION_CANCEL_DRAIN_MS) { terminal.await() }
+                                if (drained == null) {
+                                    finish { callback.onError(id, "Gemma did not finish in time. Please retry the question.") }
+                                }
+                            }
                         }
                     } catch (t: Throwable) {
                         Log.e(TAG, "ask failed", t)
@@ -401,6 +417,14 @@ class AiInferenceService : Service() {
         generations[generationId]?.cancel()
     }
 
+    private fun requestCancelAllGenerations() {
+        val snapshot = generations.entries.toList()
+        for ((id, handle) in snapshot) {
+            cancelledGenerations.add(id)
+            handle.cancel()
+        }
+    }
+
     private fun startInstall(source: File, targetName: String, sha: String, size: Long, deleteSource: Boolean, callback: IInstallCallback?, downloadId: Long) {
         pendingInstalls.incrementAndGet()
         scope.launch(Dispatchers.IO) {
@@ -507,6 +531,9 @@ class AiInferenceService : Service() {
     companion object {
         private const val TAG = "AiInferenceService"
         const val NOTIFICATION_ID = 1001
+        private const val GENERATION_GATE_TIMEOUT_MS = 180_000L
+        private const val GENERATION_CANCEL_DRAIN_MS =
+            (GemmaEngine.CANCEL_PROCESS_TIMEOUT_SEC + GemmaEngine.CONVERSATION_CLOSE_TIMEOUT_SEC + 7L) * 1_000L
         const val ACTION_INSTALL_MODEL = "com.example.pdfgemmarag.action.INSTALL_MODEL"
         const val ACTION_INSTALL_MODEL_RESULT = "com.example.pdfgemmarag.action.INSTALL_MODEL_RESULT"
         const val ACTION_KEEPALIVE = "com.example.pdfgemmarag.action.KEEPALIVE"

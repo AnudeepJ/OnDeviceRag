@@ -94,7 +94,8 @@ class GemmaEngine(
     /**
      * Starts a streaming turn. Only one generation runs at a time; callers must cancel and await
      * the previous terminal callback before starting another.
-     * The returned handle can cancel; [sink] callbacks arrive on a LiteRT-LM worker thread.
+     * The returned handle can cancel; [sink] callbacks arrive after native cancel/close, which are
+     * time-boxed so a GPU-prefill hang cannot strand the next question.
      */
     fun generate(
         systemInstruction: String,
@@ -137,25 +138,59 @@ class GemmaEngine(
         val idleFuture = AtomicReference<ScheduledFuture<*>?>(null)
         val assembled = StringBuilder()
 
+        fun releaseConversation(cancelProcess: Boolean) {
+            // cancelProcess can hang for the entire GPU prefill. Skip it until a token has
+            // arrived, and time-box it otherwise so closer can still close() and notify the sink.
+            val invokeCancel = cancelProcess && firstTokenSeen.get()
+            if (invokeCancel) {
+                runCatching {
+                    if (!TimedNative.run(CANCEL_PROCESS_TIMEOUT_SEC, "cancelProcess") { conversation.cancelProcess() }) {
+                        Log.w(TAG, "cancelProcess timed out after ${CANCEL_PROCESS_TIMEOUT_SEC}s")
+                    }
+                }.onFailure { Log.w(TAG, "cancelProcess: ${it.message}") }
+            }
+            runCatching {
+                if (!TimedNative.run(CONVERSATION_CLOSE_TIMEOUT_SEC, "conversation-close") { conversation.close() }) {
+                    Log.w(TAG, "conversation close timed out after ${CONVERSATION_CLOSE_TIMEOUT_SEC}s")
+                }
+            }.onFailure { Log.w(TAG, "conversation close: ${it.message}") }
+        }
+
+        fun notifySink(cancelled: Boolean, error: Throwable?) {
+            active.compareAndSet(conversation, null)
+            try {
+                if (error != null) sink.onError(error) else sink.onDone(cancelled)
+            } catch (t: Throwable) {
+                Log.w(TAG, "sink failed", t)
+            }
+        }
+
         fun terminal(cancelled: Boolean, error: Throwable? = null, cancelProcess: Boolean = false) {
             if (!finished.compareAndSet(false, true)) return
             watchdog.shutdownNow()
             idleFuture.getAndSet(null)?.cancel(false)
             try {
                 closer.execute {
-                    if (cancelProcess) runCatching { conversation.cancelProcess() }.onFailure { Log.w(TAG, "cancelProcess: ${it.message}") }
-                    runCatching { conversation.close() }.onFailure { Log.w(TAG, "conversation close: ${it.message}") }
-                    active.compareAndSet(conversation, null)
-                    if (error != null) sink.onError(error) else sink.onDone(cancelled)
+                    try {
+                        releaseConversation(cancelProcess)
+                    } finally {
+                        notifySink(cancelled, error)
+                    }
                 }
             } catch (_: RejectedExecutionException) {
-                // Engine shutdown already owns conversation cleanup; never crash an SDK callback.
-                active.compareAndSet(conversation, null)
+                // Engine shutdown already owns native cleanup. Still release the admission gate.
+                notifySink(cancelled, error)
             }
         }
 
         val generation = Generation(cancelledFlag) {
-            terminal(cancelled = true, cancelProcess = true)
+            if (firstTokenSeen.get()) {
+                terminal(cancelled = true, cancelProcess = true)
+            } else {
+                // Pixel 10 GPU: close()/cancelProcess() during prefill kills :inference.
+                // Keep the cancelled flag so tokens are dropped; tear down after first token.
+                Log.i(TAG, "cancel during prefill; deferring native close until first token")
+            }
         }
 
         watchdog.schedule({
@@ -177,7 +212,12 @@ class GemmaEngine(
             object : MessageCallback {
                 override fun onMessage(message: Message) {
                     val full = message.contents.toString()
-                    if (full.isEmpty() || generation.cancelled || finished.get()) return
+                    if (full.isEmpty() || finished.get()) return
+                    if (generation.cancelled) {
+                        firstTokenSeen.set(true)
+                        terminal(cancelled = true, cancelProcess = true)
+                        return
+                    }
                     val delta = synchronized(assembled) {
                         val soFar = assembled.toString()
                         val piece = when {
@@ -223,16 +263,19 @@ class GemmaEngine(
         return generation
     }
 
-    fun cancelActive() {
-        // Cancellation must go through the generation handle so its terminal callback fires.
-        Log.w(TAG, "cancelActive ignored without a generation handle")
-    }
-
     override fun close() {
         val task = closer.submit {
             active.getAndSet(null)?.let { conv ->
-                runCatching { conv.cancelProcess() }
-                runCatching { conv.close() }
+                runCatching {
+                    if (!TimedNative.run(CANCEL_PROCESS_TIMEOUT_SEC, "cancelProcess") { conv.cancelProcess() }) {
+                        Log.w(TAG, "engine close: cancelProcess timed out after ${CANCEL_PROCESS_TIMEOUT_SEC}s")
+                    }
+                }.onFailure { Log.w(TAG, "engine close cancelProcess: ${it.message}") }
+                runCatching {
+                    if (!TimedNative.run(CONVERSATION_CLOSE_TIMEOUT_SEC, "conversation-close") { conv.close() }) {
+                        Log.w(TAG, "engine close: conversation close timed out after ${CONVERSATION_CLOSE_TIMEOUT_SEC}s")
+                    }
+                }.onFailure { Log.w(TAG, "engine close conversation: ${it.message}") }
             }
             runCatching { if (engine.isInitialized()) engine.close() }
         }
@@ -246,6 +289,8 @@ class GemmaEngine(
         const val DEFAULT_MAX_OUTPUT_TOKENS = 512
         const val FIRST_TOKEN_TIMEOUT_SEC = 45L
         const val STALLED_GENERATION_TIMEOUT_SEC = 30L
+        const val CANCEL_PROCESS_TIMEOUT_SEC = 3L
+        const val CONVERSATION_CLOSE_TIMEOUT_SEC = 10L
         fun gpuMarker(context: Context): File = GpuMarker.file(context)
 
         /** Warm only after a successful initialize, never merely because a partial cache exists. */

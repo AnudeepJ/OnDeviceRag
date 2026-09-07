@@ -165,4 +165,22 @@ class Phase2GenerationDeviceTest {
         assertTrue("immediate re-ask failed: ${next.error}", next.error == null && id2 != id)
         assertTrue("race escaped service gate", next.error?.contains("still finishing", ignoreCase = true) != true)
     }
+
+    @Test
+    fun cancelDuringPrefillThenImmediateReaskDoesNotHang() {
+        val stream = Stream()
+        val id = service!!.ask("", "", "Write a very long story about a dragon, at least 800 words.", emptyList<QaPair>(), stream.callback)
+        // Cancel before the first token when possible — GPU prefill is the hang LiteRT-LM
+        // historically never returned from. A 200 ms wait only lets sendMessageAsync start.
+        Thread.sleep(200)
+        service!!.cancelGeneration(id)
+
+        val next = Stream()
+        val id2 = service!!.ask("", "", "Say OK.", emptyList<QaPair>(), next.callback)
+
+        assertTrue("prefill cancel did not finish", stream.done.await(60, TimeUnit.SECONDS))
+        assertTrue("prefill re-ask hung or failed: ${next.error}", next.done.await(90, TimeUnit.SECONDS))
+        assertTrue("prefill re-ask failed: ${next.error}", next.error == null && id2 != id)
+        assertTrue("race escaped service gate", next.error?.contains("still finishing", ignoreCase = true) != true)
+    }
 }

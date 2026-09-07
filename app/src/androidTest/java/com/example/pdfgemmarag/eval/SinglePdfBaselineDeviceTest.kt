@@ -117,7 +117,7 @@ class SinglePdfBaselineDeviceTest {
         }
         ensureEngine(svc)
         val requestedCase = arguments.getString("caseId")
-        val cases = loadCases().filter { requestedCase == null || it.id == requestedCase }
+        val cases = loadCases(arguments.getString("casesAsset")).filter { requestedCase == null || it.id == requestedCase }
         check(cases.isNotEmpty()) { "Unknown baseline caseId: $requestedCase" }
         val completed = LinkedHashMap<String, Turn>()
         val reportCases = JSONArray()
@@ -335,9 +335,9 @@ class SinglePdfBaselineDeviceTest {
         return reasons
     }
 
-    private fun loadCases(): List<Case> {
+    private fun loadCases(assetName: String? = null): List<Case> {
         val testContext = InstrumentationRegistry.getInstrumentation().context
-        val raw = testContext.assets.open("single_pdf_baseline.json").bufferedReader().use { it.readText() }
+        val raw = testContext.assets.open(assetName?.ifBlank { null } ?: "single_pdf_baseline.json").bufferedReader().use { it.readText() }
         val array = JSONArray(raw)
         return (0 until array.length()).map { index ->
             val item = array.getJSONObject(index)
