@@ -113,7 +113,7 @@ class Phase2GenerationDeviceTest {
     fun plainChatStreamsTokensTaggedWithGenerationId() {
         val stream = Stream()
         val t0 = SystemClock.elapsedRealtime()
-        val id = service!!.ask("", "Reply with exactly the words: hello from the phone", emptyList<QaPair>(), stream.callback)
+        val id = service!!.ask("", "", "Reply with exactly the words: hello from the phone", emptyList<QaPair>(), stream.callback)
         assertTrue("generation did not finish", stream.done.await(600, TimeUnit.SECONDS))
         val text = synchronized(stream.tokens) { stream.tokens.toString() }
         Log.i("PHASE2", "gen $id: ttft=${stream.firstTokenAt - t0}ms total=${SystemClock.elapsedRealtime() - t0}ms stats=${stream.stats}\n$text")
@@ -131,7 +131,7 @@ class Phase2GenerationDeviceTest {
     fun historyIsCarriedIntoTheNextTurn() {
         val stream = Stream()
         val history = listOf(QaPair("My name is Anudeep and my favourite colour is teal.", "Nice to meet you, Anudeep."))
-        service!!.ask("", "What is my favourite colour? Answer with one word.", history, stream.callback)
+        service!!.ask("", "", "What is my favourite colour? Answer with one word.", history, stream.callback)
         assertTrue(stream.done.await(600, TimeUnit.SECONDS))
         val text = synchronized(stream.tokens) { stream.tokens.toString() }
         Log.i("PHASE2", "history turn: $text")
@@ -141,7 +141,7 @@ class Phase2GenerationDeviceTest {
     @Test
     fun cancelThenImmediateReaskWaitsForNativeClose() {
         val stream = Stream()
-        val id = service!!.ask("", "Write a very long story about a dragon, at least 800 words.", emptyList<QaPair>(), stream.callback)
+        val id = service!!.ask("", "", "Write a very long story about a dragon, at least 800 words.", emptyList<QaPair>(), stream.callback)
         // Wait for the first token, then cancel.
         val deadline = SystemClock.elapsedRealtime() + 300_000
         while (stream.firstTokenAt < 0 && SystemClock.elapsedRealtime() < deadline && stream.done.count > 0) Thread.sleep(50)
@@ -152,7 +152,7 @@ class Phase2GenerationDeviceTest {
         // Match the UI race precisely: it unlocks the composer as soon as Stop is tapped, before
         // LiteRT-LM's asynchronous cancelProcess()/close has delivered the first terminal callback.
         val next = Stream()
-        val id2 = service!!.ask("", "Say OK.", emptyList<QaPair>(), next.callback)
+        val id2 = service!!.ask("", "", "Say OK.", emptyList<QaPair>(), next.callback)
 
         assertTrue("onDone/onError not delivered after cancel", stream.done.await(60, TimeUnit.SECONDS))
         Thread.sleep(1500) // stragglers must be suppressed

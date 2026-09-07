@@ -90,8 +90,12 @@ class AppSearchVectorStore private constructor(
         keywordWeight: Double = 0.05,
         sectionId: String? = null,
         specificationNumber: String? = null,
+        /** Trusted published namespace supplied by the UI; permits FACT recovery if the manifest is corrupt. */
+        indexNamespace: String? = null,
     ): List<Citation> {
-        val namespace = activeNamespace(docHash)
+        val namespace = indexNamespace
+            ?.takeIf { it == docHash || it.startsWith("$docHash:") }
+            ?: activeNamespace(docHash)
         val terms = HybridQuery.keywordTerms(queryText)
         val requested = if (sectionId == null && specificationNumber == null) topK else topK * 6
         val requiredPropertyTerm = specificationNumber?.let { "specificationNumber" to it }
@@ -240,7 +244,10 @@ class AppSearchVectorStore private constructor(
                 .addFilterNamespaces(ns).addFilterSchemas(PdfChunkDocument.SCHEMA_TYPE)
                 .setRankingStrategy(SearchSpec.RANKING_STRATEGY_CREATION_TIMESTAMP)
                 .setResultCountPerPage(1)
-                .addProjection(PdfChunkDocument.SCHEMA_TYPE, listOf("docHash", "docName", "script", "pageCount"))
+                .addProjection(
+                    PdfChunkDocument.SCHEMA_TYPE,
+                    listOf("docHash", "docName", "script", "pageCount", "indexVersion"),
+                )
                 .build()
             val results = session.search("", spec)
             try {
@@ -252,6 +259,8 @@ class AppSearchVectorStore private constructor(
                     pageCount = g.getPropertyLong("pageCount").toInt(),
                     chunkCount = countChunks(ns),
                     script = g.getPropertyString("script") ?: "",
+                    indexVersion = active[ns]?.indexVersion ?: g.getPropertyLong("indexVersion").toInt().coerceAtLeast(1),
+                    activeIndexNamespace = ns,
                 )
             } finally { results.close() }
         }

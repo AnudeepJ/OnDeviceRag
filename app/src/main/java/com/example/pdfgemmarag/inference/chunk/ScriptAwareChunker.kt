@@ -21,6 +21,7 @@ data class Chunk(
     val sectionNumber: String = "",
     val sectionTitle: String = "",
     val sectionPath: String = "",
+    val sectionLevel: Int = 0,
     val positionInSection: Int = 0,
     val contentKind: String = if (isTable) "TABLE" else "PARAGRAPH",
     val identifierAtoms: List<String> = emptyList(),
@@ -77,6 +78,7 @@ class ScriptAwareChunker(
                 sectionNumber = section.number,
                 sectionTitle = section.title,
                 sectionPath = section.path,
+                sectionLevel = section.level,
                 positionInSection = position++,
                 contentKind = kind,
                 identifierAtoms = IdentifierAtoms.extract(retrieval),
@@ -302,16 +304,17 @@ class ScriptAwareChunker(
         val number: String,
         val title: String,
         val path: String,
+        val level: Int,
     ) {
         companion object {
-            fun root(docHash: String) = SectionState(stableId("$docHash|root"), "", "", "", "")
+            fun root(docHash: String) = SectionState(stableId("$docHash|root"), "", "", "", "", 0)
 
             fun from(docHash: String, stack: List<Segment.Heading>, ordinal: Int): SectionState {
                 val leaf = stack.last()
                 val specification = stack.asReversed().firstNotNullOfOrNull { it.specificationNumber } ?: ""
                 val path = stack.joinToString(" > ") { it.text }
                 val key = "$docHash|$specification|${leaf.number.orEmpty()}|${leaf.title}|$ordinal"
-                return SectionState(stableId(key), specification, leaf.number.orEmpty(), leaf.title, path)
+                return SectionState(stableId(key), specification, leaf.number.orEmpty(), leaf.title, path, leaf.level)
             }
 
             private fun stableId(value: String): String = MessageDigest.getInstance("SHA-256")

@@ -22,7 +22,7 @@ interface IAiInferenceService {
 
     // ---- Generation ----
     /** Starts a RAG turn; returns the generationId echoed in every callback. */
-    long ask(String docHash, String question, in List<QaPair> history, IStreamCallback callback);
+    long ask(String docHash, String activeIndexNamespace, String question, in List<QaPair> history, IStreamCallback callback);
     void cancelGeneration(long generationId);
 
     // ---- Ingestion ----

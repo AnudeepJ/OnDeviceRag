@@ -43,6 +43,14 @@ class QueryPlannerTest {
     }
 
     @Test
+    fun `document summary is classified as structural overview`() {
+        val plan = QueryPlanner().plan("Summarize this document", manifest)
+
+        assertEquals(QuestionIntent.DOCUMENT_OVERVIEW, plan.intent)
+        assertNull(plan.resolvedSectionId)
+    }
+
+    @Test
     fun `generic fact does not pretend a section was resolved`() {
         val plan = QueryPlanner().plan("What is the required curing temperature?", manifest)
         assertEquals(QuestionIntent.FACT, plan.intent)

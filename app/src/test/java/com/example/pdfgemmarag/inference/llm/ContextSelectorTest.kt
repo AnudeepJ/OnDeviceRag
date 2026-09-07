@@ -76,6 +76,24 @@ class ContextSelectorTest {
         assertEquals("target", ordered.last().chunkId)
     }
 
+    @Test
+    fun `document overview preserves structural breadth instead of fact ranking`() {
+        val candidates = (1..6).map { index ->
+            citation("topic-$index", index, "Top-level topic $index and its principal scope")
+                .copy(contentKind = if (index % 2 == 1) "HEADING" else "PARAGRAPH", sectionId = "s$index")
+        }
+
+        val selected = ContextSelector(overviewBudget = 2_200).select(
+            "Summarize this document",
+            candidates,
+            QuestionIntent.DOCUMENT_OVERVIEW,
+        )
+
+        assertEquals(candidates.map { it.chunkId }, selected.excerpts.map { it.chunkId })
+        assertTrue(selected.prompt.contains("document overview"))
+        assertTrue(selected.prompt.contains("key points, not a complete summary"))
+    }
+
     private fun citation(id: String, page: Int, text: String) = Citation(
         id, "doc", page, page, 1.0, text,
         indexNamespace = "doc:v21:x", sectionId = "s1", sectionPath = "Section A",

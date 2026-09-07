@@ -170,8 +170,40 @@ class Spike3AppSearchHybridTest {
 
             val listed = store.listDocuments().single { it.displayName == "spike" && it.docHash == canonicalHash }
             assertEquals(canonicalHash, listed.docHash)
+            assertEquals(stagedNamespace, listed.activeIndexNamespace)
+            assertEquals(DocumentStructureManifest.INDEX_VERSION, listed.indexVersion)
         } finally {
             store.removeDocument(canonicalHash)
+        }
+    }
+
+    @Test
+    fun explicitNamespaceAllowsFactSearchWhenManifestIsCorrupt(): Unit = runBlocking {
+        val ctx = InstrumentationRegistry.getInstrumentation().targetContext
+        val canonicalHash = "$nsA-fallback"
+        val stagedNamespace = "$canonicalHash:v21:published"
+        val source = doc(stagedNamespace, 0, "fallback fact value alpha", vec(37)).apply {
+            docHash = canonicalHash
+        }
+        val manifestFile = java.io.File(ctx.filesDir, "rag_manifests/$canonicalHash.json")
+        try {
+            store.putChunk(source)
+            manifestFile.parentFile?.mkdirs()
+            manifestFile.writeText("not valid json")
+
+            val hits = store.search(
+                canonicalHash,
+                "fallback fact alpha",
+                vec(37),
+                topK = 3,
+                similarityFloor = 0.0,
+                indexNamespace = stagedNamespace,
+            )
+
+            assertEquals(listOf(source.id), hits.map { it.chunkId })
+        } finally {
+            manifestFile.delete()
+            store.removeNamespace(stagedNamespace)
         }
     }
 

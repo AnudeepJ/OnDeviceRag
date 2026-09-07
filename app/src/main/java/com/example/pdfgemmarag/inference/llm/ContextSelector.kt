@@ -7,6 +7,7 @@ import com.example.pdfgemmarag.inference.chat.QuestionIntent
 class ContextSelector(
     private val factBudget: Int = 1600,
     private val summaryBudget: Int = 900,
+    private val overviewBudget: Int = 2200,
     private val maxFactPrimary: Int = 4,
     private val maxFactExcerpts: Int = 8,
     private val relativeScoreFloor: Double = 0.60,
@@ -15,7 +16,12 @@ class ContextSelector(
 
     fun select(question: String, candidates: List<Citation>, intent: QuestionIntent): Selection {
         val summary = intent == QuestionIntent.SECTION_SUMMARY
-        val budget = if (summary) summaryBudget else factBudget
+        val overview = intent == QuestionIntent.DOCUMENT_OVERVIEW
+        val budget = when {
+            summary -> summaryBudget
+            overview -> overviewBudget
+            else -> factBudget
+        }
         val allUnique = candidates.distinctBy { it.indexNamespace to it.chunkId }
         // A resolved heading is useful to choose the section, but it is not evidence for the
         // section's requirements. Excluding it also prevents small models from treating identifiers
@@ -26,10 +32,10 @@ class ContextSelector(
         var used = 0
         val best = ordered.firstOrNull()?.score ?: 0.0
         for (candidate in ordered) {
-            if (!summary && chosen.size >= maxFactExcerpts) break
+            if (!summary && !overview && chosen.size >= maxFactExcerpts) break
             val structural = isStructuralContext(candidate, unique)
-            if (!summary && chosen.size >= maxFactPrimary && !structural) continue
-            if (!summary && chosen.isNotEmpty() && !structural && best > 0 && candidate.score < best * relativeScoreFloor) continue
+            if (!summary && !overview && chosen.size >= maxFactPrimary && !structural) continue
+            if (!summary && !overview && chosen.isNotEmpty() && !structural && best > 0 && candidate.score < best * relativeScoreFloor) continue
             val cost = ContextAssembler.estimateTokens(candidate.text) + 24
             if (used + cost > budget) continue
             chosen += candidate
@@ -41,13 +47,13 @@ class ContextSelector(
             // The question follows the excerpts, so keep the highest-information evidence at the
             // tail where the compact on-device model is most likely to retain exact values.
             chosen.take(1) + chosen.drop(1).sortedBy(::summaryPriority)
-        } else factPresentationOrder(question, chosen)
+        } else if (overview) chosen else factPresentationOrder(question, chosen)
         val excerpts = presented.mapIndexed { index, citation -> citation.copy(excerptId = "E${index + 1}") }
         val rendered = exactBoundaryDedupe(excerpts)
         val prompt = buildString {
             append("Answer using only the excerpts below. Cite every factual paragraph with its excerpt id, for example [E1]. ")
             append("Never create an excerpt id. If the excerpts do not contain the answer, say that the document does not cover it. ")
-            if (summary && used < unique.sumOf { ContextAssembler.estimateTokens(it.text) + 24 }) {
+            if ((summary || overview) && used < unique.sumOf { ContextAssembler.estimateTokens(it.text) + 24 }) {
                 append("The context is a coverage selection; describe the result as key points rather than a complete summary. ")
             }
             if (summary) {
@@ -58,6 +64,9 @@ class ContextSelector(
                 append("Omit introductory purpose or objective statements when actionable requirements exist. If the source names who prepares, tests, or approves the work, give that responsibility its own bullet. ")
                 append("Put distinct numeric limits and criteria compactly in the first bullet, then give descriptive requirements. ")
                 append("Prefer ratios, percentage ranges, and table limits over formula or standards references when space is limited. ")
+            } else if (overview) {
+                append("For the document overview, add at most 3 compact bullets and 75 words describing key scope or requirement categories across the supplied outline sample. ")
+                append("Describe it as key points, not a complete summary. Prefer scope and major requirement categories over isolated details. ")
             } else {
                 append("Answer directly in at most 3 short sentences or bullets and 55 words. Do not restate the question. ")
                 append("Keep table row labels with their values. If similar rows have different scopes or structure types, name each scope and do not merge their values. ")
@@ -66,7 +75,7 @@ class ContextSelector(
             excerpts.forEachIndexed { index, citation ->
                 append('[').append(citation.excerptId).append("]\n")
                 if (citation.specificationNumber.isNotBlank()) append("Specification: ").append(citation.specificationNumber).append('\n')
-                if (!summary && citation.sectionPath.isNotBlank()) append("Section: ").append(citation.sectionPath).append('\n')
+                if ((!summary || overview) && citation.sectionPath.isNotBlank()) append("Section: ").append(citation.sectionPath).append('\n')
                 append("Page: ").append(citation.pageNumber).append('\n')
                 append("Content: ").append(rendered[index]).append("\n\n")
             }

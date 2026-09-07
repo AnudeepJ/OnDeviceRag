@@ -2,10 +2,78 @@ package com.example.pdfgemmarag.inference.chat
 
 import com.example.pdfgemmarag.core.model.Citation
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AnswerQuestionUseCaseRankingTest {
+    @Test
+    fun `corrupt manifest fallback is restricted to facts with a matching trusted namespace`() {
+        assertTrue(
+            AnswerQuestionUseCase.canFallbackWithoutManifest(
+                QuestionIntent.FACT, "doc", "doc:v21:published",
+            ),
+        )
+        assertFalse(
+            AnswerQuestionUseCase.canFallbackWithoutManifest(
+                QuestionIntent.SECTION_SUMMARY, "doc", "doc:v21:published",
+            ),
+        )
+        assertFalse(
+            AnswerQuestionUseCase.canFallbackWithoutManifest(
+                QuestionIntent.FACT, "doc", "another:v21:published",
+            ),
+        )
+    }
+
+    @Test
+    fun `overview samples top-level sections across the document`() {
+        val sections = (1..20).map { index ->
+            com.example.pdfgemmarag.inference.store.SectionRecord(
+                sectionId = "s$index",
+                specificationNumber = index.toString().padStart(5, '0'),
+                sectionNumber = "",
+                title = "Topic $index",
+                path = "Topic $index",
+                startPage = index,
+                endPage = index,
+                orderedChunkIds = listOf("c$index-a", "c$index-b", "c$index-c"),
+                tokenCount = 100,
+                level = 1,
+            )
+        }
+        val manifest = com.example.pdfgemmarag.inference.store.DocumentStructureManifest(
+            "doc", "doc:v21:test", 21, "sig", sections,
+        )
+
+        val ids = AnswerQuestionUseCase.overviewChunkIds(manifest, maxSections = 5, chunksPerSection = 2)
+
+        assertEquals(10, ids.size)
+        assertTrue(ids.take(5).all { it.endsWith("-a") })
+        assertTrue(ids.drop(5).all { it.endsWith("-b") })
+        assertEquals("c1-a", ids.first())
+        assertEquals("c20-b", ids.last())
+    }
+
+    @Test
+    fun `overview lead exposes distinct cited document roots immediately`() {
+        val roots = listOf(
+            citation(1, "CAST-IN-PLACE CONCRETE").copy(
+                specificationNumber = "03300", sectionId = "s1", sectionTitle = "CAST-IN-PLACE CONCRETE",
+                contentKind = "HEADING", pageNumber = 13,
+            ),
+            citation(2, "STRUCTURAL CONCRETE").copy(
+                specificationNumber = "03310", sectionId = "s2", sectionTitle = "STRUCTURAL CONCRETE",
+                contentKind = "HEADING", pageNumber = 51,
+            ),
+        )
+
+        val lead = AnswerQuestionUseCase.buildOverviewLead(roots)
+
+        assertTrue(lead.text.contains("Specification 03300"))
+        assertTrue(lead.text.contains("[Page 13]"))
+        assertEquals(listOf("s1", "s2"), lead.citations.map { it.sectionId })
+    }
     @Test
     fun `manifest scoped fallback ranks the requested facts first`() {
         val unrelated = citation(1, "Admixtures shall comply with the referenced standard")

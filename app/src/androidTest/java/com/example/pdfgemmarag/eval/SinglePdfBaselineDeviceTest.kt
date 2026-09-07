@@ -26,6 +26,7 @@ import kotlinx.coroutines.runBlocking
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -63,6 +64,7 @@ class SinglePdfBaselineDeviceTest {
         val totalMs: Long,
         val tokensPerSecond: Double,
         val backend: String,
+        val retrievedChunks: Int,
         val contextTokens: Int,
         val groundingFailure: Boolean,
         val sourceSectionId: String,
@@ -124,7 +126,7 @@ class SinglePdfBaselineDeviceTest {
             val prior = case.historyFrom?.let(completed::get)
             val history = if (prior == null) emptyList()
             else listOf(QaPair(prior.case.question, prior.answer, prior.sourceSectionId))
-            val turn = ask(svc, doc.docHash, case, history)
+            val turn = ask(svc, doc.docHash, doc.activeIndexNamespace, case, history)
             completed[case.id] = turn
             reportCases.put(turn.toJson())
             Log.i(TAG, "${case.id}: retrieval=${turn.retrievalPassed} answer=${turn.answerPassed} pages=${turn.pages} backend=${turn.backend} " +
@@ -148,6 +150,63 @@ class SinglePdfBaselineDeviceTest {
         output.writeText(report.toString(2))
         Log.i(TAG, "BASELINE retrieval=$retrievalPassed/${completed.size} answer=$answerPassed/${completed.size}; report=${output.absolutePath}")
         assertTrue("baseline did not execute any cases", completed.isNotEmpty())
+    }
+
+    @Test
+    fun documentOverviewUsesBroadStructuralContext() {
+        val svc = requireNotNull(service)
+        val doc = runBlocking { svc.listDocumentsAsync() }.firstOrNull { it.pageCount >= 70 }
+            ?: error("The test PDF is not indexed on this device")
+        ensureEngine(svc)
+        val overview = Case(
+            id = "document-overview",
+            intent = "DOCUMENT_OVERVIEW",
+            question = "Summarize this document",
+            expectedPages = emptySet(),
+            requireAllPages = false,
+            requiredPhrases = emptyList(),
+            forbiddenPhrases = emptyList(),
+            forbiddenPages = emptySet(),
+            expectedRefusal = false,
+            expectedClarification = false,
+            historyFrom = null,
+        )
+
+        val turn = ask(svc, doc.docHash, doc.activeIndexNamespace, overview, emptyList())
+
+        assertTrue("overview failed: ${turn.error}", turn.error == null && turn.answer.isNotBlank())
+        assertTrue("overview used only ${turn.retrievedChunks} chunks", turn.retrievedChunks >= 4)
+        assertTrue("document overview must not establish one follow-up section", turn.sourceSectionId.isBlank())
+    }
+
+    @Test
+    fun resolvedSectionMetadataSurvivesMultiCitationAnswerForFollowUp() {
+        val svc = requireNotNull(service)
+        val doc = runBlocking { svc.listDocumentsAsync() }.firstOrNull { it.pageCount >= 70 }
+            ?: error("The test PDF is not indexed on this device")
+        ensureEngine(svc)
+        val summary = Case(
+            "metadata-summary", "SECTION_SUMMARY",
+            "Summarize section 2.05 concrete mix in specification 03300",
+            setOf(17), false, emptyList(), emptyList(), emptySet(), false, false, null,
+        )
+        val first = ask(svc, doc.docHash, doc.activeIndexNamespace, summary, emptyList())
+        assertTrue("planner did not publish a resolved source section", first.sourceSectionId.isNotBlank())
+
+        val followUp = Case(
+            "metadata-follow-up", "FOLLOW_UP", "What about its slump requirements?",
+            setOf(17), false, emptyList(), emptyList(), emptySet(), false, false, null,
+        )
+        val second = ask(
+            svc,
+            doc.docHash,
+            doc.activeIndexNamespace,
+            followUp,
+            listOf(QaPair(summary.question, first.answer, first.sourceSectionId)),
+        )
+
+        assertTrue("follow-up escaped the resolved section: pages=${second.pages}", 17 in second.pages)
+        assertEquals(first.sourceSectionId, second.sourceSectionId)
     }
 
     private fun ensureEngine(svc: IAiInferenceService) {
@@ -174,7 +233,13 @@ class SinglePdfBaselineDeviceTest {
         check(failure == null) { "engine load failed: $failure" }
     }
 
-    private fun ask(svc: IAiInferenceService, docHash: String, case: Case, history: List<QaPair>): Turn {
+    private fun ask(
+        svc: IAiInferenceService,
+        docHash: String,
+        activeIndexNamespace: String,
+        case: Case,
+        history: List<QaPair>,
+    ): Turn {
         val done = CountDownLatch(1)
         val answer = StringBuilder()
         val citations = ArrayList<Citation>()
@@ -183,7 +248,7 @@ class SinglePdfBaselineDeviceTest {
         val started = SystemClock.elapsedRealtime()
         var visibleFirstToken = -1L
         var generationId = -1L
-        generationId = svc.ask(docHash, case.question, history, object : IStreamCallback.Stub() {
+        generationId = svc.ask(docHash, activeIndexNamespace, case.question, history, object : IStreamCallback.Stub() {
             override fun onRetrieved(id: Long, value: List<Citation>) {
                 if (id == generationId || generationId < 0) synchronized(citations) { citations += value }
             }
@@ -233,9 +298,10 @@ class SinglePdfBaselineDeviceTest {
             totalMs = stats?.totalMs ?: elapsed,
             tokensPerSecond = stats?.approxTokensPerSecond ?: 0.0,
             backend = stats?.backend ?: "unknown",
+            retrievedChunks = stats?.retrievedChunks ?: 0,
             contextTokens = stats?.contextTokensApprox ?: 0,
             groundingFailure = stats?.groundingFailure ?: false,
-            sourceSectionId = synchronized(citations) { citations.firstOrNull { it.sectionId.isNotBlank() }?.sectionId.orEmpty() },
+            sourceSectionId = stats?.sourceSectionId.orEmpty(),
             retrievalPassed = retrievalReasons.isEmpty(),
             answerPassed = answerReasons.isEmpty(),
             retrievalReasons = retrievalReasons,
@@ -305,6 +371,7 @@ class SinglePdfBaselineDeviceTest {
         .put("totalMs", totalMs)
         .put("tokensPerSecond", tokensPerSecond)
         .put("backend", backend)
+        .put("retrievedChunks", retrievedChunks)
         .put("contextTokens", contextTokens)
         .put("groundingFailure", groundingFailure)
         .put("sourceSectionId", sourceSectionId)

@@ -13,10 +13,11 @@ import com.example.pdfgemmarag.inference.store.AppSearchVectorStore
 import com.example.pdfgemmarag.inference.store.DocumentStructureManifest
 import com.example.pdfgemmarag.inference.store.ManifestIntegrityError
 import com.example.pdfgemmarag.inference.store.HybridQuery
+import com.example.pdfgemmarag.inference.store.SectionRecord
 
 /** Retrieve -> assemble -> generate for one question against one document. */
 class AnswerQuestionUseCase(
-    private val embedder: EmbeddingGemmaEmbedder,
+    private val requireEmbedder: suspend () -> EmbeddingGemmaEmbedder,
     private val store: AppSearchVectorStore,
     private val engine: GemmaEngine,
     private val selector: ContextSelector = ContextSelector(),
@@ -34,7 +35,14 @@ class AnswerQuestionUseCase(
     }
 
     /** Runs retrieval synchronously and starts generation; returns the handle used for cancellation. */
-    suspend fun start(generationId: Long, docHash: String, question: String, history: List<QaPair>, listener: Listener): GemmaEngine.Generation? {
+    suspend fun start(
+        generationId: Long,
+        docHash: String,
+        activeIndexNamespace: String,
+        question: String,
+        history: List<QaPair>,
+        listener: Listener,
+    ): GemmaEngine.Generation? {
         val t0 = SystemClock.elapsedRealtime()
         val retrievalQuestion = rewriteForRetrieval(question, history)
         val manifestResult = runCatching { store.loadManifest(docHash) }
@@ -47,13 +55,14 @@ class AnswerQuestionUseCase(
         val inherited = history.lastOrNull()?.sourceSectionId?.ifBlank { null }
         var plan = planner.plan(question, manifest, inherited)
         var queryVec: FloatArray? = null
+        var manifestFallback = false
 
         if (manifestResult.exceptionOrNull() is ManifestIntegrityError) {
-            return deterministic(
-                generationId, t0,
-                REPAIR_MESSAGE,
-                listener,
-            )
+            if (!canFallbackWithoutManifest(plan.intent, docHash, activeIndexNamespace)) {
+                return deterministic(generationId, t0, REPAIR_MESSAGE, listener)
+            }
+            manifestFallback = true
+            Log.w(TAG, "manifest corrupt; using trusted namespace for unscoped FACT retrieval")
         }
         if (plan.intent == QuestionIntent.AMBIGUOUS_SECTION) {
             return deterministic(
@@ -62,7 +71,7 @@ class AnswerQuestionUseCase(
             )
         }
         if (plan.intent == QuestionIntent.SECTION_SUMMARY && plan.resolvedSectionId == null && manifest != null) {
-            queryVec = embedder.embedQuery(retrievalQuestion)
+            queryVec = requireEmbedder().embedQuery(retrievalQuestion)
             plan = planner.plan(question, manifest, inherited, queryVec)
             if (plan.intent == QuestionIntent.AMBIGUOUS_SECTION) {
                 return deterministic(
@@ -73,6 +82,16 @@ class AnswerQuestionUseCase(
         }
 
         val ranked = when {
+            plan.intent == QuestionIntent.DOCUMENT_OVERVIEW && manifest != null -> {
+                val ids = overviewChunkIds(manifest)
+                if (ids.isEmpty()) return deterministic(generationId, t0, REPAIR_MESSAGE, listener)
+                try {
+                    store.getChunks(manifest, ids)
+                } catch (t: ManifestIntegrityError) {
+                    Log.e(TAG, "document overview fetch failed", t)
+                    return deterministic(generationId, t0, REPAIR_MESSAGE, listener)
+                }
+            }
             plan.intent == QuestionIntent.SECTION_SUMMARY && plan.resolvedSectionId != null && manifest != null -> {
                 val section = manifest.sections.firstOrNull { it.sectionId == plan.resolvedSectionId }
                     ?: return deterministic(generationId, t0, REPAIR_MESSAGE, listener)
@@ -84,13 +103,14 @@ class AnswerQuestionUseCase(
                 }
             }
             else -> {
-                val vector = queryVec ?: embedder.embedQuery(retrievalQuestion)
+                val vector = queryVec ?: requireEmbedder().embedQuery(retrievalQuestion)
                 val terms = HybridQuery.keywordTerms(retrievalQuestion)
                 Log.i(TAG, "ask hash=${docHash.take(12)} q='${question.take(120)}' terms=$terms dim=${vector.size}")
                 var primary = store.search(
                     docHash, retrievalQuestion, vector, topK, similarityFloor, keywordWeight,
                     sectionId = plan.resolvedSectionId,
                     specificationNumber = plan.explicitSpecificationNumber,
+                    indexNamespace = manifest?.indexNamespace ?: activeIndexNamespace.takeIf { manifestFallback },
                 )
                 if (primary.isEmpty() && plan.inheritedSectionId != null &&
                     plan.resolvedSectionId == plan.inheritedSectionId
@@ -98,6 +118,7 @@ class AnswerQuestionUseCase(
                     Log.i(TAG, "inherited section produced no hits; retrying standard unscoped search")
                     primary = store.search(
                         docHash, retrievalQuestion, vector, topK, similarityFloor, keywordWeight,
+                        indexNamespace = manifest?.indexNamespace ?: activeIndexNamespace.takeIf { manifestFallback },
                     )
                 }
                 if (primary.isEmpty() && plan.explicitSpecificationNumber != null && manifest != null) {
@@ -121,15 +142,24 @@ class AnswerQuestionUseCase(
         if (plan.intent == QuestionIntent.FACT) {
             val enumerated = buildEnumeratedValueAnswer(question, ranked)
             if (enumerated.text.isNotEmpty()) {
-                return deterministic(generationId, t0, enumerated.text, listener, enumerated.citations)
+                return deterministic(
+                    generationId, t0, enumerated.text, listener, enumerated.citations,
+                    plan.resolvedSectionId.orEmpty(), manifestFallback,
+                )
             }
             val pointer = buildSectionPointerAnswer(question, ranked)
             if (pointer.text.isNotEmpty()) {
-                return deterministic(generationId, t0, pointer.text, listener, pointer.citations)
+                return deterministic(
+                    generationId, t0, pointer.text, listener, pointer.citations,
+                    plan.resolvedSectionId.orEmpty(), manifestFallback,
+                )
             }
             val exactTableRow = buildTableLead(question, ranked)
             if (exactTableRow.decisive) {
-                return deterministic(generationId, t0, exactTableRow.text, listener, exactTableRow.citations)
+                return deterministic(
+                    generationId, t0, exactTableRow.text, listener, exactTableRow.citations,
+                    plan.resolvedSectionId.orEmpty(), manifestFallback,
+                )
             }
         }
         val selected = selector.select(question, ranked, plan.intent)
@@ -143,7 +173,12 @@ class AnswerQuestionUseCase(
             val msg = "The document does not appear to contain information about that."
             listener.onToken(msg)
             listener.onDone(
-                GenerationStats(generationId, 0, SystemClock.elapsedRealtime() - t0, msg.length, 0.0, 0, 0, engine.backendName, false),
+                GenerationStats(
+                    generationId, 0, SystemClock.elapsedRealtime() - t0, msg.length, 0.0,
+                    0, 0, engine.backendName, false,
+                    sourceSectionId = plan.resolvedSectionId.orEmpty(),
+                    manifestFallback = manifestFallback,
+                ),
             )
             return null
         }
@@ -154,15 +189,18 @@ class AnswerQuestionUseCase(
         val evidenceLead = when (plan.intent) {
             QuestionIntent.FACT -> buildTableLead(question, ranked)
             QuestionIntent.SECTION_SUMMARY -> buildEnumeratedSummaryLead(ranked)
-            else -> SummaryLead.EMPTY
+            QuestionIntent.DOCUMENT_OVERVIEW -> buildOverviewLead(ranked)
+            QuestionIntent.AMBIGUOUS_SECTION -> SummaryLead.EMPTY
         }
         if (evidenceLead.decisive) {
-            return deterministic(generationId, t0, evidenceLead.text, listener, evidenceLead.citations)
+            return deterministic(
+                generationId, t0, evidenceLead.text, listener, evidenceLead.citations,
+                plan.resolvedSectionId.orEmpty(), manifestFallback,
+            )
         }
         if (evidenceLead.text.isNotEmpty()) {
             firstVisibleToken = SystemClock.elapsedRealtime()
             chars += evidenceLead.text.length + 2
-            listener.onRetrieved(evidenceLead.citations.map { it.copy(text = "") })
             listener.onToken(evidenceLead.text + "\n\n")
         }
         val validatedPointers = buildList {
@@ -183,7 +221,11 @@ class AnswerQuestionUseCase(
             // A 75-word summary can exceed 160 model tokens once citations and Markdown are
             // included. Keep enough headroom to finish the last sentence instead of displaying a
             // syntactically valid but visibly truncated answer.
-            maxOutputTokens = if (plan.intent == QuestionIntent.SECTION_SUMMARY) 256 else 112,
+            maxOutputTokens = when (plan.intent) {
+                QuestionIntent.SECTION_SUMMARY -> 256
+                QuestionIntent.DOCUMENT_OVERVIEW -> 128
+                else -> 112
+            },
             sink = object : GemmaEngine.TokenSink {
                 override fun onToken(text: String) {
                     if (firstToken < 0) firstToken = SystemClock.elapsedRealtime()
@@ -224,6 +266,8 @@ class AnswerQuestionUseCase(
                             cancelled = cancelled,
                             visibleTimeToFirstTokenMs = if (firstVisibleToken > 0) firstVisibleToken - t0 else -1,
                             groundingFailure = filter.hadGroundingFailure,
+                            sourceSectionId = plan.resolvedSectionId.orEmpty(),
+                            manifestFallback = manifestFallback,
                         ),
                     )
                 }
@@ -246,12 +290,91 @@ class AnswerQuestionUseCase(
         private const val REPAIR_MESSAGE =
             "The document index needs repair before I can safely answer. Please re-index the document."
         private const val MAX_STRUCTURAL_NEIGHBOR_DISTANCE = 3
+
+        internal fun canFallbackWithoutManifest(
+            intent: QuestionIntent,
+            docHash: String,
+            activeIndexNamespace: String,
+        ): Boolean = intent == QuestionIntent.FACT && activeIndexNamespace.isNotBlank() &&
+            (activeIndexNamespace == docHash || activeIndexNamespace.startsWith("$docHash:"))
+
+        /** Selects a small, document-wide structural sample without vector search. */
+        internal fun overviewChunkIds(
+            manifest: DocumentStructureManifest,
+            maxSections: Int = 8,
+            chunksPerSection: Int = 4,
+        ): List<String> {
+            val sections = manifest.sections.filter { it.orderedChunkIds.isNotEmpty() && it.title.isNotBlank() }
+            if (sections.isEmpty()) return emptyList()
+            val specificationGroups = sections
+                .filter { it.specificationNumber.isNotBlank() }
+                .groupBy { it.specificationNumber }
+                .values
+                .sortedBy { group -> group.minOf { it.startPage } }
+            if (specificationGroups.size >= 2) {
+                val perSpecification = evenlySpaced(specificationGroups, maxSections)
+                    .map { group ->
+                        group.sortedWith(compareBy<SectionRecord> { it.level }.thenBy { it.startPage })
+                            .flatMap { it.orderedChunkIds }
+                            .distinct()
+                            .take(chunksPerSection)
+                    }
+                // Round-robin keeps every specification represented if the context budget fills
+                // before all secondary excerpts fit.
+                return (0 until chunksPerSection)
+                    .flatMap { offset -> perSpecification.mapNotNull { it.getOrNull(offset) } }
+                    .distinct()
+            }
+            val positiveLevels = sections.map { it.level }.filter { it > 0 }
+            val topLevel = positiveLevels.minOrNull()
+            var representatives = if (topLevel == null) sections else sections.filter { it.level == topLevel }
+            // A document with one root heading still needs breadth: include its immediate children.
+            if (representatives.size < 3 && topLevel != null) {
+                val childLevel = sections.map { it.level }.filter { it > topLevel }.minOrNull()
+                if (childLevel != null) representatives = (representatives + sections.filter { it.level == childLevel }).distinct()
+            }
+            val sampled = evenlySpaced(representatives, maxSections)
+            return sampled.flatMap { it.orderedChunkIds.take(chunksPerSection) }.distinct()
+        }
+
+        private fun <T> evenlySpaced(values: List<T>, limit: Int): List<T> {
+            if (values.size <= limit || limit <= 0) return values.take(limit.coerceAtLeast(0))
+            if (limit == 1) return listOf(values.first())
+            return (0 until limit).map { slot ->
+                values[(slot * (values.lastIndex).toDouble() / (limit - 1)).toInt()]
+            }.distinct()
+        }
+
         internal data class SummaryLead(
             val text: String,
             val citations: List<Citation>,
             val decisive: Boolean = false,
         ) {
             companion object { val EMPTY = SummaryLead("", emptyList()) }
+        }
+
+        /** Immediately visible, source-derived outline while the compact model adds key details. */
+        internal fun buildOverviewLead(candidates: List<Citation>): SummaryLead {
+            val roots = candidates
+                .filter { it.contentKind == "HEADING" }
+                .distinctBy { it.specificationNumber.ifBlank { it.sectionId } }
+                .take(8)
+            if (roots.isEmpty()) return SummaryLead.EMPTY
+            val text = buildString {
+                append("Document scope:\n")
+                roots.forEach { citation ->
+                    val identity = citation.specificationNumber
+                        .takeIf(String::isNotBlank)
+                        ?.let { "Specification $it — " }
+                        .orEmpty()
+                    val title = citation.sectionTitle.ifBlank {
+                        citation.text.lineSequence().firstOrNull().orEmpty().trim()
+                    }
+                    append("- ").append(identity).append(title.ifBlank { "Untitled section" })
+                        .append(" [Page ").append(citation.pageNumber).append("]\n")
+                }
+            }.trimEnd()
+            return SummaryLead(text, roots)
         }
 
         /** Exact table rows plus their structural neighbours, ranked by query words and numbers. */
@@ -567,13 +690,18 @@ class AnswerQuestionUseCase(
         text: String,
         listener: Listener,
         citations: List<Citation> = emptyList(),
+        sourceSectionId: String = "",
+        manifestFallback: Boolean = false,
     ): GemmaEngine.Generation? {
-        listener.onRetrieved(citations.map { it.copy(text = "") })
         listener.onToken(text)
+        // Publish only evidence used by the completed deterministic answer.
+        listener.onRetrieved(citations.map { it.copy(text = "") })
         listener.onDone(
             GenerationStats(
                 generationId, 0, SystemClock.elapsedRealtime() - started, text.length, 0.0,
                 0, 0, engine.backendName, false,
+                sourceSectionId = sourceSectionId,
+                manifestFallback = manifestFallback,
             ),
         )
         return null

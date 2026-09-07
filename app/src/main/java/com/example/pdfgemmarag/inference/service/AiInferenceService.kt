@@ -222,7 +222,13 @@ class AiInferenceService : Service() {
             embedderLoaded = embedder != null, thermalStatus = thermal.status.value,
         )
 
-        override fun ask(docHash: String, question: String, history: List<QaPair>, callback: IStreamCallback): Long {
+        override fun ask(
+            docHash: String,
+            activeIndexNamespace: String,
+            question: String,
+            history: List<QaPair>,
+            callback: IStreamCallback,
+        ): Long {
             val id = generationIds.incrementAndGet()
             scope.launch {
                 generationMutex.withLock {
@@ -263,7 +269,9 @@ class AiInferenceService : Service() {
                         val handle = if (docHash == PlainChatUseCase.PLAIN_CHAT_DOC_HASH) {
                             PlainChatUseCase(e).start(id, question, history, listener)
                         } else {
-                            AnswerQuestionUseCase(requireEmbedder(), requireStore(), e).start(id, docHash, question, history, listener)
+                            AnswerQuestionUseCase({ requireEmbedder() }, requireStore(), e).start(
+                                id, docHash, activeIndexNamespace, question, history, listener,
+                            )
                         }
                         if (handle != null && !terminal.isCompleted) {
                             generations[id] = handle

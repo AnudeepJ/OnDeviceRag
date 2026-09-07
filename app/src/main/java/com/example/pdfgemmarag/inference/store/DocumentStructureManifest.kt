@@ -19,6 +19,7 @@ data class SectionRecord(
     val orderedChunkIds: List<String>,
     val tokenCount: Int,
     val centroid: FloatArray? = null,
+    val level: Int = 0,
 )
 
 data class DocumentStructureManifest(
@@ -64,6 +65,7 @@ data class DocumentStructureManifest(
                     orderedChunkIds = group.sortedBy { it.chunkIndex }.map { chunkId(it.chunkIndex) },
                     tokenCount = group.sumOf { tokenCount(it.retrievalText) },
                     centroid = centroids[first.sectionId],
+                    level = first.sectionLevel,
                 )
             }.sortedWith(compareBy<SectionRecord> { it.startPage }.thenBy { it.orderedChunkIds.firstOrNull() })
             return DocumentStructureManifest(documentHash, namespace, INDEX_VERSION, signature, sections).also { it.validate() }
@@ -145,6 +147,7 @@ class DocumentStructureManifestStore(context: Context) {
                     put("endPage", section.endPage)
                     put("orderedChunkIds", JSONArray(section.orderedChunkIds))
                     put("tokenCount", section.tokenCount)
+                    put("level", section.level)
                     section.centroid?.let { values -> put("centroid", JSONArray(values.toList())) }
                 })
             }
@@ -168,6 +171,8 @@ class DocumentStructureManifestStore(context: Context) {
                 orderedChunkIds = (0 until ids.length()).map { ids.getString(it) },
                 tokenCount = section.optInt("tokenCount"),
                 centroid = centroidJson?.let { a -> FloatArray(a.length()) { a.getDouble(it).toFloat() } },
+                // Older V2.1 manifests predate the explicit level; path depth is equivalent.
+                level = section.optInt("level", section.optString("path").split(" > ").count { it.isNotBlank() }),
             )
         }
         return DocumentStructureManifest(

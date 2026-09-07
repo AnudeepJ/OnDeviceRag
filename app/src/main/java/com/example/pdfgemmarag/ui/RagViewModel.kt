@@ -431,13 +431,14 @@ class RagViewModel(app: Application) : AndroidViewModel(app) {
         if (gate.chatBlockedWhileIndexing && _ui.value.indexing != null) { notice("Chat is paused while indexing on this device."); return@launch }
 
         val history = db.messages().latest(docHash, 8).reversed().let { toQaPairs(it) }
+        val activeIndexNamespace = if (docHash.isBlank()) "" else db.documents().get(docHash)?.activeIndexNamespace.orEmpty()
         db.messages().insert(MessageEntity(docHash = docHash, role = "user", text = q))
         val turn = ActiveTurn(turnIds.incrementAndGet(), docHash)
         synchronized(turnLock) { activeTurn = turn }
         _chat.update { it.copy(generating = true, streamingText = "", streamingCitations = emptyList(), error = null, lastStats = null) }
         try {
             val service = connection.await()
-            val id = service.ask(docHash, q, history, callbackFor(turn))
+            val id = service.ask(docHash, activeIndexNamespace, q, history, callbackFor(turn))
             turn.generationId = id
             if (activeTurn === turn) {
                 _chat.update { it.copy(generationId = id) }
@@ -478,7 +479,7 @@ class RagViewModel(app: Application) : AndroidViewModel(app) {
                         text = snapshot.streamingText.ifBlank { "(stopped)" },
                         citationIds = snapshot.streamingCitations.joinToString(",") { it.chunkId },
                         citationNamespaces = snapshot.streamingCitations.joinToString(",") { it.indexNamespace },
-                        sourceSectionId = snapshot.streamingCitations.map { it.sectionId }.distinct().singleOrNull().orEmpty(),
+                        sourceSectionId = stats?.sourceSectionId.orEmpty(),
                         backend = stats?.backend ?: "",
                         tokensPerSecond = stats?.approxTokensPerSecond ?: 0.0,
                         cancelled = cancelled || error != null || (stats?.cancelled == true),
