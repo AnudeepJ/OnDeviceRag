@@ -11,4 +11,6 @@ data class DocumentInfo(
     val pageCount: Int,
     val chunkCount: Int,
     val script: String,
+    val indexVersion: Int = 1,
+    val activeIndexNamespace: String = docHash,
 ) : Parcelable

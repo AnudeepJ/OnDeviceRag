@@ -77,6 +77,66 @@ class RowReflowTest {
     }
 
     @Test
+    fun `single-column flow is restored from geometry`() {
+        val lines = listOf(
+            row(100f, 60f to "First body line is intentionally long enough."),
+            row(800f, 60f to "Footer text"),
+            row(114f, 60f to "Second wrapped body line follows the first."),
+        )
+
+        assertEquals(
+            listOf(lines[0].text, lines[2].text, lines[1].text),
+            RowReflow().reflow(lines, pageWidth).map { it.text },
+        )
+    }
+
+    @Test
+    fun `wide table labels paired with narrow values are rebuilt into rows`() {
+        val lines = listOf(
+            cell(60f, 110f, "Surfaces of columns piers and walls"),
+            cell(470f, 110f, "1/2 in 10"),
+            cell(60f, 130f, "Top surfaces of curbs and railings"),
+            cell(470f, 130f, "3/16 in 10"),
+            cell(60f, 150f, "Cross section of columns caps walls and beams"),
+            cell(470f, 150f, "+1/2 -1/4"),
+        )
+
+        val out = RowReflow().reflow(lines, pageWidth)
+
+        assertEquals(3, out.size)
+        assertEquals("Surfaces of columns piers and walls 1/2 in 10", out[0].text)
+        assertEquals("Top surfaces of curbs and railings 3/16 in 10", out[1].text)
+        assertEquals("Cross section of columns caps walls and beams +1/2 -1/4", out[2].text)
+    }
+
+    @Test
+    fun `centred values bridge wrapped description cells into logical rows`() {
+        val lines = listOf(
+            cell(135f, 220f, "PLUMB OR"),
+            cell(235f, 220f, "Surfaces of columns, piers and"),
+            cell(425f, 227f, "1/2 in 10"),
+            cell(135f, 234f, "SPECIFIED BATTER"),
+            cell(235f, 234f, "walls"),
+            cell(235f, 266f, "Top surfaces of slabs"),
+            cell(410f, 266f, "See Section 03345"),
+            cell(135f, 286f, "SPECIFIED GRADE"),
+            cell(235f, 284f, "Top surfaces of curbs and"),
+            cell(422f, 291f, "3/16 in 10"),
+            cell(235f, 298f, "railings"),
+        )
+
+        val out = RowReflow().reflow(lines, pageWidth).map { it.text }
+
+        assertTrue(out.toString(), out.any {
+            "Surfaces of columns, piers and" in it && "walls" in it && "1/2 in 10" in it
+        })
+        assertTrue(out.any { "Top surfaces of slabs See Section 03345" in it })
+        assertTrue(out.toString(), out.any {
+            "SPECIFIED GRADE" in it && "Top surfaces of curbs and" in it && "3/16 in 10" in it && "railings" in it
+        })
+    }
+
+    @Test
     fun `two short same-baseline lines without a second aligned row are left alone`() {
         val lines = listOf(row(100f, 40f to "Title"), row(100f, 400f to "Draft"), row(130f, 40f to "A normal paragraph line follows here."))
         assertEquals(lines, RowReflow().reflow(lines, pageWidth))

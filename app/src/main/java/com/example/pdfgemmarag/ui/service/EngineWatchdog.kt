@@ -38,11 +38,11 @@ class EngineWatchdog(
         }
     }
 
-    fun onLoadStarted(gpuAttempt: Boolean) {
+    fun onLoadStarted(gpuAttempt: Boolean, model: File) {
         timer?.cancel()
         gpuAttemptInFlight = gpuAttempt
         if (!gpuAttempt) return
-        val timeoutMs = if (hasWarmCache()) WARM_TIMEOUT_MS else COLD_TIMEOUT_MS
+        val timeoutMs = if (GpuMarker.hasReadyCache(context, model)) WARM_TIMEOUT_MS else COLD_TIMEOUT_MS
         Log.i(TAG, "watching GPU init, timeout ${timeoutMs / 1000}s")
         timer = scope.launch {
             delay(timeoutMs)
@@ -64,9 +64,6 @@ class EngineWatchdog(
         GpuMarker.write(context, reason)
         onFallback(reason)
     }
-
-    /** The service compiles GPU kernels into `cacheDir/litertlm`; both processes share cacheDir. */
-    private fun hasWarmCache(): Boolean = File(context.cacheDir, "litertlm").listFiles()?.isNotEmpty() == true
 
     companion object {
         private const val TAG = "EngineWatchdog"

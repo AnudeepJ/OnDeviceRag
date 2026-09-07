@@ -1,5 +1,7 @@
 package com.example.pdfgemmarag.inference.store
 
+import com.example.pdfgemmarag.inference.chunk.IdentifierAtoms
+
 /**
  * Builds the AppSearch list-filter query for hybrid retrieval.
  *
@@ -25,6 +27,12 @@ object HybridQuery {
 
     fun keywordTerms(question: String, maxTerms: Int = 12): List<String> {
         val seen = LinkedHashSet<String>()
+        // Extract compound IDs before the ordinary tokenizer splits punctuation. Leading-zero
+        // specification numbers and dotted section paths are never subject to min token length.
+        for (identifier in IdentifierAtoms.extract(question)) {
+            seen += identifier
+            if (seen.size >= maxTerms) return seen.toList()
+        }
         for (m in tokenRe.findAll(question.lowercase())) {
             val t = m.value
             if (t in STOPWORDS) continue
@@ -40,10 +48,23 @@ object HybridQuery {
      * @param similarityFloor cosine below which vector hits are dropped
      * @param vectorLimit max hits the `semanticSearch` function itself may contribute
      */
-    fun build(terms: List<String>, similarityFloor: Double, vectorLimit: Int): String {
+    fun build(
+        terms: List<String>,
+        similarityFloor: Double,
+        vectorLimit: Int,
+        requiredPropertyTerm: Pair<String, String>? = null,
+    ): String {
         val semantic = "semanticSearch(getEmbeddingParameter(0), $similarityFloor, $vectorLimit)"
-        if (terms.isEmpty()) return semantic
-        val keyword = terms.indices.joinToString(" OR ") { "getSearchStringParameter($it)" }
-        return "($keyword) OR $semantic"
+        val retrieval = if (terms.isEmpty()) semantic else {
+            val keyword = terms.indices.joinToString(" OR ") { "getSearchStringParameter($it)" }
+            "($keyword) OR $semantic"
+        }
+        val required = requiredPropertyTerm ?: return retrieval
+        require(PROPERTY_NAME.matches(required.first)) { "Unsafe AppSearch property name" }
+        require(PROPERTY_TERM.matches(required.second)) { "Unsafe AppSearch property term" }
+        return "${required.first}:${required.second} AND ($retrieval)"
     }
+
+    private val PROPERTY_NAME = Regex("[A-Za-z][A-Za-z0-9_.]*")
+    private val PROPERTY_TERM = Regex("[A-Za-z0-9_-]+")
 }

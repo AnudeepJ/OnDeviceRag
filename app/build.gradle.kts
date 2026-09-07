@@ -31,10 +31,13 @@ android {
     // Model hosting. HF-gated weights must be mirrored on your own CDN; SHA-256 values gate install.
     fun prop(name: String, default: String) = "\"${(project.findProperty(name) as String?) ?: default}\""
     buildConfigField("String", "MODEL_CDN_BASE_URL", prop("MODEL_CDN_BASE_URL", "https://models.example.invalid/ondevice-rag"))
-    buildConfigField("String", "SHA256_GEMMA_E2B", prop("SHA256_GEMMA_E2B", ""))
+    // Hashes are integrity metadata, not secrets. Keeping the hashes for the pinned artifacts in
+    // source means a developer only has to configure the CDN location; CI may still override them
+    // when intentionally rolling a model artifact.
+    buildConfigField("String", "SHA256_GEMMA_E2B", prop("SHA256_GEMMA_E2B", "ab7838cdfc8f77e54d8ca45eadceb20452d9f01e4bfade03e5dce27911b27e42"))
     buildConfigField("String", "SHA256_GEMMA_E4B", prop("SHA256_GEMMA_E4B", ""))
-    buildConfigField("String", "SHA256_EMBEDDING", prop("SHA256_EMBEDDING", ""))
-    buildConfigField("String", "SHA256_TOKENIZER", prop("SHA256_TOKENIZER", ""))
+    buildConfigField("String", "SHA256_EMBEDDING", prop("SHA256_EMBEDDING", "ad09e81557203cb0e177abf9bf8727dfe138a7d394aa0f70f0b2ed16432e121a"))
+    buildConfigField("String", "SHA256_TOKENIZER", prop("SHA256_TOKENIZER", "1299c11d7cf632ef3b4e11937501358ada021bbdf7c47638d13c0ee982f2e79c"))
   }
 
   buildTypes {

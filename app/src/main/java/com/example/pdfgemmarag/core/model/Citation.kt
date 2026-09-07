@@ -16,4 +16,15 @@ data class Citation(
     val score: Double,
     /** Chunk text. Empty when only the reference is being transferred. */
     val text: String = "",
+    /** Explicit AppSearch namespace. Never infer this from [chunkId]. */
+    val indexNamespace: String = docHash,
+    val excerptId: String = "",
+    val sectionId: String = "",
+    val specificationNumber: String = "",
+    val sectionNumber: String = "",
+    val sectionTitle: String = "",
+    val sectionPath: String = "",
+    val contentKind: String = "PARAGRAPH",
+    val continuesFromChunkIndex: Int = -1,
+    val continuesToChunkIndex: Int = -1,
 ) : Parcelable

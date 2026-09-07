@@ -31,7 +31,10 @@ class DeviceGate(private val context: Context) {
         }
 
     /** On 6-8 GB devices the LLM and the indexing pipeline must not be resident at the same time. */
-    val chatBlockedWhileIndexing: Boolean get() = tier == Tier.LOW && !BuildConfig.DEBUG
+    // This is a device safety rule, not a release-only product rule. Keeping the LLM and embedder
+    // resident together made debug performance tests unrepresentative and pushed 8 GB-class phones
+    // into swap/LMK pressure.
+    val chatBlockedWhileIndexing: Boolean get() = tier == Tier.LOW
 
     /** Release builds refuse < 6 GB. Debug (emulator) still lets you load a small test LLM. */
     val canLoadLlm: Boolean get() = tier != Tier.UNSUPPORTED || BuildConfig.DEBUG

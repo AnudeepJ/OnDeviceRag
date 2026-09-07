@@ -12,7 +12,7 @@ import androidx.appsearch.app.ExperimentalAppSearchApi;
  *
  * Written in Java so {@code androidx.appsearch:appsearch-compiler} runs as a plain javac annotation
  * processor (kapt cannot be used with AGP's built-in Kotlin). The namespace is the PDF's content
- * hash, which makes per-document search filtering and whole-document deletion a namespace operation.
+ * versioned index namespace. The stable PDF content hash is stored separately as {@link #docHash}.
  */
 @OptIn(markerClass = ExperimentalAppSearchApi.class)
 @Document(name = PdfChunkDocument.SCHEMA_TYPE)
@@ -20,12 +20,12 @@ public class PdfChunkDocument {
 
     public static final String SCHEMA_TYPE = "PdfChunkDocument";
 
-    /** Content hash of the source PDF. */
+    /** Active or staging namespace for one complete index build. */
     @Document.Namespace
     @NonNull
     public String namespace;
 
-    /** {@code <docHash>:<chunkIndex>} – stable, and what the UI receives as a citation id. */
+    /** Stable inside the explicit namespace; citations must carry both values. */
     @Document.Id
     @NonNull
     public String id;
@@ -39,6 +39,69 @@ public class PdfChunkDocument {
             tokenizerType = AppSearchSchema.StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
     @NonNull
     public String text = "";
+
+    /** Original source text displayed in the citation sheet. */
+    @Document.StringProperty(indexingType = AppSearchSchema.StringPropertyConfig.INDEXING_TYPE_NONE)
+    @NonNull
+    public String bodyText = "";
+
+    /** Section path + source text used for lexical and semantic retrieval. */
+    @Document.StringProperty(
+            indexingType = AppSearchSchema.StringPropertyConfig.INDEXING_TYPE_PREFIXES,
+            tokenizerType = AppSearchSchema.StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+    @NonNull
+    public String retrievalText = "";
+
+    /** Stable content hash of the source document. */
+    @Document.StringProperty(indexingType = AppSearchSchema.StringPropertyConfig.INDEXING_TYPE_NONE)
+    @NonNull
+    public String docHash = "";
+
+    @Document.StringProperty(
+            indexingType = AppSearchSchema.StringPropertyConfig.INDEXING_TYPE_EXACT_TERMS,
+            tokenizerType = AppSearchSchema.StringPropertyConfig.TOKENIZER_TYPE_VERBATIM)
+    @NonNull
+    public String sectionId = "";
+
+    @Document.StringProperty(indexingType = AppSearchSchema.StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+    @NonNull
+    public String sectionTitle = "";
+
+    @Document.StringProperty(indexingType = AppSearchSchema.StringPropertyConfig.INDEXING_TYPE_NONE)
+    @NonNull
+    public String sectionPath = "";
+
+    @Document.StringProperty(indexingType = AppSearchSchema.StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+    @NonNull
+    public String specificationNumber = "";
+
+    @Document.StringProperty(indexingType = AppSearchSchema.StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+    @NonNull
+    public String sectionNumber = "";
+
+    @Document.StringProperty(indexingType = AppSearchSchema.StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+    @NonNull
+    public String identifierAtoms = "";
+
+    @Document.StringProperty(indexingType = AppSearchSchema.StringPropertyConfig.INDEXING_TYPE_NONE)
+    @NonNull
+    public String contentKind = "PARAGRAPH";
+
+    @Document.LongProperty
+    public int positionInSection;
+
+    @Document.LongProperty
+    public int continuesFromChunkIndex = -1;
+
+    @Document.LongProperty
+    public int continuesToChunkIndex = -1;
+
+    @Document.LongProperty
+    public int indexVersion;
+
+    @Document.StringProperty(indexingType = AppSearchSchema.StringPropertyConfig.INDEXING_TYPE_NONE)
+    @NonNull
+    public String embeddingSignature = "";
 
     @Document.LongProperty
     public int pageNumber;

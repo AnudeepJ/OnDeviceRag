@@ -44,3 +44,9 @@
   - `[x]` Implement LMK recovery in `:ui` (*"Reloading model"*).
   - `[x]` Set up CI 16 KB page-size alignment checks (`scripts/check_16kb_alignment.sh`, `.github/workflows/ci.yml`).
   - `[x]` Build Retrieval Evaluation Harness (~30 Q/A per language, `page-hit@5` logging).
+
+- `[ ]` **Future value add: Open and highlight original-PDF evidence** — planned in
+  [`docs/FUTURE_VALUE_ADDS.md`](docs/FUTURE_VALUE_ADDS.md). Add an Apryse-backed PDF viewer so a
+  citation can open its original page and highlight a verified exact excerpt. This complements
+  AppSearch retrieval; it does not replace semantic/hybrid search. Scanned/OCR-only pages require
+  a graceful page-only fallback.

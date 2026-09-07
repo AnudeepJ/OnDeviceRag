@@ -24,6 +24,7 @@ import com.example.pdfgemmarag.ui.data.DocumentEntity
 import com.example.pdfgemmarag.ui.data.MessageEntity
 import com.example.pdfgemmarag.ui.download.CatalogEntry
 import com.example.pdfgemmarag.ui.download.ModelDownloadManager
+import com.example.pdfgemmarag.ui.download.ModelCatalog
 import com.example.pdfgemmarag.ui.service.EngineWatchdog
 import com.example.pdfgemmarag.ui.service.ServiceConnectionManager
 import kotlinx.coroutines.Dispatchers
@@ -38,6 +39,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.util.UUID
 import java.security.MessageDigest
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
@@ -89,6 +91,7 @@ class RagViewModel(app: Application) : AndroidViewModel(app) {
     private val turnIds = AtomicLong()
     private val turnLock = Any()
     @Volatile private var activeTurn: ActiveTurn? = null
+    private val reindexPreviousStatus = HashMap<String, String>()
     private val loadingModel = AtomicReference<String?>(null)
 
     val documents: StateFlow<List<DocumentEntity>> =
@@ -102,6 +105,10 @@ class RagViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     init {
+        viewModelScope.launch {
+            runCatching { db.documents().markLegacyIndexes(CURRENT_INDEX_VERSION) }
+                .onFailure { Log.e(TAG, "Could not mark legacy indexes", it) }
+        }
         connection.bind()
         refreshLocalState()
         viewModelScope.launch {
@@ -130,14 +137,28 @@ class RagViewModel(app: Application) : AndroidViewModel(app) {
     fun refreshLocalState() {
         val app = getApplication<Application>()
         _ui.update {
+            val installed = ModelPaths.installedLlms(app)
+            // A single installed LLM is the natural default.  Remember it so entering chat does
+            // not require the user to visit Models and press a second, unrelated "Load" button.
+            val remembered = prefs.getString(KEY_MODEL, null)?.takeIf { p -> File(p).exists() }
             it.copy(
-                installedModels = ModelPaths.installedLlms(app),
+                installedModels = installed,
                 embeddingReady = ModelPaths.embeddingReady(app),
                 gpuDisabled = GpuMarker.exists(app),
                 gpuDisabledReason = GpuMarker.reason(app),
-                selectedModelPath = it.selectedModelPath ?: prefs.getString(KEY_MODEL, null)?.takeIf { p -> File(p).exists() },
+                selectedModelPath = it.selectedModelPath ?: remembered ?: installed.singleOrNull()?.absolutePath,
             )
         }
+    }
+
+    /** Starts the remembered model on demand.  Loading a 2+ GB model at app launch wastes RAM. */
+    private fun loadPreferredModelIfNeeded() {
+        if (_ui.value.engine.state == EngineStatus.State.READY || _ui.value.engine.state == EngineStatus.State.LOADING) return
+        val path = _ui.value.selectedModelPath
+            ?.takeIf { File(it).exists() }
+            ?: _ui.value.installedModels.singleOrNull()?.absolutePath
+            ?: return
+        loadEngine(path)
     }
 
     private fun syncEngineStatus() = viewModelScope.launch {
@@ -156,7 +177,7 @@ class RagViewModel(app: Application) : AndroidViewModel(app) {
             prefs.edit { putString(KEY_MODEL, modelPath) }
             val gpuAttempt = !GpuMarker.exists(app)
             _ui.update { it.copy(selectedModelPath = modelPath, engine = EngineStatus(EngineStatus.State.LOADING, modelName = File(modelPath).name), engineMessage = "Starting…") }
-            watchdog.onLoadStarted(gpuAttempt)
+            watchdog.onLoadStarted(gpuAttempt, File(modelPath))
             try {
                 connection.startService()
                 connection.await().loadEngine(modelPath, true, object : IEngineCallback.Stub() {
@@ -210,22 +231,50 @@ class RagViewModel(app: Application) : AndroidViewModel(app) {
 
     fun cancelDownload(entry: CatalogEntry) = downloads.cancel(entry)
 
+    fun downloadRequiredModels() {
+        val missing = ModelCatalog.requiredEntries.filter {
+            !downloads.installed(it) && downloads.states.value[it.id]?.running != true
+        }
+        if (missing.isEmpty()) { notice("All required models are already installed or downloading."); return }
+        val unavailable = missing.firstOrNull { !it.downloadable }
+        if (unavailable != null) {
+            notice("Model download is not configured. Set MODEL_CDN_BASE_URL, rebuild, or add local model files.")
+            return
+        }
+        // All downloads may coexist, while the largest one is copied into private storage.
+        val requiredFree = missing.sumOf { it.sizeBytes } + missing.maxOf { it.sizeBytes } + DeviceGate.SAFETY_MARGIN
+        if (gate.freeBytes() < requiredFree) {
+            notice("Not enough free storage: need about ${requiredFree shr 20} MB for the required downloads and installation.")
+            return
+        }
+        val failures = missing.mapNotNull { entry ->
+            runCatching { downloads.enqueue(entry) }.exceptionOrNull()?.message
+        }
+        notice(if (failures.isEmpty()) "Downloading ${missing.size} required model files over Wi-Fi." else "Some downloads could not start: ${failures.first()}")
+    }
+
     /** Local `.litertlm`/`.tflite`/`.model` picker: copy through staging, then verify+install in :inference. */
     fun importLocalModel(uri: Uri, displayName: String) = viewModelScope.launch {
         val app = getApplication<Application>()
+        val safeDisplayName = File(displayName).name
         val targetName = when {
-            displayName.endsWith(".litertlm") -> displayName
-            displayName.endsWith(".tflite") -> ModelPaths.EMBEDDING_MODEL_FILE
-            displayName.endsWith(".model") -> ModelPaths.EMBEDDING_TOKENIZER_FILE
+            safeDisplayName.endsWith(".litertlm", true) -> safeDisplayName
+            safeDisplayName.endsWith(".tflite", true) -> ModelPaths.EMBEDDING_MODEL_FILE
+            safeDisplayName.endsWith(".model", true) -> ModelPaths.EMBEDDING_TOKENIZER_FILE
             else -> { notice("Unsupported file: $displayName"); return@launch }
         }
         _ui.update { it.copy(busy = true, notice = "Copying $displayName…") }
+        var staged: File? = null
         try {
-            val staged = withContext(Dispatchers.IO) {
-                val f = File(ModelPaths.stagingDir(app), targetName)
-                app.contentResolver.openInputStream(uri)!!.use { input -> f.outputStream().use { input.copyTo(it, 1 shl 20) } }
+            staged = withContext(Dispatchers.IO) {
+                val directory = ModelPaths.modelStagingDir(app)
+                directory.listFiles { file -> file.name.endsWith(".incoming") }?.forEach(File::delete)
+                val f = File(directory, "${UUID.randomUUID()}-$targetName.incoming")
+                val input = app.contentResolver.openInputStream(uri)
+                    ?: throw IllegalArgumentException("The selected file could not be opened")
+                input.use { source -> f.outputStream().use { source.copyTo(it, 1 shl 20) } }
                 val minimumSize = when {
-                    targetName.endsWith(".litertlm", true) -> 100L * 1024 * 1024
+                    targetName.endsWith(".litertlm", true) -> ModelPaths.MIN_LLM_BYTES
                     targetName.endsWith(".tflite", true) -> 1024L * 1024
                     else -> 100L * 1024
                 }
@@ -237,15 +286,24 @@ class RagViewModel(app: Application) : AndroidViewModel(app) {
                 f
             }
             connection.startService()
-            connection.await().installModel(staged.absolutePath, targetName, "", -1, true, object : IInstallCallback.Stub() {
+            val stagedFile = requireNotNull(staged)
+            connection.await().installModel(stagedFile.absolutePath, targetName, "", stagedFile.length(), true, object : IInstallCallback.Stub() {
                 override fun onProgress(bytesCopied: Long, totalBytes: Long) { _ui.update { it.copy(install = Triple(targetName, bytesCopied, totalBytes)) } }
-                override fun onInstalled(targetPath: String, sha256: String) {
-                    _ui.update { it.copy(install = null, busy = false, notice = "Installed $targetName (sha256 ${sha256.take(12)}…)") }
-                    refreshLocalState()
+                    override fun onInstalled(targetPath: String, sha256: String) {
+                        _ui.update { it.copy(install = null, busy = false, notice = "Installed $targetName (sha256 ${sha256.take(12)}…)") }
+                        refreshLocalState()
+                        // The selected Gemma file is ready to use as soon as copying completes.
+                        // Embedding assets are deliberately not loaded here; they are lazy-loaded
+                        // only when the user indexes a document.
+                        if (gate.canLoadLlm && targetName.endsWith(ModelPaths.LLM_EXTENSION, ignoreCase = true)) loadEngine(targetPath)
+                    }
+                override fun onFailed(message: String) {
+                    stagedFile.delete()
+                    _ui.update { it.copy(install = null, busy = false, notice = "Install failed: $message. Select the complete .litertlm file and retry.") }
                 }
-                override fun onFailed(message: String) { _ui.update { it.copy(install = null, busy = false, notice = "Install failed: $message") } }
             })
         } catch (t: Throwable) {
+            withContext(Dispatchers.IO) { staged?.delete() }
             _ui.update { it.copy(busy = false, notice = "Import failed: ${t.message}") }
         }
     }
@@ -292,22 +350,42 @@ class RagViewModel(app: Application) : AndroidViewModel(app) {
         override fun onProgress(progress: IndexingProgress) { _ui.update { it.copy(indexing = progress) } }
         override fun onCompleted(document: DocumentInfo) {
             viewModelScope.launch {
+                reindexPreviousStatus.remove(document.docHash)
                 db.documents().get(document.docHash)?.let {
-                    db.documents().update(it.copy(pageCount = document.pageCount, chunkCount = document.chunkCount, script = document.script, status = STATUS_READY, indexedAt = System.currentTimeMillis()))
+                    db.documents().update(
+                        it.copy(
+                            pageCount = document.pageCount,
+                            chunkCount = document.chunkCount,
+                            script = document.script,
+                            status = STATUS_READY,
+                            indexedAt = System.currentTimeMillis(),
+                            indexVersion = document.indexVersion,
+                            activeIndexNamespace = document.activeIndexNamespace,
+                        ),
+                    )
                 }
                 _ui.update { it.copy(indexing = null, indexingDocName = null, notice = "Indexed ${document.displayName}: ${document.pageCount} pages, ${document.chunkCount} chunks") }
             }
         }
         override fun onCancelled(docHash: String) {
             viewModelScope.launch {
-                db.documents().get(docHash)?.let { db.documents().delete(it) }
-                ModelPaths.pdfFile(getApplication(), docHash).delete()
+                val previous = reindexPreviousStatus.remove(docHash)
+                db.documents().get(docHash)?.let { current ->
+                    if (previous != null) db.documents().update(current.copy(status = previous, error = null))
+                    else {
+                        db.documents().delete(current)
+                        ModelPaths.pdfFile(getApplication(), docHash).delete()
+                    }
+                }
                 _ui.update { it.copy(indexing = null, indexingDocName = null, notice = "Indexing cancelled") }
             }
         }
         override fun onFailed(docHash: String, message: String) {
             viewModelScope.launch {
-                db.documents().get(docHash)?.let { db.documents().update(it.copy(status = STATUS_FAILED, error = message)) }
+                val previous = reindexPreviousStatus.remove(docHash)
+                db.documents().get(docHash)?.let {
+                    db.documents().update(it.copy(status = previous ?: STATUS_FAILED, error = if (previous == null) message else null))
+                }
                 _ui.update { it.copy(indexing = null, indexingDocName = null, notice = "Indexing failed: $message") }
             }
         }
@@ -317,6 +395,7 @@ class RagViewModel(app: Application) : AndroidViewModel(app) {
 
     fun reindex(doc: DocumentEntity) = viewModelScope.launch {
         if (_ui.value.indexing != null) { notice("Another document is being indexed."); return@launch }
+        reindexPreviousStatus[doc.hash] = doc.status
         db.documents().update(doc.copy(status = STATUS_INDEXING, error = null))
         _ui.update { it.copy(indexing = IndexingProgress(doc.hash, IndexingProgress.Stage.PREPARING, 0, 1), indexingDocName = doc.name) }
         connection.startService()
@@ -337,6 +416,7 @@ class RagViewModel(app: Application) : AndroidViewModel(app) {
         if (_chat.value.docHash == docHash) return
         if (_chat.value.generating) stopGeneration()
         _chat.value = ChatState(docHash = docHash)
+        loadPreferredModelIfNeeded()
     }
 
     fun ask(question: String) = viewModelScope.launch {
@@ -392,6 +472,8 @@ class RagViewModel(app: Application) : AndroidViewModel(app) {
                         docHash = turn.docHash, role = "model",
                         text = snapshot.streamingText.ifBlank { "(stopped)" },
                         citationIds = snapshot.streamingCitations.joinToString(",") { it.chunkId },
+                        citationNamespaces = snapshot.streamingCitations.joinToString(",") { it.indexNamespace },
+                        sourceSectionId = snapshot.streamingCitations.map { it.sectionId }.distinct().singleOrNull().orEmpty(),
                         backend = stats?.backend ?: "",
                         tokensPerSecond = stats?.approxTokensPerSecond ?: 0.0,
                         cancelled = cancelled || error != null || (stats?.cancelled == true),
@@ -433,8 +515,11 @@ class RagViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    suspend fun citation(chunkId: String): Citation? = withContext(Dispatchers.IO) {
-        runCatching { connection.await().getCitation(chunkId) }.getOrNull()
+    suspend fun citation(indexNamespace: String, chunkId: String): Citation? = withContext(Dispatchers.IO) {
+        runCatching {
+            if (indexNamespace.isBlank()) connection.await().getCitation(chunkId)
+            else connection.await().getCitationInNamespace(indexNamespace, chunkId)
+        }.getOrNull()
     }
 
     private fun toQaPairs(messages: List<MessageEntity>): List<QaPair> {
@@ -442,7 +527,10 @@ class RagViewModel(app: Application) : AndroidViewModel(app) {
         var pendingQ: String? = null
         for (m in messages) {
             if (m.role == "user") pendingQ = m.text
-            else if (pendingQ != null && !m.cancelled) { pairs += QaPair(pendingQ, m.text.take(1200)); pendingQ = null }
+            else if (pendingQ != null && !m.cancelled) {
+                pairs += QaPair(pendingQ, m.text.take(1200), m.sourceSectionId)
+                pendingQ = null
+            }
         }
         return pairs.takeLast(4)
     }
@@ -451,6 +539,9 @@ class RagViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun onInferenceDied() {
         Log.w(TAG, "inference process died")
+        // A Binder death cannot deliver the load callback that normally clears this guard. Without
+        // resetting it, the recovery load below is silently rejected forever.
+        loadingModel.set(null)
         val wasGenerating = _chat.value.generating
         val wasIndexing = _ui.value.indexing != null
         synchronized(turnLock) { activeTurn = null }
@@ -511,5 +602,7 @@ class RagViewModel(app: Application) : AndroidViewModel(app) {
         const val STATUS_INDEXING = "INDEXING"
         const val STATUS_READY = "READY"
         const val STATUS_FAILED = "FAILED"
+        const val STATUS_REINDEX_REQUIRED = "REINDEX_REQUIRED"
+        const val CURRENT_INDEX_VERSION = 21
     }
 }

@@ -56,7 +56,7 @@ fun ChatScreen(viewModel: RagViewModel, docHash: String, title: String, onBack: 
     val chat by viewModel.chat.collectAsStateWithLifecycle()
     val messages by viewModel.messages(docHash).collectAsStateWithLifecycle(initialValue = emptyList())
     var input by remember { mutableStateOf("") }
-    var citationToShow by remember { mutableStateOf<String?>(null) }
+    var citationToShow by remember { mutableStateOf<CitationTarget?>(null) }
     val listState = rememberLazyListState()
 
     LaunchedEffect(docHash) { viewModel.openChat(docHash) }
@@ -92,8 +92,8 @@ fun ChatScreen(viewModel: RagViewModel, docHash: String, title: String, onBack: 
                     Text(
                         when (ui.engine.state) {
                             EngineStatus.State.LOADING -> "Loading model… ${ui.engineMessage}"
-                            EngineStatus.State.FAILED -> "Model failed: ${ui.engine.message}"
-                            else -> "No model loaded. Open Models and load a Gemma model."
+                            EngineStatus.State.FAILED -> "The selected model could not start. Choose it again in Models to retry."
+                            else -> "No Gemma model has been added yet. Add one in Models; future chats will start it automatically."
                         },
                         Modifier.padding(12.dp), style = MaterialTheme.typography.bodySmall,
                     )
@@ -110,7 +110,7 @@ fun ChatScreen(viewModel: RagViewModel, docHash: String, title: String, onBack: 
                 chat.lastStats?.let { s ->
                     item(key = "stats") {
                         Text(
-                            "ttft ${s.timeToFirstTokenMs} ms · ${"%.1f".format(s.approxTokensPerSecond)} tok/s · ${s.retrievedChunks} chunks · ~${s.contextTokensApprox} ctx tokens · ${s.backend}",
+                            "model ttft ${s.timeToFirstTokenMs} ms · visible ${s.visibleTimeToFirstTokenMs} ms · ${"%.1f".format(s.approxTokensPerSecond)} tok/s · ${s.retrievedChunks} chunks · ~${s.contextTokensApprox} ctx tokens · ${s.backend}",
                             style = MaterialTheme.typography.labelSmall,
                         )
                     }
@@ -137,7 +137,14 @@ fun ChatScreen(viewModel: RagViewModel, docHash: String, title: String, onBack: 
         }
     }
 
-    citationToShow?.let { id -> CitationSheet(chunkId = id, viewModel = viewModel, onDismiss = { citationToShow = null }) }
+    citationToShow?.let { target ->
+        CitationSheet(
+            indexNamespace = target.indexNamespace,
+            chunkId = target.chunkId,
+            viewModel = viewModel,
+            onDismiss = { citationToShow = null },
+        )
+    }
 }
 
 private fun engineLine(ui: RagViewModel.UiState): String = when (ui.engine.state) {
@@ -147,44 +154,58 @@ private fun engineLine(ui: RagViewModel.UiState): String = when (ui.engine.state
 }
 
 @Composable
-private fun MessageBubble(m: MessageEntity, onCitation: (String) -> Unit) {
+private fun MessageBubble(m: MessageEntity, onCitation: (CitationTarget) -> Unit) {
     val isUser = m.role == "user"
     Column(Modifier.fillMaxWidth(), horizontalAlignment = if (isUser) Alignment.End else Alignment.Start) {
         Box(
             Modifier.widthIn(max = 340.dp).clip(RoundedCornerShape(16.dp))
                 .background(if (isUser) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant)
                 .padding(12.dp),
-        ) { Text(m.text, style = MaterialTheme.typography.bodyMedium) }
+        ) {
+            if (isUser) Text(m.text, style = MaterialTheme.typography.bodyMedium)
+            else MarkdownText(m.text)
+        }
         val ids = m.citationIds.split(',').filter { it.isNotBlank() }
-        if (ids.isNotEmpty()) CitationChips(ids.map { it to it.substringAfterLast(':') }, onCitation)
+        val namespaces = m.citationNamespaces.split(',')
+        if (ids.isNotEmpty()) CitationChips(
+            ids.mapIndexed { index, id ->
+                CitationChip(CitationTarget(namespaces.getOrElse(index) { "" }, id), "#${index + 1}")
+            },
+            onCitation,
+        )
         if (!isUser && m.tokensPerSecond > 0) Text("${"%.1f".format(m.tokensPerSecond)} tok/s · ${m.backend}${if (m.cancelled) " · stopped" else ""}", style = MaterialTheme.typography.labelSmall)
     }
 }
 
 @Composable
-private fun StreamingBubble(chat: RagViewModel.ChatState, elapsedSec: Int, onCitation: (String) -> Unit) {
+private fun StreamingBubble(chat: RagViewModel.ChatState, elapsedSec: Int, onCitation: (CitationTarget) -> Unit) {
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.Start) {
         Box(Modifier.widthIn(max = 340.dp).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surfaceVariant).padding(12.dp)) {
-            Text(
+            MarkdownText(
                 when {
                     chat.streamingText.isNotEmpty() -> chat.streamingText + "▍"
                     chat.streamingCitations.isEmpty() -> "Searching document…"
                     elapsedSec < 15 -> "Waiting for Gemma… ${elapsedSec}s"
                     else -> "Still waiting for Gemma… ${elapsedSec}s. You can tap Stop and ask again."
                 },
-                style = MaterialTheme.typography.bodyMedium,
             )
         }
-        if (chat.streamingCitations.isNotEmpty()) CitationChips(chat.streamingCitations.map { it.chunkId to "p.${it.pageNumber}" }, onCitation)
+        if (chat.streamingCitations.isNotEmpty()) CitationChips(
+            chat.streamingCitations.map { CitationChip(CitationTarget(it.indexNamespace, it.chunkId), "p.${it.pageNumber}") },
+            onCitation,
+        )
     }
 }
 
+private data class CitationTarget(val indexNamespace: String, val chunkId: String)
+private data class CitationChip(val target: CitationTarget, val label: String)
+
 @Composable
-private fun CitationChips(items: List<Pair<String, String>>, onCitation: (String) -> Unit) {
+private fun CitationChips(items: List<CitationChip>, onCitation: (CitationTarget) -> Unit) {
     Spacer(Modifier.height(4.dp))
     LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        items(items, key = { it.first }) { (id, label) ->
-            AssistChip(onClick = { onCitation(id) }, label = { Text(if (label.startsWith("p.")) label else "#$label") })
+        items(items, key = { it.target.indexNamespace + "|" + it.target.chunkId }) { item ->
+            AssistChip(onClick = { onCitation(item.target) }, label = { Text(item.label) })
         }
     }
 }

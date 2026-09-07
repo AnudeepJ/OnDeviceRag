@@ -3,6 +3,9 @@ package com.example.pdfgemmarag.core.model
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.nio.file.AtomicMoveNotSupportedException
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.security.MessageDigest
 
 /**
@@ -33,35 +36,54 @@ object ModelInstaller {
             throw VerificationException("size mismatch: expected $expectedSize, got ${source.length()}")
         }
         target.parentFile?.mkdirs()
-        val tmp = File(target.parentFile, target.name + ".part")
+        val tmp = File(target.parentFile, target.name + ".installing")
+        // A killed process must not make a stale partial file look like an installed model.
+        if (tmp.exists() && !tmp.delete()) {
+            throw VerificationException("could not clear stale install file: ${tmp.name}")
+        }
         val digest = MessageDigest.getInstance("SHA-256")
         val buffer = ByteArray(1 shl 20)
         var copied = 0L
-        FileInputStream(source).use { input ->
-            FileOutputStream(tmp).use { out ->
-                while (true) {
-                    val n = input.read(buffer)
-                    if (n < 0) break
-                    digest.update(buffer, 0, n)
-                    out.write(buffer, 0, n)
-                    copied += n
-                    onProgress(copied)
+        var committed = false
+        try {
+            FileInputStream(source).use { input ->
+                FileOutputStream(tmp).use { out ->
+                    while (true) {
+                        val n = input.read(buffer)
+                        if (n < 0) break
+                        digest.update(buffer, 0, n)
+                        out.write(buffer, 0, n)
+                        copied += n
+                        onProgress(copied)
+                    }
+                    out.fd.sync()
                 }
-                out.fd.sync()
             }
+            if (copied != source.length()) {
+                throw VerificationException("copy was incomplete: expected ${source.length()}, got $copied")
+            }
+            val actual = digest.digest().joinToString("") { "%02x".format(it) }
+            if (expectedSha256.isNotBlank() && !actual.equals(expectedSha256, ignoreCase = true)) {
+                throw VerificationException("SHA-256 mismatch: expected $expectedSha256, got $actual")
+            }
+            try {
+                Files.move(
+                    tmp.toPath(),
+                    target.toPath(),
+                    StandardCopyOption.ATOMIC_MOVE,
+                    StandardCopyOption.REPLACE_EXISTING,
+                )
+            } catch (_: AtomicMoveNotSupportedException) {
+                Files.move(tmp.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING)
+            }
+            committed = true
+            if (deleteSource && !source.delete()) {
+                // Installation succeeded. A source cleanup failure is non-fatal and can be retried.
+            }
+            return actual
+        } finally {
+            if (!committed) tmp.delete()
         }
-        val actual = digest.digest().joinToString("") { "%02x".format(it) }
-        if (expectedSha256.isNotBlank() && !actual.equals(expectedSha256, ignoreCase = true)) {
-            tmp.delete()
-            throw VerificationException("SHA-256 mismatch: expected $expectedSha256, got $actual")
-        }
-        if (target.exists()) target.delete()
-        if (!tmp.renameTo(target)) {
-            tmp.delete()
-            throw VerificationException("could not move ${tmp.name} into place")
-        }
-        if (deleteSource) source.delete()
-        return actual
     }
 
     fun sha256(file: File): String {

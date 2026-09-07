@@ -25,7 +25,7 @@ class ModelInstallerTest {
         assertTrue(target.exists()); assertEquals(payload.size.toLong(), target.length())
         assertFalse(src.exists())
         assertTrue(progressCalls >= 3)
-        assertFalse(target.parentFile!!.resolve("model.litertlm.part").exists())
+        assertFalse(target.parentFile!!.resolve("model.litertlm.installing").exists())
     }
 
     @Test
@@ -48,5 +48,24 @@ class ModelInstallerTest {
             ModelInstaller.verifyAndInstall(src, tmp.root.resolve("m"), "", 11, deleteSource = false)
             fail()
         } catch (e: ModelInstaller.VerificationException) { assertTrue(e.message!!.contains("size")) }
+    }
+
+    @Test
+    fun `verification failure preserves an existing installed model and removes stale partial`() {
+        val src = tmp.newFile("replacement.bin").apply { writeBytes(ByteArray(1024) { 2 }) }
+        val directory = tmp.newFolder("installed")
+        val target = directory.resolve("model.litertlm").apply { writeText("known-good") }
+        directory.resolve("model.litertlm.installing").writeText("stale")
+
+        try {
+            ModelInstaller.verifyAndInstall(src, target, "00".repeat(32), -1, deleteSource = true)
+            fail("expected VerificationException")
+        } catch (_: ModelInstaller.VerificationException) {
+            // Expected.
+        }
+
+        assertEquals("known-good", target.readText())
+        assertTrue(src.exists())
+        assertFalse(directory.resolve("model.litertlm.installing").exists())
     }
 }

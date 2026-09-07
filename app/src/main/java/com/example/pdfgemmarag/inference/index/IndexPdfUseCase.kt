@@ -16,7 +16,9 @@ import com.example.pdfgemmarag.inference.pdf.HeaderFooterStripper
 import com.example.pdfgemmarag.inference.pdf.PageContent
 import com.example.pdfgemmarag.inference.pdf.PageLayout
 import com.example.pdfgemmarag.inference.pdf.TableClusterer
+import com.example.pdfgemmarag.inference.pdf.StructureAnalyzer
 import com.example.pdfgemmarag.inference.store.AppSearchVectorStore
+import com.example.pdfgemmarag.inference.store.DocumentStructureManifest
 import com.example.pdfgemmarag.inference.store.PdfChunkDocument
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ensureActive
@@ -36,7 +38,7 @@ class IndexPdfUseCase(
     private val store: AppSearchVectorStore,
     private val chunker: ScriptAwareChunker = ScriptAwareChunker(),
     private val stripper: HeaderFooterStripper = HeaderFooterStripper(),
-    private val tables: TableClusterer = TableClusterer(),
+    private val structure: StructureAnalyzer = StructureAnalyzer(TableClusterer()),
     /** Suspends while the device is thermally throttled. */
     private val awaitCool: suspend () -> Unit = {},
 ) {
@@ -47,10 +49,11 @@ class IndexPdfUseCase(
         displayName: String,
         onProgress: (IndexingProgress) -> Unit,
     ): DocumentInfo {
+        val previousNamespace = runCatching { store.loadManifest(docHash)?.indexNamespace }.getOrNull()
+        val buildId = System.currentTimeMillis().toString(36)
+        val stagingNamespace = "$docHash:v21:$buildId"
         try {
             onProgress(IndexingProgress(docHash, Stage.PREPARING, 0, 1))
-            // Re-indexing the same content hash replaces the previous index.
-            store.removeDocument(docHash)
 
             val layouts = ArrayList<PageLayout>()
             val ocrPages = ArrayList<Int>()
@@ -93,19 +96,25 @@ class IndexPdfUseCase(
             val stripped = stripper.strip(layouts)
             val contents = stripped.mapIndexed { i, layout ->
                 currentCoroutineContext().ensureActive()
-                tables.analyse(layout).also {
+                structure.analyse(layout).also {
                     if ((i + 1) % 2 == 0 || i + 1 == stripped.size) {
                         onProgress(IndexingProgress(docHash, Stage.CHUNKING, i + 1, stripped.size))
                     }
                 }
             }
-            val chunks = chunker.chunk(contents)
-                .flatMap { chunk -> chunker.fitToTokenWindow(chunk, embedder.sequenceLength - 2, embedder::tokenCount) }
-                .mapIndexed { index, chunk -> chunk.copy(chunkIndex = index) }
+            val chunks = chunker.reindex(chunker.chunk(docHash, contents)
+                .flatMap { chunk ->
+                    chunker.fitToTokenWindow(chunk, embedder.sequenceLength - 2) { text ->
+                        embedder.tokenCount("", text)
+                    }
+                })
             val allText = contents.joinToString("\n") { pc ->
                 pc.segments.joinToString("\n") {
                     when (it) {
+                        is com.example.pdfgemmarag.inference.pdf.Segment.Heading -> it.text
                         is com.example.pdfgemmarag.inference.pdf.Segment.Paragraph -> it.text
+                        is com.example.pdfgemmarag.inference.pdf.Segment.ListBlock ->
+                            it.items.joinToString("\n") { item -> "${item.label} ${item.text}" }
                         is com.example.pdfgemmarag.inference.pdf.Segment.Table -> it.header
                     }
                 }
@@ -117,6 +126,8 @@ class IndexPdfUseCase(
             // 4. Embed + index in batches
             val pageCount = layouts.size
             val batch = ArrayList<PdfChunkDocument>(BATCH)
+            val centroidSums = HashMap<String, FloatArray>()
+            val centroidCounts = HashMap<String, Int>()
             var indexed = 0
             val now = System.currentTimeMillis()
             val embedStarted = SystemClock.elapsedRealtime()
@@ -124,16 +135,34 @@ class IndexPdfUseCase(
             for (chunk in chunks) {
                 currentCoroutineContext().ensureActive(); awaitCool()
                 val t0 = SystemClock.elapsedRealtime()
-                val vec = embedder.embedDocument(chunk.text)
+                val vec = embedder.embedDocument(chunk.sectionPath, chunk.bodyText)
+                val sum = centroidSums.getOrPut(chunk.sectionId) { FloatArray(vec.size) }
+                for (dimension in vec.indices) sum[dimension] += vec[dimension]
+                centroidCounts[chunk.sectionId] = (centroidCounts[chunk.sectionId] ?: 0) + 1
                 val embedMs = SystemClock.elapsedRealtime() - t0
                 batch += PdfChunkDocument().apply {
-                    namespace = docHash
-                    id = "$docHash:${chunk.chunkIndex}"
+                    namespace = stagingNamespace
+                    id = DocumentStructureManifest.chunkId(chunk.chunkIndex)
                     creationTimestampMillis = now
-                    text = chunk.text
+                    text = chunk.retrievalText
+                    bodyText = chunk.bodyText
+                    retrievalText = chunk.retrievalText
+                    this.docHash = docHash
                     pageNumber = chunk.pageNumber
                     chunkIndex = chunk.chunkIndex
                     isTable = chunk.isTable
+                    sectionId = chunk.sectionId
+                    sectionTitle = chunk.sectionTitle
+                    sectionPath = chunk.sectionPath
+                    specificationNumber = chunk.specificationNumber
+                    sectionNumber = chunk.sectionNumber
+                    identifierAtoms = chunk.identifierAtoms.joinToString(" ")
+                    contentKind = chunk.contentKind
+                    positionInSection = chunk.positionInSection
+                    continuesFromChunkIndex = chunk.continuesFromChunkIndex ?: -1
+                    continuesToChunkIndex = chunk.continuesToChunkIndex ?: -1
+                    indexVersion = DocumentStructureManifest.INDEX_VERSION
+                    embeddingSignature = EmbeddingGemmaEmbedder.MODEL_SIGNATURE
                     docName = displayName
                     script = docScript.name
                     this.pageCount = pageCount
@@ -158,11 +187,38 @@ class IndexPdfUseCase(
             if (batch.isNotEmpty()) store.putChunks(batch)
             onProgress(IndexingProgress(docHash, Stage.FINALIZING, 1, 1))
             store.flush()
+            val centroids = centroidSums.mapValues { (sectionId, sum) ->
+                val count = centroidCounts.getValue(sectionId).coerceAtLeast(1)
+                for (i in sum.indices) sum[i] /= count
+                EmbeddingGemmaEmbedder.l2Normalize(sum)
+                sum
+            }
+            val manifest = DocumentStructureManifest.fromChunks(
+                documentHash = docHash,
+                namespace = stagingNamespace,
+                signature = EmbeddingGemmaEmbedder.MODEL_SIGNATURE,
+                chunks = chunks,
+                tokenCount = { embedder.tokenCount("", it) },
+                centroids = centroids,
+            )
+            // Publication is the commit point. Until this succeeds, every query keeps using the
+            // previous complete namespace.
+            store.publishManifest(manifest)
+            if (previousNamespace != null && previousNamespace != stagingNamespace) {
+                runCatching { store.removeNamespace(previousNamespace) }
+                    .onFailure { Log.w(TAG, "old namespace cleanup failed", it) }
+            } else if (previousNamespace == null) {
+                // Remove a legacy V1 namespace only after V2.1 is active.
+                runCatching { store.removeNamespace(docHash) }
+            }
             Log.i(TAG, "indexed $displayName: $pageCount pages, ${chunks.size} chunks in ${SystemClock.elapsedRealtime() - embedStarted} ms embed+put")
-            return DocumentInfo(docHash, displayName, pageCount, chunks.size, docScript.name)
+            return DocumentInfo(
+                docHash, displayName, pageCount, chunks.size, docScript.name,
+                DocumentStructureManifest.INDEX_VERSION, stagingNamespace,
+            )
         } catch (t: Throwable) {
             // A batch can partially succeed even when AppSearch reports an aggregate failure.
-            runCatching { store.removeDocument(docHash) }
+            runCatching { store.removeNamespace(stagingNamespace) }
             if (t is CancellationException) Log.i(TAG, "indexing cancelled for $displayName") else Log.e(TAG, "indexing failed", t)
             throw t
         }

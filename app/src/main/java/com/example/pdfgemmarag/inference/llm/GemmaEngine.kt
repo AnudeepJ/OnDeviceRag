@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.SystemClock
 import android.util.Log
 import com.example.pdfgemmarag.core.model.GpuMarker
+import com.example.pdfgemmarag.core.model.ModelPaths
 import com.example.pdfgemmarag.core.model.QaPair
 import com.google.ai.edge.litertlm.Backend
 import com.google.ai.edge.litertlm.Contents
@@ -101,6 +102,7 @@ class GemmaEngine(
         userMessage: String,
         sink: TokenSink,
         temperature: Double = 0.0,
+        maxOutputTokens: Int = DEFAULT_MAX_OUTPUT_TOKENS,
     ): Generation {
         check(engine.isInitialized()) { "engine not initialised" }
         check(active.get() == null) { "A previous generation is still finishing" }
@@ -114,6 +116,7 @@ class GemmaEngine(
             systemInstruction = Contents.of(systemInstruction),
             initialMessages = initial,
             samplerConfig = SamplerConfig(topK = 40, topP = 0.95, temperature = temperature, seed = 0),
+            maxOutputToken = maxOutputTokens,
             thinkingConfig = ThinkingConfig(false, 0),
         )
         val tCreate = SystemClock.elapsedRealtime()
@@ -238,13 +241,18 @@ class GemmaEngine(
     companion object {
         private const val TAG = "GemmaEngine"
         const val MAX_HISTORY_TURNS = 4
+        const val DEFAULT_MAX_OUTPUT_TOKENS = 512
         const val FIRST_TOKEN_TIMEOUT_SEC = 45L
         const val STALLED_GENERATION_TIMEOUT_SEC = 30L
         fun gpuMarker(context: Context): File = GpuMarker.file(context)
 
-        /** Warm-cache detection: LiteRT-LM writes compiled GPU kernels under cacheDir. */
-        fun hasWarmGpuCache(context: Context): Boolean =
-            File(context.cacheDir, "litertlm").listFiles()?.isNotEmpty() == true
+        /** Warm only after a successful initialize, never merely because a partial cache exists. */
+        fun hasWarmGpuCache(context: Context): Boolean {
+            val model = File(context.filesDir, "models").listFiles()
+                ?.firstOrNull { it.name.endsWith(ModelPaths.LLM_EXTENSION, ignoreCase = true) }
+                ?: return false
+            return GpuMarker.hasReadyCache(context, model)
+        }
 
         val SYSTEM_INSTRUCTION = """
             You are a precise assistant that answers questions about a PDF document using only the excerpts supplied in each message.

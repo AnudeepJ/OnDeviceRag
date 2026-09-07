@@ -70,7 +70,7 @@ fun ModelManagerScreen(viewModel: RagViewModel, onBack: () -> Unit) {
             item {
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(16.dp)) {
-                        Text("Device", style = MaterialTheme.typography.titleMedium)
+                        Text("Assistant readiness", style = MaterialTheme.typography.titleMedium)
                         Text(gate.describe(), style = MaterialTheme.typography.bodySmall)
                         when (gate.tier) {
                             DeviceGate.Tier.UNSUPPORTED -> Text("Less than 6 GB RAM: Gemma 4 cannot run reliably on this device.", color = MaterialTheme.colorScheme.error)
@@ -78,10 +78,18 @@ fun ModelManagerScreen(viewModel: RagViewModel, onBack: () -> Unit) {
                             else -> Unit
                         }
                         Spacer(Modifier.height(8.dp))
-                        Text("Engine: ${ui.engine.state} ${ui.engine.backend} ${ui.engineMessage}", style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            when (ui.engine.state) {
+                                EngineStatus.State.READY -> "Ready · ${ui.engine.modelName} (${ui.engine.backend})"
+                                EngineStatus.State.LOADING -> "Starting ${ui.engine.modelName}…"
+                                EngineStatus.State.FAILED -> "Could not start the selected model"
+                                else -> "Choose a Gemma model once; it will start automatically when you open chat."
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                        )
                         if (ui.gpuDisabled) {
-                            Text("GPU disabled: ${ui.gpuDisabledReason ?: "previous failure"}", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-                            TextButton(onClick = { viewModel.retryGpu() }) { Text("Retry GPU") }
+                            Text("Using CPU for reliability after a previous graphics-driver failure.", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                            TextButton(onClick = { viewModel.retryGpu() }) { Text("Try GPU again") }
                         }
                         Text(
                             if (ui.embeddingReady) "Embedding model: installed" else "Embedding model: missing (required for indexing)",
@@ -92,8 +100,8 @@ fun ModelManagerScreen(viewModel: RagViewModel, onBack: () -> Unit) {
                 }
             }
 
-            item { Text("Installed Gemma models", style = MaterialTheme.typography.titleMedium) }
-            if (ui.installedModels.isEmpty()) item { Text("None yet. Download below or import a local .litertlm file.", style = MaterialTheme.typography.bodySmall) }
+            item { Text("Gemma model", style = MaterialTheme.typography.titleMedium) }
+            if (ui.installedModels.isEmpty()) item { Text("Add one .litertlm file below. It starts automatically when you open chat.", style = MaterialTheme.typography.bodySmall) }
             items(ui.installedModels, key = { it.absolutePath }) { file ->
                 val loaded = ui.engine.modelPath == file.absolutePath && ui.engine.state == EngineStatus.State.READY
                 val loading = ui.engine.modelPath == file.absolutePath && ui.engine.state == EngineStatus.State.LOADING
@@ -104,15 +112,16 @@ fun ModelManagerScreen(viewModel: RagViewModel, onBack: () -> Unit) {
                             Text("${file.length() shr 20} MB${if (loaded) " · loaded on ${ui.engine.backend}" else ""}", style = MaterialTheme.typography.bodySmall)
                         }
                         if (loaded) OutlinedButton(onClick = { viewModel.unloadEngine() }) { Text("Unload") }
-                        else Button(onClick = { viewModel.loadEngine(file.absolutePath) }, enabled = !loading && gate.canLoadLlm) { Text(if (loading) "Loading…" else "Load") }
+                        else Button(onClick = { viewModel.loadEngine(file.absolutePath) }, enabled = !loading && gate.canLoadLlm) { Text(if (loading) "Starting…" else "Use") }
                         IconButton(onClick = { viewModel.deleteModel(file) }) { Icon(Icons.Default.Delete, contentDescription = "Delete") }
                     }
                 }
             }
             item {
                 OutlinedButton(onClick = { filePicker.launch(arrayOf("*/*")) }, modifier = Modifier.fillMaxWidth()) {
-                    Text("Import local file (.litertlm / .tflite / tokenizer .model)")
+                    Text("Add a model file")
                 }
+                Text("For document Q&A, also add the EmbeddingGemma .tflite file and tokenizer .model file.", style = MaterialTheme.typography.bodySmall)
                 ui.install?.let { (name, copied, total) ->
                     Spacer(Modifier.height(8.dp))
                     Text("Verifying and installing $name: ${copied shr 20}/${total shr 20} MB", style = MaterialTheme.typography.bodySmall)
@@ -121,12 +130,21 @@ fun ModelManagerScreen(viewModel: RagViewModel, onBack: () -> Unit) {
             }
 
             item { Text("Download catalog", style = MaterialTheme.typography.titleMedium) }
+            item {
+                val requiredMissing = ModelCatalog.requiredEntries.any { !viewModel.downloads.installed(it) }
+                Button(
+                    onClick = viewModel::downloadRequiredModels,
+                    enabled = requiredMissing && ModelCatalog.requiredEntries.all { it.downloadable },
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text("Download required models") }
+                Text("About 2.8 GB · Wi-Fi only · continues if you leave this screen", style = MaterialTheme.typography.bodySmall)
+            }
             items(ModelCatalog.entries.filter { it.minRamGb <= gate.totalRamGb + 0.5 }, key = { it.id }) { entry ->
                 CatalogRow(entry, downloads[entry.id], installed = viewModel.downloads.installed(entry), onDownload = { viewModel.download(entry) }, onCancel = { viewModel.cancelDownload(entry) })
             }
             item {
                 Text(
-                    "Gemma weights are gated on Hugging Face and must be mirrored on your own CDN (MODEL_CDN_BASE_URL + SHA256_* Gradle properties). " +
+                    "Production model artifacts must be mirrored on your own CDN (MODEL_CDN_BASE_URL; SHA256_* only when rolling an artifact). " +
                         "Until then, import files picked from device storage.",
                     style = MaterialTheme.typography.bodySmall,
                 )
@@ -155,7 +173,7 @@ private fun CatalogRow(entry: CatalogEntry, state: com.example.pdfgemmarag.ui.do
                 LinearProgressIndicator(progress = { state.fraction }, modifier = Modifier.fillMaxWidth())
                 Text("${state.bytesSoFar shr 20} / ${state.totalBytes shr 20} MB", style = MaterialTheme.typography.bodySmall)
             } else if (!installed && state?.status == DownloadManager.STATUS_FAILED) {
-                Text("Download failed (${downloadFailure(state.reason)})", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                Text("Download/install failed (${state.message ?: downloadFailure(state.reason)})", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
             } else if (!installed && state?.status == DownloadManager.STATUS_SUCCESSFUL) {
                 Text("Downloaded; verifying and installing…", style = MaterialTheme.typography.bodySmall)
             } else if (!installed && !entry.downloadable) {

@@ -158,14 +158,20 @@ private fun DocumentRow(doc: DocumentEntity, onClick: () -> Unit, onDelete: () -
                 Spacer(Modifier.height(4.dp))
                 Text(
                     when (doc.status) {
-                        RagViewModel.STATUS_READY -> "${doc.pageCount} pages · ${doc.chunkCount} chunks · ${doc.script.lowercase()}"
+                        RagViewModel.STATUS_READY -> "${doc.pageCount} pages · ${doc.chunkCount} chunks · ${doc.script.lowercase()} · index v${doc.indexVersion}"
                         RagViewModel.STATUS_INDEXING -> "Indexing…"
+                        RagViewModel.STATUS_REINDEX_REQUIRED -> "Index upgrade required · tap refresh"
                         else -> "Failed: ${doc.error ?: "unknown"}"
                     },
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
-            if (doc.status == RagViewModel.STATUS_FAILED) IconButton(onClick = onReindex) { Icon(Icons.Default.Refresh, contentDescription = "Re-index") }
+            if (doc.status == RagViewModel.STATUS_READY ||
+                doc.status == RagViewModel.STATUS_FAILED ||
+                doc.status == RagViewModel.STATUS_REINDEX_REQUIRED
+            ) {
+                IconButton(onClick = onReindex) { Icon(Icons.Default.Refresh, contentDescription = "Re-index") }
+            }
             IconButton(onClick = onDelete) { Icon(Icons.Default.Delete, contentDescription = "Delete") }
         }
     }

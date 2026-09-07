@@ -1,5 +1,9 @@
 # On-Device Android RAG: Final Implementation Plan
 
+> The foundation and the single-PDF V2.1 hardening increment are implemented. V2.1 is specified in
+> [`docs/SINGLE_PDF_RAG_V2_1_PLAN.md`](docs/SINGLE_PDF_RAG_V2_1_PLAN.md) and validated on a Pixel 10
+> in [`docs/SINGLE_PDF_BASELINE_RESULTS.md`](docs/SINGLE_PDF_BASELINE_RESULTS.md).
+
 ## Locked Decisions
 
 * **LLM Runtime:** `com.google.ai.edge.litertlm:litertlm-android:0.11.x`. API: `Engine(EngineConfig(modelPath, backend, maxNumTokens = 8192, cacheDir))`, `engine.initialize()`, `engine.createConversation(ConversationConfig(...))`, `conversation.sendMessageAsync(msg): Flow<Message>`, `conversation.cancelProcess()`. No manual chat-template tokens; no `<|think|>` in the system instruction.

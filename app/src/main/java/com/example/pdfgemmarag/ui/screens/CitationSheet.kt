@@ -26,18 +26,24 @@ import com.example.pdfgemmarag.ui.RagViewModel
 /** Fetches the chunk text by id from :inference on demand, so token streams stay small. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CitationSheet(chunkId: String, viewModel: RagViewModel, onDismiss: () -> Unit) {
-    var citation by remember(chunkId) { mutableStateOf<Citation?>(null) }
-    var failed by remember(chunkId) { mutableStateOf(false) }
-    LaunchedEffect(chunkId) {
-        citation = viewModel.citation(chunkId)
+fun CitationSheet(indexNamespace: String, chunkId: String, viewModel: RagViewModel, onDismiss: () -> Unit) {
+    var citation by remember(indexNamespace, chunkId) { mutableStateOf<Citation?>(null) }
+    var failed by remember(indexNamespace, chunkId) { mutableStateOf(false) }
+    LaunchedEffect(indexNamespace, chunkId) {
+        citation = viewModel.citation(indexNamespace, chunkId)
         failed = citation == null
     }
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(Modifier.fillMaxWidth().padding(20.dp).verticalScroll(rememberScrollState())) {
             when {
                 citation != null -> {
-                    Text("Page ${citation!!.pageNumber} · chunk ${citation!!.chunkIndex}", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        buildString {
+                            append("Page ${citation!!.pageNumber} · chunk ${citation!!.chunkIndex}")
+                            if (citation!!.sectionPath.isNotBlank()) append("\n${citation!!.sectionPath}")
+                        },
+                        style = MaterialTheme.typography.titleMedium,
+                    )
                     Spacer(Modifier.height(12.dp))
                     Text(citation!!.text, style = MaterialTheme.typography.bodyMedium)
                 }

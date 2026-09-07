@@ -14,4 +14,6 @@ data class GenerationStats(
     val contextTokensApprox: Int,
     val backend: String,
     val cancelled: Boolean,
+    val visibleTimeToFirstTokenMs: Long = timeToFirstTokenMs,
+    val groundingFailure: Boolean = false,
 ) : Parcelable

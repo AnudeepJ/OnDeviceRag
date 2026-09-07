@@ -17,7 +17,7 @@ import kotlin.math.sqrt
  *
  * Input: token ids padded to the model's fixed sequence length (`seq512` variant). Output: 768-d
  * pooled embedding, truncated (Matryoshka) to [outputDim] and L2-normalised so cosine == dot.
- * Chunks use the `title: none | text: ` prefix, queries `task: search result | query: `; using the
+ * Chunks use the `title: <section path> | text: ` prefix, queries `task: search result | query: `; using the
  * wrong prefix costs several points of retrieval quality.
  */
 class EmbeddingGemmaEmbedder(
@@ -72,12 +72,18 @@ class EmbeddingGemmaEmbedder(
             "vocab=${tokenizer.vocabSize} (${tokenizer.normalizerNote})")
     }
 
-    fun embedDocument(text: String): FloatArray = embed(DOC_PREFIX + text)
+    fun embedDocument(text: String): FloatArray = embedDocument("none", text)
+
+    fun embedDocument(title: String, text: String): FloatArray =
+        embed("title: ${title.ifBlank { "none" }} | text: $text")
 
     fun embedQuery(text: String): FloatArray = embed(QUERY_PREFIX + text)
 
     /** Token count of the prefixed chunk; used to verify chunks fit the window. */
-    fun tokenCount(text: String): Int = tokenizer.encode(DOC_PREFIX + text).size + 2
+    fun tokenCount(text: String): Int = tokenCount("none", text)
+
+    fun tokenCount(title: String, text: String): Int =
+        tokenizer.encode("title: ${title.ifBlank { "none" }} | text: $text").size + 2
 
     private fun embed(text: String): FloatArray = synchronized(lock) {
         val ids = tokenizer.encodeForModel(text, sequenceLength, addBos = true, addEos = true)
@@ -109,7 +115,7 @@ class EmbeddingGemmaEmbedder(
         const val DOC_PREFIX = "title: none | text: "
         const val QUERY_PREFIX = "task: search result | query: "
         const val DEFAULT_SEQ_LEN = 512
-        const val MODEL_SIGNATURE = "embeddinggemma-300m-seq512-512d"
+        const val MODEL_SIGNATURE = "embeddinggemma-300m-seq512-512d-v2.1-section-title"
         private val INPUT_NAMES = listOf("input_ids", "input_word_ids", "serving_default_input_ids:0", "args_0")
 
         fun seqLenFromFileName(name: String): Int? =

@@ -31,6 +31,7 @@ interface IAiInferenceService {
 
     // ---- Citations ----
     Citation getCitation(String chunkId);
+    Citation getCitationInNamespace(String indexNamespace, String chunkId);
 
     // ---- Model install (SHA-256 verify + copy into filesDir/models) ----
     void installModel(String sourcePath, String targetFileName, String expectedSha256, long expectedSize, boolean deleteSource, IInstallCallback callback);

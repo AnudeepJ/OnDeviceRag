@@ -1,0 +1,179 @@
+[
+  {
+    "id": "ambiguous-concrete-mix",
+    "intent": "AMBIGUOUS_SECTION",
+    "question": "Summarize concrete mix",
+    "expectedPages": [17, 60],
+    "requireAllPages": true,
+    "requiredPhrases": [],
+    "forbiddenPages": [65],
+    "expectedClarification": true
+  },
+  {
+    "id": "summary-03300-205",
+    "intent": "SECTION_SUMMARY",
+    "question": "Summarize section 2.05 concrete mix in specification 03300",
+    "expectedPages": [17],
+    "requireAllPages": false,
+    "requiredPhrases": ["5.75", "2400", "4000", "0.50"],
+    "forbiddenPages": [60, 65]
+  },
+  {
+    "id": "summary-03310-202",
+    "intent": "SECTION_SUMMARY",
+    "question": "Summarize section 2.02 concrete mix in specification 03310",
+    "expectedPages": [60, 61, 62, 63],
+    "requireAllPages": false,
+    "requiredPhrases": ["testing laboratory", "0.45", "0.55", "4 to 6 percent"],
+    "forbiddenPages": [17, 65]
+  },
+  {
+    "id": "fact-03300-ratio",
+    "intent": "FACT",
+    "question": "What is the maximum water cement ratio in section 2.05 of specification 03300",
+    "expectedPages": [17],
+    "requireAllPages": false,
+    "requiredPhrases": ["0.50"],
+    "forbiddenPages": [62],
+    "forbiddenPhrases": ["0.45", "0.40", "0.55"]
+  },
+  {
+    "id": "fact-03300-strength-slump",
+    "intent": "MULTI_FACT",
+    "question": "What compressive strengths and slump ranges are specified in section 2.05 of specification 03300",
+    "expectedPages": [17],
+    "requireAllPages": false,
+    "requiredPhrases": ["2400", "4000", "3 to 4", "5 to 6"],
+    "forbiddenPages": [62, 63]
+  },
+  {
+    "id": "fact-03300-admixtures",
+    "intent": "MULTI_FACT",
+    "question": "When may accelerating and set retarding admixtures be used in section 2.05 of specification 03300",
+    "expectedPages": [17],
+    "requireAllPages": false,
+    "requiredPhrases": ["cold weather", "hot weather", "approved"],
+    "forbiddenPages": [63]
+  },
+  {
+    "id": "summary-03300-curing",
+    "intent": "SECTION_SUMMARY",
+    "question": "Summarize section 3.26 curing in specification 03300",
+    "expectedPages": [44, 45],
+    "requireAllPages": true,
+    "requiredPhrases": ["7 curing days", "3 curing days", "curing compound"],
+    "forbiddenPages": [24, 72]
+  },
+  {
+    "id": "fact-curing-material",
+    "intent": "MULTI_FACT",
+    "question": "What minimum solids content and color requirement apply to membrane forming curing compound in specification 03300",
+    "expectedPages": [24],
+    "requireAllPages": false,
+    "requiredPhrases": ["30 percent", "white"],
+    "forbiddenPages": [44, 78]
+  },
+  {
+    "id": "table-slump",
+    "intent": "TABLE_LOOKUP",
+    "question": "What are the minimum and maximum slump values for Portland cement concrete and concrete dosed with superplasticizer",
+    "expectedPages": [62],
+    "requireAllPages": false,
+    "requiredPhrases": ["Portland", "superplasticizer", "2", "4", "1", "3"],
+    "forbiddenPages": [17]
+  },
+  {
+    "id": "table-class-d",
+    "intent": "TABLE_LOOKUP",
+    "question": "Which concrete class has 5000 psi compressive strength and 658 pounds of cement per cubic yard",
+    "expectedPages": [63],
+    "requireAllPages": false,
+    "requiredPhrases": ["Class D", "5000", "658"],
+    "forbiddenPages": []
+  },
+  {
+    "id": "regression-plywood",
+    "intent": "FACT",
+    "question": "What standard and class must plywood form material meet",
+    "expectedPages": [3, 17],
+    "requireAllPages": false,
+    "requiredPhrases": ["PS 1", "Class 1"],
+    "forbiddenPages": []
+  },
+  {
+    "id": "regression-ratios-03310",
+    "intent": "MULTI_FACT",
+    "question": "List the maximum water cement ratios in specification 03310",
+    "expectedPages": [62],
+    "requireAllPages": false,
+    "requiredPhrases": ["0.45", "0.40", "0.55"],
+    "forbiddenPages": [17]
+  },
+  {
+    "id": "negative-handrail-color",
+    "intent": "UNSUPPORTED",
+    "question": "What color must structural steel handrails be painted",
+    "expectedPages": [],
+    "requireAllPages": false,
+    "requiredPhrases": [],
+    "forbiddenPages": [],
+    "expectedRefusal": true
+  },
+  {
+    "id": "fact-mass-curing",
+    "intent": "FACT",
+    "question": "What is the minimum curing period for mass concrete in specification 03300",
+    "expectedPages": [45],
+    "requireAllPages": false,
+    "requiredPhrases": ["2 weeks"],
+    "forbiddenPages": [72]
+  },
+  {
+    "id": "followup-mass-freezing",
+    "intent": "FOLLOW_UP",
+    "question": "What about when ambient temperature is below freezing",
+    "expectedPages": [45],
+    "requireAllPages": false,
+    "requiredPhrases": ["32", "freezing"],
+    "forbiddenPages": [],
+    "historyFrom": "fact-mass-curing"
+  },
+  {
+    "id": "script1-plumb-piers",
+    "intent": "TABLE_LOOKUP",
+    "question": "The surveying team is checking the formwork for the new piers. What is the maximum allowable variation from plumb?",
+    "expectedPages": [12, 49],
+    "requireAllPages": false,
+    "requiredPhrases": ["1/2", "10"],
+    "forbiddenPages": []
+  },
+  {
+    "id": "script1-column-cross-section",
+    "intent": "FOLLOW_UP",
+    "question": "Got it. What about the cross-sectional dimensions? How much tolerance do we have on the column thickness?",
+    "expectedPages": [12, 48, 49],
+    "requireAllPages": false,
+    "requiredPhrases": ["+1/2", "-1/4"],
+    "forbiddenPages": [],
+    "historyFrom": "script1-plumb-piers"
+  },
+  {
+    "id": "script1-curb-level",
+    "intent": "FOLLOW_UP",
+    "question": "Okay, and what is the tolerance for the level of the top surfaces of the curbs?",
+    "expectedPages": [12, 49],
+    "requireAllPages": false,
+    "requiredPhrases": ["3/16", "10"],
+    "forbiddenPages": [],
+    "historyFrom": "script1-column-cross-section"
+  },
+  {
+    "id": "script1-testing-laboratory",
+    "intent": "FACT",
+    "question": "We will need the lab out here to test the mix. What section of the specifications covers the testing laboratory services?",
+    "expectedPages": [13, 43, 51, 53, 56],
+    "requireAllPages": false,
+    "requiredPhrases": ["01450", "Testing Laboratory Services"],
+    "forbiddenPages": []
+  }
+]

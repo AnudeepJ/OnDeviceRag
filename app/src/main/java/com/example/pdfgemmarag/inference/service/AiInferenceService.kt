@@ -35,6 +35,7 @@ import com.example.pdfgemmarag.inference.ocr.MlKitOcr
 import com.example.pdfgemmarag.inference.pdf.AprysePdfExtractor
 import com.example.pdfgemmarag.inference.store.AppSearchVectorStore
 import com.example.pdfgemmarag.inference.store.RetrievalProbe
+import com.example.pdfgemmarag.ui.download.ModelDownloadReceiver
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -48,6 +49,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 
 /**
@@ -76,7 +78,8 @@ class AiInferenceService : Service() {
     private val generations = ConcurrentHashMap<Long, GemmaEngine.Generation>()
     private val cancelledGenerations = ConcurrentHashMap.newKeySet<Long>()
     @Volatile private var indexingJob: Job? = null
-    @Volatile private var installJob: Job? = null
+    private val installMutex = Mutex()
+    private val pendingInstalls = AtomicInteger(0)
 
     override fun onCreate() {
         super.onCreate()
@@ -94,7 +97,8 @@ class AiInferenceService : Service() {
                 val target = intent.getStringExtra(EXTRA_TARGET_NAME) ?: return START_NOT_STICKY
                 val sha = intent.getStringExtra(EXTRA_SHA256) ?: ""
                 val size = intent.getLongExtra(EXTRA_SIZE, -1)
-                startInstall(File(source), target, sha, size, deleteSource = true, callback = null)
+                val downloadId = intent.getLongExtra(EXTRA_DOWNLOAD_ID, -1)
+                startInstall(File(source), target, sha, size, deleteSource = true, callback = null, downloadId = downloadId)
             }
             ACTION_KEEPALIVE -> Unit
         }
@@ -142,35 +146,55 @@ class AiInferenceService : Service() {
         override fun loadEngine(modelPath: String, allowGpu: Boolean, callback: IEngineCallback) {
             scope.launch {
                 engineLock.withLock {
+                    val modelFile = File(modelPath)
+                    if (!modelFile.isFile || !modelFile.canRead()) {
+                        safe { callback.onFailed("Model file is missing or unreadable. Import the complete .litertlm file again.") }
+                        return@withLock
+                    }
+                    if (!modelFile.name.endsWith(ModelPaths.LLM_EXTENSION, ignoreCase = true) ||
+                        modelFile.length() < ModelPaths.MIN_LLM_BYTES
+                    ) {
+                        safe { callback.onFailed("Model file is incomplete or is not a .litertlm model (${modelFile.length()} bytes).") }
+                        return@withLock
+                    }
                     gemma?.close(); gemma = null
                     currentStatus = EngineStatus(EngineStatus.State.LOADING, modelPath = modelPath, modelName = File(modelPath).name)
                     val useGpu = allowGpu && !GemmaEngine.gpuMarker(this@AiInferenceService).exists()
                     safe { callback.onProgress("Creating engine (${if (useGpu) "GPU" else "CPU"})") }
+                    var candidate: GemmaEngine? = null
                     try {
-                        val e = GemmaEngine(this@AiInferenceService, modelPath, allowGpu)
+                        val e = GemmaEngine(this@AiInferenceService, modelPath, allowGpu).also { candidate = it }
                         safe { callback.onProgress("Initialising on ${e.backendName}. First GPU start compiles shaders and can take up to two minutes.") }
                         withContext(Dispatchers.IO) { e.initialize() }
+                        if (e.backendName == "GPU") GpuMarker.markCacheReady(this@AiInferenceService, modelFile)
                         gemma = e
+                        candidate = null
                         currentStatus = EngineStatus(
                             EngineStatus.State.READY, backend = e.backendName, modelPath = modelPath,
                             modelName = File(modelPath).name, embedderLoaded = embedder != null, thermalStatus = thermal.status.value,
                         )
                         safe { callback.onReady(currentStatus) }
                     } catch (t: Throwable) {
+                        candidate?.close(); candidate = null
                         Log.e(TAG, "engine init failed (gpu=$useGpu)", t)
                         if (useGpu) {
                             // A clean exception (not a crash) on GPU: persist the decision and retry on CPU now.
                             GpuMarker.write(this@AiInferenceService, "init exception: ${t.message}")
                             safe { callback.onProgress("GPU initialisation failed; retrying on CPU") }
                             try {
-                                val e = GemmaEngine(this@AiInferenceService, modelPath, allowGpu = false)
+                                val e = GemmaEngine(this@AiInferenceService, modelPath, allowGpu = false).also { candidate = it }
                                 withContext(Dispatchers.IO) { e.initialize() }
                                 gemma = e
+                                candidate = null
                                 currentStatus = EngineStatus(EngineStatus.State.READY, backend = "CPU", modelPath = modelPath, modelName = File(modelPath).name)
                                 safe { callback.onReady(currentStatus) }
                                 return@withLock
                             } catch (t2: Throwable) {
+                                candidate?.close(); candidate = null
                                 Log.e(TAG, "CPU init failed too", t2)
+                                // Both backends failing points to the model/runtime, not a proven GPU
+                                // incompatibility. Do not permanently poison future valid models.
+                                GemmaEngine.gpuMarker(this@AiInferenceService).delete()
                                 currentStatus = EngineStatus(EngineStatus.State.FAILED, message = t2.message ?: "init failed")
                                 safe { callback.onFailed(t2.message ?: t2.javaClass.simpleName) }
                                 return@withLock
@@ -291,8 +315,12 @@ class AiInferenceService : Service() {
 
         override fun getCitation(chunkId: String): Citation? = runBlocking { runCatching { requireStore().getCitation(chunkId) }.getOrNull() }
 
+        override fun getCitationInNamespace(indexNamespace: String, chunkId: String): Citation? = runBlocking {
+            runCatching { requireStore().getCitation(indexNamespace, chunkId) }.getOrNull()
+        }
+
         override fun installModel(sourcePath: String, targetFileName: String, expectedSha256: String, expectedSize: Long, deleteSource: Boolean, callback: IInstallCallback?) {
-            startInstall(File(sourcePath), targetFileName, expectedSha256, expectedSize, deleteSource, callback)
+            startInstall(File(sourcePath), targetFileName, expectedSha256, expectedSize, deleteSource, callback, downloadId = -1)
         }
 
         override fun getDiagnostics(): String = runBlocking { diagnostics() }
@@ -316,31 +344,46 @@ class AiInferenceService : Service() {
         generations.remove(generationId)?.cancel()
     }
 
-    private fun startInstall(source: File, targetName: String, sha: String, size: Long, deleteSource: Boolean, callback: IInstallCallback?) {
-        if (installJob?.isActive == true) { safe { callback?.onFailed("Another install is running") }; return }
-        installJob = scope.launch(Dispatchers.IO) {
-            startForegroundCompat(buildNotification("Installing model", targetName, 0, 0, indeterminate = true))
+    private fun startInstall(source: File, targetName: String, sha: String, size: Long, deleteSource: Boolean, callback: IInstallCallback?, downloadId: Long) {
+        pendingInstalls.incrementAndGet()
+        scope.launch(Dispatchers.IO) {
+            var installError: String? = null
             try {
-                val target = File(ModelPaths.modelsDir(this@AiInferenceService), targetName)
-                val total = if (size > 0) size else source.length()
-                var last = 0L
-                val hash = ModelInstaller.verifyAndInstall(source, target, sha, size, deleteSource) { copied ->
-                    val now = System.currentTimeMillis()
-                    if (now - last > 500) {
-                        last = now
-                        safe { callback?.onProgress(copied, total) }
-                        updateNotification(buildNotification("Installing model", "${copied * 100 / total.coerceAtLeast(1)}%", (copied shr 20).toInt(), (total shr 20).toInt(), false))
+                installMutex.withLock {
+                    startForegroundCompat(buildNotification("Installing model", targetName, 0, 0, indeterminate = true))
+                    try {
+                        val target = File(ModelPaths.modelsDir(this@AiInferenceService), targetName)
+                        val total = if (size > 0) size else source.length()
+                        var last = 0L
+                        val hash = ModelInstaller.verifyAndInstall(source, target, sha, size, deleteSource) { copied ->
+                            val now = System.currentTimeMillis()
+                            if (now - last > 500) {
+                                last = now
+                                safe { callback?.onProgress(copied, total) }
+                                updateNotification(buildNotification("Installing model", "${copied * 100 / total.coerceAtLeast(1)}%", (copied shr 20).toInt(), (total shr 20).toInt(), false))
+                            }
+                        }
+                        safe { callback?.onInstalled(target.absolutePath, hash) }
+                    } catch (t: Throwable) {
+                        installError = t.message ?: t.javaClass.simpleName
+                        Log.e(TAG, "install failed", t)
+                        safe { callback?.onFailed(requireNotNull(installError)) }
                     }
                 }
-                safe { callback?.onInstalled(target.absolutePath, hash) }
-            } catch (t: Throwable) {
-                Log.e(TAG, "install failed", t)
-                safe { callback?.onFailed(t.message ?: t.javaClass.simpleName) }
             } finally {
-                installJob = null
+                if (downloadId >= 0) notifyDownloadInstallResult(downloadId, installError)
+                pendingInstalls.decrementAndGet()
                 stopForegroundIfIdle()
             }
         }
+    }
+
+    private fun notifyDownloadInstallResult(downloadId: Long, error: String?) {
+        val result = Intent(this, ModelDownloadReceiver::class.java)
+            .setAction(ACTION_INSTALL_MODEL_RESULT)
+            .putExtra(EXTRA_DOWNLOAD_ID, downloadId)
+        if (error != null) result.putExtra(EXTRA_INSTALL_ERROR, error)
+        sendBroadcast(result)
     }
 
     private suspend fun diagnostics(): String {
@@ -381,7 +424,7 @@ class AiInferenceService : Service() {
     }
 
     private fun stopForegroundIfIdle() {
-        if (indexingJob?.isActive != true && installJob?.isActive != true) {
+        if (indexingJob?.isActive != true && pendingInstalls.get() == 0) {
             ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
         }
     }
@@ -408,11 +451,14 @@ class AiInferenceService : Service() {
         private const val TAG = "AiInferenceService"
         const val NOTIFICATION_ID = 1001
         const val ACTION_INSTALL_MODEL = "com.example.pdfgemmarag.action.INSTALL_MODEL"
+        const val ACTION_INSTALL_MODEL_RESULT = "com.example.pdfgemmarag.action.INSTALL_MODEL_RESULT"
         const val ACTION_KEEPALIVE = "com.example.pdfgemmarag.action.KEEPALIVE"
         const val EXTRA_SOURCE = "source"
         const val EXTRA_TARGET_NAME = "targetName"
         const val EXTRA_SHA256 = "sha256"
         const val EXTRA_SIZE = "size"
+        const val EXTRA_DOWNLOAD_ID = "download_id"
+        const val EXTRA_INSTALL_ERROR = "install_error"
 
     }
 }

@@ -42,6 +42,22 @@ class HybridQueryTest {
     }
 
     @Test
+    fun `required property scopes keyword and semantic retrieval before ranking`() {
+        assertEquals(
+            "specificationNumber:03310 AND ((getSearchStringParameter(0)) OR semanticSearch(getEmbeddingParameter(0), 0.3, 72))",
+            HybridQuery.build(
+                listOf("ratios"), 0.3, 72,
+                requiredPropertyTerm = "specificationNumber" to "03310",
+            ),
+        )
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `unsafe property term cannot enter query expression`() {
+        HybridQuery.build(emptyList(), 0.3, 12, "specificationNumber" to "03310 OR foo")
+    }
+
+    @Test
     fun `keeps CJK tokens of any length`() {
         assertEquals(listOf("東京", "首都"), HybridQuery.keywordTerms("東京 is the 首都"))
     }

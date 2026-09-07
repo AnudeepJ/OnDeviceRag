@@ -12,12 +12,14 @@ import java.io.File
 object GpuMarker {
     private const val TAG = "GpuMarker"
     const val FILE_NAME = "gpu_disabled.marker"
+    private const val READY_FILE_NAME = "gpu_cache_ready.marker"
 
     fun file(context: Context): File = File(context.filesDir, FILE_NAME)
 
     fun exists(context: Context): Boolean = file(context).exists()
 
     fun write(context: Context, reason: String) {
+        readyFile(context).delete()
         val marker = file(context)
         val tmp = File(marker.parentFile, marker.name + ".tmp")
         tmp.writeText("${System.currentTimeMillis()}\n$reason\n")
@@ -29,6 +31,22 @@ object GpuMarker {
         if (file(context).delete()) Log.i(TAG, "GPU marker cleared; next load retries GPU")
         if (embedderFile(context).delete()) Log.i(TAG, "embedder GPU marker cleared")
     }
+
+    /** A cache directory is only warm after Engine.initialize() has completed for this artifact. */
+    fun markCacheReady(context: Context, model: File) {
+        val marker = readyFile(context)
+        val tmp = File(marker.parentFile, marker.name + ".tmp")
+        tmp.writeText(modelIdentity(model))
+        if (!tmp.renameTo(marker)) marker.writeText(modelIdentity(model))
+    }
+
+    fun hasReadyCache(context: Context, model: File): Boolean {
+        val cacheHasFiles = File(context.cacheDir, "litertlm").listFiles()?.isNotEmpty() == true
+        return cacheHasFiles && runCatching { readyFile(context).readText() == modelIdentity(model) }.getOrDefault(false)
+    }
+
+    private fun readyFile(context: Context): File = File(context.filesDir, READY_FILE_NAME)
+    private fun modelIdentity(model: File): String = "${model.name}\n${model.length()}\n"
 
     /**
      * Separate marker for the EmbeddingGemma `CompiledModel`: a failed GPU compile is a clean exception

@@ -4,10 +4,10 @@ import com.example.pdfgemmarag.BuildConfig
 import com.example.pdfgemmarag.core.model.ModelPaths
 
 /**
- * Downloadable artifacts. The Gemma and EmbeddingGemma weights are gated on Hugging Face, so they
- * must be mirrored on a CDN you control; set `MODEL_CDN_BASE_URL` (and the SHA-256 of each file)
- * in `~/.gradle/gradle.properties` or CI secrets. Catalog downloads are disabled until both the
- * base URL and a valid SHA-256 are configured.
+ * Downloadable artifacts. EmbeddingGemma requires license acceptance, and upstream model objects
+ * may be replaced as new exports are published. Product builds therefore use immutable artifacts
+ * mirrored on a CDN you control. Set `MODEL_CDN_BASE_URL` in `~/.gradle/gradle.properties` or CI;
+ * catalog downloads remain disabled until both the base URL and a valid SHA-256 are configured.
  */
 data class CatalogEntry(
     val id: String,
@@ -15,6 +15,8 @@ data class CatalogEntry(
     val fileName: String,
     val kind: Kind,
     val sizeBytes: Long,
+    /** Exact content length for the pinned artifact, or null when only an estimate is known. */
+    val expectedSizeBytes: Long? = sizeBytes,
     val sha256: String,
     /** Minimum device RAM (GB) to offer this entry; 0 = always. */
     val minRamGb: Int,
@@ -38,7 +40,7 @@ object ModelCatalog {
             displayName = "Gemma 4 E2B (default)",
             fileName = "gemma-4-E2B-it.litertlm",
             kind = CatalogEntry.Kind.LLM,
-            sizeBytes = 2_580L * 1024 * 1024,
+            sizeBytes = 2_583_085_056L,
             sha256 = BuildConfig.SHA256_GEMMA_E2B,
             minRamGb = 6,
             description = "2.6 GB. Runs on 6 GB+ devices. Best balance of speed and quality for RAG.",
@@ -49,6 +51,7 @@ object ModelCatalog {
             fileName = "gemma-4-E4B-it.litertlm",
             kind = CatalogEntry.Kind.LLM,
             sizeBytes = 3_650L * 1024 * 1024,
+            expectedSizeBytes = null,
             sha256 = BuildConfig.SHA256_GEMMA_E4B,
             minRamGb = 12,
             description = "3.7 GB. Higher quality; needs 12 GB+ RAM.",
@@ -58,7 +61,7 @@ object ModelCatalog {
             displayName = "EmbeddingGemma 300M (required)",
             fileName = ModelPaths.EMBEDDING_MODEL_FILE,
             kind = CatalogEntry.Kind.EMBEDDING,
-            sizeBytes = 179L * 1024 * 1024,
+            sizeBytes = 179_132_472L,
             sha256 = BuildConfig.SHA256_EMBEDDING,
             minRamGb = 0,
             description = "179 MB. seq512 LiteRT export; produces the 512-d vectors stored in AppSearch.",
@@ -68,12 +71,16 @@ object ModelCatalog {
             displayName = "EmbeddingGemma tokenizer (required)",
             fileName = ModelPaths.EMBEDDING_TOKENIZER_FILE,
             kind = CatalogEntry.Kind.TOKENIZER,
-            sizeBytes = 4_700L * 1024,
+            sizeBytes = 4_689_074L,
             sha256 = BuildConfig.SHA256_TOKENIZER,
             minRamGb = 0,
             description = "4.7 MB SentencePiece model shared by Gemma and EmbeddingGemma.",
         ),
     )
+
+    /** Minimum artifact set for document Q&A on a supported phone. */
+    val requiredEntries: List<CatalogEntry>
+        get() = entries.filter { it.id == "gemma4-e2b" || it.kind != CatalogEntry.Kind.LLM }
 
     fun byFileName(fileName: String): CatalogEntry? = entries.firstOrNull { it.fileName == fileName }
 }

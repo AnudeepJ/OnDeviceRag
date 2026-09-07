@@ -5,6 +5,7 @@ import com.example.pdfgemmarag.inference.ocr.ScriptDetector
 import com.example.pdfgemmarag.inference.pdf.PageContent
 import com.example.pdfgemmarag.inference.pdf.Segment
 import java.text.BreakIterator
+import java.security.MessageDigest
 import java.util.Locale
 
 data class Chunk(
@@ -13,6 +14,18 @@ data class Chunk(
     val text: String,
     val isTable: Boolean,
     val script: Script,
+    val bodyText: String = text,
+    val retrievalText: String = text,
+    val sectionId: String = "",
+    val specificationNumber: String = "",
+    val sectionNumber: String = "",
+    val sectionTitle: String = "",
+    val sectionPath: String = "",
+    val positionInSection: Int = 0,
+    val contentKind: String = if (isTable) "TABLE" else "PARAGRAPH",
+    val identifierAtoms: List<String> = emptyList(),
+    val continuesFromChunkIndex: Int? = null,
+    val continuesToChunkIndex: Int? = null,
 )
 
 /**
@@ -37,26 +50,87 @@ class ScriptAwareChunker(
     private val minKeepChars: Int = 40,
 ) {
 
-    fun chunk(pages: List<PageContent>): List<Chunk> {
+    fun chunk(pages: List<PageContent>): List<Chunk> = chunk("document", pages)
+
+    fun chunk(docHash: String, pages: List<PageContent>): List<Chunk> {
         val out = ArrayList<Chunk>()
         var index = 0
+        var ordinal = 0
+        val sectionStack = ArrayList<Segment.Heading>()
+        var section = SectionState.root(docHash)
+        var position = 0
+
+        fun add(page: Int, body: String, table: Boolean, kind: String) {
+            val clean = body.trim()
+            if (clean.isEmpty()) return
+            val retrieval = listOf(section.path, clean).filter { it.isNotBlank() }.joinToString("\n")
+            out += Chunk(
+                chunkIndex = index++,
+                pageNumber = page,
+                text = clean,
+                isTable = table,
+                script = ScriptDetector.detect(clean),
+                bodyText = clean,
+                retrievalText = retrieval,
+                sectionId = section.id,
+                specificationNumber = section.specificationNumber,
+                sectionNumber = section.number,
+                sectionTitle = section.title,
+                sectionPath = section.path,
+                positionInSection = position++,
+                contentKind = kind,
+                identifierAtoms = IdentifierAtoms.extract(retrieval),
+            )
+        }
+
         for (page in pages) {
             for (segment in page.segments) {
                 when (segment) {
+                    is Segment.Heading -> {
+                        while (sectionStack.isNotEmpty() && sectionStack.last().level >= segment.level) {
+                            sectionStack.removeAt(sectionStack.lastIndex)
+                        }
+                        sectionStack += segment
+                        ordinal++
+                        section = SectionState.from(docHash, sectionStack, ordinal)
+                        position = 0
+                        add(page.pageNumber, segment.text, table = false, kind = "HEADING")
+                    }
                     is Segment.Paragraph -> {
                         for (text in chunkParagraph(segment.text)) {
-                            out += Chunk(index++, page.pageNumber, text, isTable = false, script = ScriptDetector.detect(text))
+                            add(page.pageNumber, text, table = false, kind = "PARAGRAPH")
+                        }
+                    }
+                    is Segment.ListBlock -> {
+                        for (text in chunkList(segment)) {
+                            add(page.pageNumber, text, table = false, kind = "LIST")
                         }
                     }
                     is Segment.Table -> {
                         for (text in chunkTable(segment)) {
-                            out += Chunk(index++, page.pageNumber, text, isTable = true, script = ScriptDetector.detect(text))
+                            add(page.pageNumber, text, table = true, kind = "TABLE")
                         }
                     }
                 }
             }
         }
-        return mergeTiny(out)
+        return linkContinuations(mergeTiny(out))
+    }
+
+    /** Re-establishes IDs, section positions and continuation edges after token-window splitting. */
+    fun reindex(chunks: List<Chunk>): List<Chunk> {
+        val positions = HashMap<String, Int>()
+        val indexed = chunks.mapIndexed { index, chunk ->
+            val position = positions[chunk.sectionId] ?: 0
+            positions[chunk.sectionId] = position + 1
+            chunk.copy(
+                chunkIndex = index,
+                positionInSection = position,
+                continuesFromChunkIndex = null,
+                continuesToChunkIndex = null,
+            )
+        }
+        return linkContinuations(indexed)
     }
 
     /**
@@ -64,8 +138,8 @@ class ScriptAwareChunker(
      * tables/mixed scripts can otherwise be silently truncated by the model input encoder.
      */
     fun fitToTokenWindow(chunk: Chunk, maxTokens: Int, tokenCount: (String) -> Int): List<Chunk> {
-        if (tokenCount(chunk.text) <= maxTokens) return listOf(chunk)
-        val lines = chunk.text.lines()
+        if (tokenCount(chunk.retrievalText) <= maxTokens) return listOf(chunk)
+        val lines = chunk.bodyText.lines()
         val header = if (chunk.isTable && lines.size > 2) lines.take(2).joinToString("\n") + "\n" else ""
         val body = if (header.isEmpty()) chunk.text else lines.drop(2).joinToString("\n")
         val out = ArrayList<Chunk>()
@@ -76,7 +150,8 @@ class ScriptAwareChunker(
             var best = -1
             while (low <= high) {
                 val mid = (low + high) ushr 1
-                if (tokenCount(header + body.substring(offset, mid)) <= maxTokens) {
+                val candidate = retrievalFor(chunk, header + body.substring(offset, mid))
+                if (tokenCount(candidate) <= maxTokens) {
                     best = mid
                     low = mid + 1
                 } else {
@@ -92,8 +167,14 @@ class ScriptAwareChunker(
                 if (boundary > offset + (best - offset) / 2) end = boundary + 1
             }
             val text = (header + body.substring(offset, end).trim()).trim()
-            check(tokenCount(text) <= maxTokens) { "Chunk split still exceeds embedding token window" }
-            if (text.isNotEmpty()) out += chunk.copy(text = text, script = ScriptDetector.detect(text))
+            check(tokenCount(retrievalFor(chunk, text)) <= maxTokens) { "Chunk split still exceeds embedding token window" }
+            if (text.isNotEmpty()) out += chunk.copy(
+                text = text,
+                bodyText = text,
+                retrievalText = retrievalFor(chunk, text),
+                script = ScriptDetector.detect(text),
+                identifierAtoms = IdentifierAtoms.extract(retrievalFor(chunk, text)),
+            )
             offset = end
             while (offset < body.length && body[offset].isWhitespace()) offset++
         }
@@ -106,7 +187,7 @@ class ScriptAwareChunker(
         var acc: Chunk? = null
         fun flush() { acc?.let { merged += it }; acc = null }
         for (c in chunks) {
-            if (c.isTable) {
+            if (c.isTable || c.contentKind == "HEADING" || c.contentKind == "LIST") {
                 flush()
                 merged += c
                 continue
@@ -114,8 +195,14 @@ class ScriptAwareChunker(
             val cur = acc
             if (cur == null) {
                 acc = c
-            } else if (cur.pageNumber == c.pageNumber && cur.text.length < minMergeChars) {
-                acc = cur.copy(text = cur.text.trimEnd() + "\n" + c.text.trim())
+            } else if (cur.pageNumber == c.pageNumber && cur.sectionId == c.sectionId && cur.text.length < minMergeChars) {
+                val body = cur.bodyText.trimEnd() + "\n" + c.bodyText.trim()
+                acc = cur.copy(
+                    text = body,
+                    bodyText = body,
+                    retrievalText = retrievalFor(cur, body),
+                    identifierAtoms = IdentifierAtoms.extract(retrievalFor(cur, body)),
+                )
             } else {
                 merged += cur
                 acc = c
@@ -123,7 +210,7 @@ class ScriptAwareChunker(
         }
         flush()
         return merged
-            .filter { it.isTable || it.text.length >= minKeepChars }
+            .filter { it.isTable || it.contentKind == "HEADING" || it.contentKind == "LIST" || it.text.length >= minKeepChars }
             .mapIndexed { i, c -> c.copy(chunkIndex = i) }
     }
 
@@ -174,6 +261,64 @@ class ScriptAwareChunker(
         }
         chunks += current.toString().trimEnd()
         return chunks
+    }
+
+    internal fun chunkList(list: Segment.ListBlock): List<String> {
+        val chunks = ArrayList<String>()
+        val current = StringBuilder()
+        for (item in list.items) {
+            val row = "${item.label} ${item.text}".trim()
+            if (current.isNotEmpty() && current.length + row.length + 1 > latinTarget) {
+                chunks += current.toString().trimEnd()
+                current.setLength(0)
+            }
+            current.append(row).append('\n')
+        }
+        if (current.isNotBlank()) chunks += current.toString().trimEnd()
+        return chunks
+    }
+
+    private fun linkContinuations(chunks: List<Chunk>): List<Chunk> = chunks.mapIndexed { i, chunk ->
+        val previous = chunks.getOrNull(i - 1)?.takeIf {
+            it.sectionId == chunk.sectionId && it.pageNumber + 1 == chunk.pageNumber &&
+                it.contentKind == chunk.contentKind
+        }
+        val next = chunks.getOrNull(i + 1)?.takeIf {
+            it.sectionId == chunk.sectionId && it.pageNumber == chunk.pageNumber + 1 &&
+                it.contentKind == chunk.contentKind
+        }
+        chunk.copy(
+            continuesFromChunkIndex = previous?.chunkIndex,
+            continuesToChunkIndex = next?.chunkIndex,
+        )
+    }
+
+    private fun retrievalFor(chunk: Chunk, body: String): String =
+        listOf(chunk.sectionPath, body.trim()).filter { it.isNotBlank() }.joinToString("\n")
+
+    private data class SectionState(
+        val id: String,
+        val specificationNumber: String,
+        val number: String,
+        val title: String,
+        val path: String,
+    ) {
+        companion object {
+            fun root(docHash: String) = SectionState(stableId("$docHash|root"), "", "", "", "")
+
+            fun from(docHash: String, stack: List<Segment.Heading>, ordinal: Int): SectionState {
+                val leaf = stack.last()
+                val specification = stack.asReversed().firstNotNullOfOrNull { it.specificationNumber } ?: ""
+                val path = stack.joinToString(" > ") { it.text }
+                val key = "$docHash|$specification|${leaf.number.orEmpty()}|${leaf.title}|$ordinal"
+                return SectionState(stableId(key), specification, leaf.number.orEmpty(), leaf.title, path)
+            }
+
+            private fun stableId(value: String): String = MessageDigest.getInstance("SHA-256")
+                .digest(value.toByteArray())
+                .take(12)
+                .joinToString("") { "%02x".format(it) }
+        }
     }
 
     internal fun splitSentences(text: String, script: Script): List<String> {

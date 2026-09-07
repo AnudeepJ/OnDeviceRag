@@ -29,7 +29,10 @@ import java.util.concurrent.Executors
  * ANN) OR'ed with a prefix keyword match, ranked by summed semantic score plus a small BM25 term.
  */
 @androidx.annotation.OptIn(markerClass = [ExperimentalAppSearchApi::class])
-class AppSearchVectorStore private constructor(private val session: AppSearchSession) : Closeable {
+class AppSearchVectorStore private constructor(
+    private val session: AppSearchSession,
+    private val manifests: DocumentStructureManifestStore,
+) : Closeable {
 
     data class FeatureReport(val supported: Map<String, Boolean>) {
         val hybridOk: Boolean get() = REQUIRED.all { supported[it] == true }
@@ -85,10 +88,28 @@ class AppSearchVectorStore private constructor(private val session: AppSearchSes
         topK: Int,
         similarityFloor: Double = 0.3,
         keywordWeight: Double = 0.05,
+        sectionId: String? = null,
+        specificationNumber: String? = null,
     ): List<Citation> {
+        val namespace = activeNamespace(docHash)
         val terms = HybridQuery.keywordTerms(queryText)
-        val hits = executeSearch(docHash, HybridQuery.build(terms, similarityFloor, topK), terms, queryVec, topK, keywordWeight)
-        Log.i(TAG, "search ns=${docHash.take(8)} q='${queryText.take(80)}' terms=$terms floor=$similarityFloor -> ${hits.size} hits " +
+        val requested = if (sectionId == null && specificationNumber == null) topK else topK * 6
+        val requiredPropertyTerm = specificationNumber?.let { "specificationNumber" to it }
+        fun List<Citation>.withinRequestedScope(): List<Citation> = asSequence()
+            .filter { sectionId == null || it.sectionId == sectionId }
+            .filter { specificationNumber == null || it.specificationNumber.equals(specificationNumber, true) }
+            .take(topK)
+            .toList()
+        var hits = executeSearch(
+            docHash,
+            namespace,
+            HybridQuery.build(terms, similarityFloor, requested, requiredPropertyTerm),
+            terms,
+            queryVec,
+            requested,
+            keywordWeight,
+        ).withinRequestedScope()
+        Log.i(TAG, "search ns=${namespace.takeLast(18)} q='${queryText.take(80)}' terms=$terms floor=$similarityFloor -> ${hits.size} hits " +
             hits.take(5).joinToString { "p${it.pageNumber}@${"%.3f".format(it.score)}" })
         hits.forEachIndexed { i, c ->
             if (i < 5) Log.i(TAG, "  #$i p${c.pageNumber} c${c.chunkIndex} score=${"%.3f".format(c.score)} '${c.text.take(120).replace('\n', ' ')}'")
@@ -98,6 +119,7 @@ class AppSearchVectorStore private constructor(private val session: AppSearchSes
 
     private suspend fun executeSearch(
         docHash: String,
+        namespace: String,
         query: String,
         terms: List<String>,
         queryVec: FloatArray,
@@ -112,10 +134,10 @@ class AppSearchVectorStore private constructor(private val session: AppSearchSes
             .setRankingStrategy(
                 "sum(this.matchedSemanticScores(getEmbeddingParameter(0))) + $keywordWeight * this.relevanceScore()",
             )
-            .addFilterNamespaces(docHash)
+            .addFilterNamespaces(namespace)
             .addFilterSchemas(PdfChunkDocument.SCHEMA_TYPE)
             .setResultCountPerPage(topK)
-            .addProjection(PdfChunkDocument.SCHEMA_TYPE, listOf("text", "pageNumber", "chunkIndex"))
+            .addProjection(PdfChunkDocument.SCHEMA_TYPE, PROJECTION)
             .build()
         Log.d(TAG, "query=$query")
         val results = session.search(query, spec)
@@ -123,14 +145,7 @@ class AppSearchVectorStore private constructor(private val session: AppSearchSes
             val page = results.nextPageAsync.await()
             return page.map { r ->
                 val g: GenericDocument = r.genericDocument
-                Citation(
-                    chunkId = g.id,
-                    docHash = g.namespace,
-                    pageNumber = g.getPropertyLong("pageNumber").toInt(),
-                    chunkIndex = g.getPropertyLong("chunkIndex").toInt(),
-                    score = r.rankingSignal,
-                    text = g.getPropertyString("text") ?: "",
-                )
+                citation(g, docHash, r.rankingSignal)
             }
         } finally {
             results.close()
@@ -140,66 +155,99 @@ class AppSearchVectorStore private constructor(private val session: AppSearchSes
     /** A few stored chunks, no ranking — used to prove the namespace is not empty. */
     suspend fun sampleChunks(docHash: String, limit: Int = 3): List<Citation> {
         val spec = SearchSpec.Builder()
-            .addFilterNamespaces(docHash)
+            .addFilterNamespaces(activeNamespace(docHash))
             .addFilterSchemas(PdfChunkDocument.SCHEMA_TYPE)
             .setRankingStrategy(SearchSpec.RANKING_STRATEGY_CREATION_TIMESTAMP)
             .setResultCountPerPage(limit)
-            .addProjection(PdfChunkDocument.SCHEMA_TYPE, listOf("text", "pageNumber", "chunkIndex"))
+            .addProjection(PdfChunkDocument.SCHEMA_TYPE, PROJECTION)
             .build()
         val results = session.search("", spec)
         try {
             return results.nextPageAsync.await().map { r ->
                 val g = r.genericDocument
-                Citation(
-                    chunkId = g.id, docHash = g.namespace,
-                    pageNumber = g.getPropertyLong("pageNumber").toInt(),
-                    chunkIndex = g.getPropertyLong("chunkIndex").toInt(),
-                    score = 0.0, text = g.getPropertyString("text") ?: "",
-                )
+                citation(g, docHash, 0.0)
             }
         } finally {
             results.close()
         }
     }
 
-    suspend fun getCitation(chunkId: String): Citation? {
-        val docHash = chunkId.substringBefore(':')
+    suspend fun getCitation(indexNamespace: String, chunkId: String, docHash: String = ""): Citation? {
         val result = session.getByDocumentIdAsync(
-            GetByDocumentIdRequest.Builder(docHash).addIds(chunkId).build(),
+            GetByDocumentIdRequest.Builder(indexNamespace).addIds(chunkId).build(),
         ).await()
         val g = result.successes[chunkId] ?: return null
-        return Citation(
-            chunkId = g.id, docHash = g.namespace,
-            pageNumber = g.getPropertyLong("pageNumber").toInt(),
-            chunkIndex = g.getPropertyLong("chunkIndex").toInt(),
-            score = 0.0, text = g.getPropertyString("text") ?: "",
-        )
+        return citation(g, docHash.ifBlank { g.getPropertyString("docHash") ?: g.namespace }, 0.0)
     }
+
+    /** Legacy helper for V1 tests/indices only. Production V2.1 callers pass the namespace. */
+    suspend fun getCitation(chunkId: String): Citation? {
+        val legacyNamespace = chunkId.substringBefore(':')
+        return getCitation(legacyNamespace, chunkId, legacyNamespace)
+    }
+
+    suspend fun getChunks(manifest: DocumentStructureManifest, ids: List<String>): List<Citation> {
+        manifest.validate()
+        val found = LinkedHashMap<String, Citation>()
+        for (batch in ids.chunked(GET_BATCH)) {
+            val result = try {
+                session.getByDocumentIdAsync(
+                    GetByDocumentIdRequest.Builder(manifest.indexNamespace).addIds(batch).build(),
+                ).await()
+            } catch (t: Throwable) {
+                throw ManifestIntegrityError("Direct section fetch failed", t)
+            }
+            result.successes.forEach { (id, document) ->
+                found[id] = citation(document, manifest.documentHash, 0.0)
+            }
+        }
+        val missing = ids.filterNot(found::containsKey)
+        if (missing.isNotEmpty()) {
+            throw ManifestIntegrityError("Manifest references ${missing.size} missing chunks")
+        }
+        return ids.map { found.getValue(it) }
+    }
+
+    fun loadManifest(docHash: String): DocumentStructureManifest? = manifests.load(docHash)
+
+    fun publishManifest(manifest: DocumentStructureManifest) = manifests.publish(manifest)
+
+    fun activeNamespace(docHash: String): String = manifests.load(docHash)?.indexNamespace ?: docHash
 
     /** Deletes every chunk of one document (used for delete and for rolling back a cancelled index). */
     suspend fun removeDocument(docHash: String) {
-        val spec = SearchSpec.Builder().addFilterNamespaces(docHash).addFilterSchemas(PdfChunkDocument.SCHEMA_TYPE).build()
-        session.removeAsync("", spec).await()
+        val namespaces = session.namespacesAsync.await().filter { it == docHash || it.startsWith("$docHash:") }
+        for (namespace in namespaces) removeNamespace(namespace, flush = false)
+        manifests.delete(docHash)
         session.requestFlushAsync().await()
+    }
+
+    suspend fun removeNamespace(namespace: String, flush: Boolean = true) {
+        val spec = SearchSpec.Builder().addFilterNamespaces(namespace).addFilterSchemas(PdfChunkDocument.SCHEMA_TYPE).build()
+        session.removeAsync("", spec).await()
+        if (flush) session.requestFlushAsync().await()
     }
 
     /** Lists indexed documents by reading one chunk per namespace. */
     suspend fun listDocuments(): List<DocumentInfo> {
-        val namespaces = session.namespacesAsync.await()
+        val active = manifests.list().associateBy { it.indexNamespace }
+        val namespaces = session.namespacesAsync.await().filter { namespace ->
+            namespace in active || ':' !in namespace
+        }
         val out = ArrayList<DocumentInfo>()
         for (ns in namespaces) {
             val spec = SearchSpec.Builder()
                 .addFilterNamespaces(ns).addFilterSchemas(PdfChunkDocument.SCHEMA_TYPE)
                 .setRankingStrategy(SearchSpec.RANKING_STRATEGY_CREATION_TIMESTAMP)
                 .setResultCountPerPage(1)
-                .addProjection(PdfChunkDocument.SCHEMA_TYPE, listOf("docName", "script", "pageCount"))
+                .addProjection(PdfChunkDocument.SCHEMA_TYPE, listOf("docHash", "docName", "script", "pageCount"))
                 .build()
             val results = session.search("", spec)
             try {
                 val first = results.nextPageAsync.await().firstOrNull() ?: continue
                 val g = first.genericDocument
                 out += DocumentInfo(
-                    docHash = ns,
+                    docHash = g.getPropertyString("docHash")?.ifBlank { ns } ?: ns,
                     displayName = g.getPropertyString("docName") ?: ns,
                     pageCount = g.getPropertyLong("pageCount").toInt(),
                     chunkCount = countChunks(ns),
@@ -225,11 +273,35 @@ class AppSearchVectorStore private constructor(private val session: AppSearchSes
         return n
     }
 
+    private fun citation(g: GenericDocument, fallbackDocHash: String, score: Double): Citation = Citation(
+        chunkId = g.id,
+        docHash = g.getPropertyString("docHash")?.ifBlank { fallbackDocHash } ?: fallbackDocHash,
+        pageNumber = g.getPropertyLong("pageNumber").toInt(),
+        chunkIndex = g.getPropertyLong("chunkIndex").toInt(),
+        score = score,
+        text = g.getPropertyString("bodyText") ?: g.getPropertyString("text") ?: "",
+        indexNamespace = g.namespace,
+        sectionId = g.getPropertyString("sectionId") ?: "",
+        specificationNumber = g.getPropertyString("specificationNumber") ?: "",
+        sectionNumber = g.getPropertyString("sectionNumber") ?: "",
+        sectionTitle = g.getPropertyString("sectionTitle") ?: "",
+        sectionPath = g.getPropertyString("sectionPath") ?: "",
+        contentKind = g.getPropertyString("contentKind") ?: if (g.getPropertyBoolean("isTable")) "TABLE" else "PARAGRAPH",
+        continuesFromChunkIndex = g.getPropertyLong("continuesFromChunkIndex").toInt(),
+        continuesToChunkIndex = g.getPropertyLong("continuesToChunkIndex").toInt(),
+    )
+
     override fun close() = session.close()
 
     companion object {
         private const val TAG = "AppSearchVectorStore"
         const val DB_NAME = "rag_chunks"
+        private const val GET_BATCH = 100
+        private val PROJECTION = listOf(
+            "text", "bodyText", "pageNumber", "chunkIndex", "docHash", "sectionId",
+            "specificationNumber", "sectionNumber", "sectionTitle", "sectionPath", "contentKind",
+            "continuesFromChunkIndex", "continuesToChunkIndex", "isTable",
+        )
 
         val REQUIRED = listOf(
             Features.SCHEMA_EMBEDDING_PROPERTY_CONFIG,
@@ -257,7 +329,7 @@ class AppSearchVectorStore private constructor(private val session: AppSearchSes
                 .setWorkerExecutor(executor)
                 .build()
             val session = LocalStorage.createSearchSessionAsync(ctx).await()
-            val store = AppSearchVectorStore(session)
+            val store = AppSearchVectorStore(session, DocumentStructureManifestStore(context))
             store.setSchema()
             return store
         }

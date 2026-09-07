@@ -8,6 +8,8 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.example.pdfgemmarag.inference.embed.EmbeddingGemmaEmbedder
 import com.example.pdfgemmarag.inference.store.AppSearchVectorStore
 import com.example.pdfgemmarag.inference.store.PdfChunkDocument
+import com.example.pdfgemmarag.inference.store.DocumentStructureManifest
+import com.example.pdfgemmarag.inference.store.SectionRecord
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -47,6 +49,9 @@ class Spike3AppSearchHybridTest {
     private fun doc(ns: String, i: Int, text: String, v: FloatArray, page: Int = i + 1) = PdfChunkDocument().apply {
         namespace = ns; id = "$ns:$i"; creationTimestampMillis = System.currentTimeMillis()
         this.text = text; pageNumber = page; chunkIndex = i; docName = "spike"; script = "MIXED"; pageCount = 10
+        bodyText = text; retrievalText = text; docHash = ns; sectionId = "section-a"
+        sectionTitle = "Example"; sectionPath = "Example"; contentKind = "PARAGRAPH"
+        indexVersion = DocumentStructureManifest.INDEX_VERSION; embeddingSignature = EmbeddingGemmaEmbedder.MODEL_SIGNATURE
         embedding = EmbeddingVector(v, EmbeddingGemmaEmbedder.MODEL_SIGNATURE)
     }
 
@@ -121,6 +126,77 @@ class Spike3AppSearchHybridTest {
         assertEquals(1, store.search(nsB, "alpha", shared, topK = 5, similarityFloor = 0.0).size)
         val docs = store.listDocuments()
         assertTrue(docs.any { it.docHash == nsB } && docs.none { it.docHash == nsA })
+    }
+
+    @Test
+    fun directFetchUsesExplicitNamespaceAndRestoresManifestOrder(): Unit = runBlocking {
+        val docs = listOf(doc(nsA, 0, "first", vec(20)), doc(nsA, 1, "second", vec(21)))
+        store.putChunks(docs)
+        val manifest = DocumentStructureManifest(
+            documentHash = nsA,
+            indexNamespace = nsA,
+            indexVersion = DocumentStructureManifest.INDEX_VERSION,
+            embeddingSignature = EmbeddingGemmaEmbedder.MODEL_SIGNATURE,
+            sections = listOf(SectionRecord("section-a", "", "1.1", "Example", "Example", 1, 2, listOf("$nsA:1", "$nsA:0"), 10)),
+        )
+        val fetched = store.getChunks(manifest, manifest.sections.single().orderedChunkIds)
+        assertEquals(listOf("$nsA:1", "$nsA:0"), fetched.map { it.chunkId })
+        assertTrue(fetched.all { it.indexNamespace == nsA })
+    }
+
+    @Test
+    fun listDocumentsReturnsCanonicalHashInsteadOfStagedNamespace(): Unit = runBlocking {
+        val canonicalHash = "$nsA-canonical"
+        val stagedNamespace = "$canonicalHash:v21:stage"
+        try {
+            val stored = doc(stagedNamespace, 0, "staged document", vec(31)).apply {
+                docHash = canonicalHash
+            }
+            store.putChunk(stored)
+            store.publishManifest(
+                DocumentStructureManifest(
+                    documentHash = canonicalHash,
+                    indexNamespace = stagedNamespace,
+                    indexVersion = DocumentStructureManifest.INDEX_VERSION,
+                    embeddingSignature = EmbeddingGemmaEmbedder.MODEL_SIGNATURE,
+                    sections = listOf(
+                        SectionRecord(
+                            "section-a", "", "1.1", "Example", "Example", 1, 1,
+                            listOf(stored.id), 10,
+                        ),
+                    ),
+                ),
+            )
+
+            val listed = store.listDocuments().single { it.displayName == "spike" && it.docHash == canonicalHash }
+            assertEquals(canonicalHash, listed.docHash)
+        } finally {
+            store.removeDocument(canonicalHash)
+        }
+    }
+
+    @Test
+    fun explicitSpecificationFilterExcludesOtherSpecifications(): Unit = runBlocking {
+        val shared = vec(41)
+        val first = doc(nsA, 0, "maximum water cement ratios", shared).apply {
+            specificationNumber = "03300"
+        }
+        val second = doc(nsA, 1, "maximum water cement ratios", shared).apply {
+            specificationNumber = "03310"
+        }
+        store.putChunks(listOf(first, second))
+
+        val hits = store.search(
+            nsA,
+            "maximum water cement ratios in specification 03310",
+            shared,
+            topK = 4,
+            similarityFloor = 0.0,
+            specificationNumber = "03310",
+        )
+
+        assertEquals(listOf("03310"), hits.map { it.specificationNumber }.distinct())
+        assertEquals(listOf(second.id), hits.map { it.chunkId })
     }
 
     @Test

@@ -13,6 +13,8 @@ import androidx.room.Query
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.Update
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.coroutines.flow.Flow
 
 @Entity(tableName = "documents")
@@ -27,6 +29,8 @@ data class DocumentEntity(
     val status: String,
     val error: String? = null,
     val pdfPath: String,
+    val indexVersion: Int = 1,
+    val activeIndexNamespace: String = "",
 )
 
 @Entity(tableName = "messages")
@@ -38,6 +42,10 @@ data class MessageEntity(
     val text: String,
     /** Comma-separated chunk ids ("<hash>:<index>") that supported the answer. */
     val citationIds: String = "",
+    /** Comma-separated namespaces aligned with [citationIds]. */
+    val citationNamespaces: String = "",
+    /** Trusted source metadata for follow-up planning; never derived from the model answer. */
+    val sourceSectionId: String = "",
     val createdAt: Long = System.currentTimeMillis(),
     val backend: String = "",
     val tokensPerSecond: Double = 0.0,
@@ -60,6 +68,9 @@ interface DocumentDao {
 
     @Delete
     suspend fun delete(doc: DocumentEntity)
+
+    @Query("UPDATE documents SET status = 'REINDEX_REQUIRED' WHERE status = 'READY' AND indexVersion < :currentVersion")
+    suspend fun markLegacyIndexes(currentVersion: Int)
 }
 
 @Dao
@@ -77,7 +88,7 @@ interface MessageDao {
     suspend fun deleteForDocument(docHash: String)
 }
 
-@Database(entities = [DocumentEntity::class, MessageEntity::class], version = 1, exportSchema = true)
+@Database(entities = [DocumentEntity::class, MessageEntity::class], version = 2, exportSchema = true)
 abstract class ChatDatabase : RoomDatabase() {
     abstract fun documents(): DocumentDao
     abstract fun messages(): MessageDao
@@ -85,7 +96,16 @@ abstract class ChatDatabase : RoomDatabase() {
     companion object {
         fun create(context: Context): ChatDatabase =
             Room.databaseBuilder(context, ChatDatabase::class.java, "rag_chat.db")
-                .fallbackToDestructiveMigration(dropAllTables = true)
+                .addMigrations(MIGRATION_1_2)
                 .build()
+
+        val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE documents ADD COLUMN indexVersion INTEGER NOT NULL DEFAULT 1")
+                db.execSQL("ALTER TABLE documents ADD COLUMN activeIndexNamespace TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE messages ADD COLUMN citationNamespaces TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE messages ADD COLUMN sourceSectionId TEXT NOT NULL DEFAULT ''")
+            }
+        }
     }
 }

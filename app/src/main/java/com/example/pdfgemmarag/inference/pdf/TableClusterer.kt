@@ -100,7 +100,19 @@ class TableClusterer(
             count++
             j++
         }
-        return if (count >= minRows) count else null
+        if (count < minRows) return null
+        val runRows = cells.subList(start, start + count)
+        // Specification clauses frequently align the enumerator and body into two columns. They
+        // are lists, not data tables, and must stay as label+text logical units.
+        val enumerated = runRows.count { row -> row.firstOrNull()?.text?.trim()?.matches(ENUMERATOR) == true }
+        if (enumerated * 2 >= runRows.size) return null
+        // Two-column layouts need repeated evidence in the value column. Three or more aligned
+        // columns remain a strong table signal.
+        if (columns.size <= 2) {
+            val populated = runRows.count { it.size >= 2 && it[1].text.isNotBlank() }
+            if (populated < 3) return null
+        }
+        return count
     }
 
     private fun buildTable(page: PageLayout, cells: List<List<Cell>>, start: Int, run: Int): Segment.Table {
@@ -129,5 +141,9 @@ class TableClusterer(
         if (values.isEmpty()) return 0f
         val s = values.sorted()
         return s[s.size / 2]
+    }
+
+    companion object {
+        private val ENUMERATOR = Regex("^(?:[A-Za-z]|[0-9]+)[.)]$|^\\([A-Za-z0-9]+\\)$")
     }
 }
