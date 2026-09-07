@@ -1,0 +1,25 @@
+Script 1: Talking to a "Technical Specification"
+The Document: Technical Specifications Division 03 - Concrete Formwork (City of Baytown) Context: A Site Engineer is on the field inspecting the formwork for concrete columns and curbs. They need to verify the exact engineering tolerances allowed before authorizing the concrete pour, saving them from flipping through a dense PDF on a tablet.
+
+Conversation Transcript:
+
+User: "Hey Aconex, open the Division 03 Technical Specifications for Concrete Formwork."
+
+Assistant: "I have the Division 03 Concrete Formwork document open. What do you need to check?"
+
+User: "The surveying team is checking the formwork for the new piers. What is the maximum allowable variation from plumb?"
+
+Assistant: "For the surfaces of columns, piers, and walls, the maximum variation from plumb or specified batter is 1/2 inch in 10 feet."
+
+User: "Got it. What about the cross-sectional dimensions? How much tolerance do we have on the column thickness?"
+
+Assistant: "For the cross-section of columns, caps, walls, and beams, the allowable tolerance from the drawing dimensions is +1/2 inch and -1/4 inch."
+
+User: "Okay, and what is the tolerance for the level of the top surfaces of the curbs?"
+
+Assistant: "The variation in level for the top surfaces of curbs and railings must not exceed 3/16 inch in 10 feet."
+
+User: "We will need the lab out here to test the mix. What section of the specifications covers the testing laboratory services?"
+
+Assistant: "Testing Laboratory Services are covered under reference Section 01450 of the technical specifications."
+

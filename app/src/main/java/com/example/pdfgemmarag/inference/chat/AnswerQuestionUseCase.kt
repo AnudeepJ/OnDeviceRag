@@ -127,6 +127,10 @@ class AnswerQuestionUseCase(
             if (pointer.text.isNotEmpty()) {
                 return deterministic(generationId, t0, pointer.text, listener, pointer.citations)
             }
+            val exactTableRow = buildTableLead(question, ranked)
+            if (exactTableRow.decisive) {
+                return deterministic(generationId, t0, exactTableRow.text, listener, exactTableRow.citations)
+            }
         }
         val selected = selector.select(question, ranked, plan.intent)
         Log.i(TAG, "planned ${plan.intent} retrieved ${ranked.size} -> ${selected.excerpts.size} chunks (~${selected.approxTokens} tokens) in ${SystemClock.elapsedRealtime() - t0} ms")
@@ -149,6 +153,7 @@ class AnswerQuestionUseCase(
         var chars = 0
         val evidenceLead = when (plan.intent) {
             QuestionIntent.FACT -> buildTableLead(question, ranked)
+            QuestionIntent.SECTION_SUMMARY -> buildEnumeratedSummaryLead(ranked)
             else -> SummaryLead.EMPTY
         }
         if (evidenceLead.decisive) {
@@ -240,8 +245,6 @@ class AnswerQuestionUseCase(
         private val DECIMAL = Regex("(?<![\\d.])\\d+\\.\\d+(?!\\d)")
         private const val REPAIR_MESSAGE =
             "The document index needs repair before I can safely answer. Please re-index the document."
-        private const val MAX_SUMMARY_LEAD_EXCERPTS = 4
-        private const val MAX_SUMMARY_LEAD_CHARS = 360
         private const val MAX_STRUCTURAL_NEIGHBOR_DISTANCE = 3
         internal data class SummaryLead(
             val text: String,
@@ -258,12 +261,36 @@ class AnswerQuestionUseCase(
             // Lists of ratios and numbered requirements are structured too; that alone must not
             // cause an unrelated nearby table to be streamed as a supposedly relevant answer.
             if (!TABLE_QUERY_HINT.containsMatchIn(query) && !toleranceAsk) return SummaryLead.EMPTY
+            if (toleranceAsk) {
+                val queryEvidence = evidenceWords(query)
+                val matches = candidates.flatMap { citation ->
+                    TOLERANCE_PARAGRAPH.findAll(citation.text).map { match ->
+                        val label = match.groupValues[1]
+                            .replace(Regex("\\s+"), " ")
+                            .trim()
+                            .replace(LEADING_REPEATED_WORD, "\$1")
+                        val value = match.groupValues[2].trim()
+                        Triple(citation, listOf(label, value), evidenceWords(label).count(queryEvidence::contains))
+                    }.toList()
+                }.filter { it.third >= 2 }
+                val groups = matches.groupBy { (_, cells, _) -> canonicalTableRow(cells) }
+                    .values.sortedByDescending { group -> group.maxOf { it.third } }
+                val bestGroup = groups.firstOrNull()
+                val bestScore = bestGroup?.maxOfOrNull { it.third }
+                val best = bestGroup?.maxByOrNull { it.first.score }
+                if (best != null && groups.drop(1).none { group -> group.maxOf { it.third } == bestScore }) {
+                    return SummaryLead(
+                        "${best.second.joinToString(" — ")} [Page ${best.first.pageNumber}]",
+                        listOf(best.first),
+                        decisive = true,
+                    )
+                }
+            }
             // Some extractors preserve a table as pipe-delimited text even when geometry was too
             // weak for the conservative TABLE label. The delimiters are still explicit evidence.
             val tables = candidates.filter { it.contentKind == "TABLE" || '|' in it.text }
             if (tables.isEmpty()) return SummaryLead.EMPTY
             val queryNumbers = NUMBER_TOKEN.findAll(query).map { it.value }.toSet()
-            val queryWords = WORD_TOKEN.findAll(query).map { it.value }.filterNot { it in TABLE_STOP_WORDS }.toSet()
             if (toleranceAsk) {
                 val evidenceWords = evidenceWords(query)
                 val rows = tables.flatMap { citation ->
@@ -274,8 +301,15 @@ class AnswerQuestionUseCase(
                 }.filter { (_, cells, score) ->
                     score >= 2 && NUMBER_TOKEN.containsMatchIn(cells.joinToString(" "))
                 }.sortedByDescending { it.third }
-                val best = rows.firstOrNull()
-                if (best != null && rows.drop(1).none { it.third == best.third }) {
+                // The same schedule can legitimately be repeated in a specification package.
+                // Treat identical rows as corroboration; only equal-scoring *different* rows are
+                // ambiguous. Prefer the highest retrieval score as the displayed citation.
+                val groups = rows.groupBy { (_, cells, _) -> canonicalTableRow(cells) }
+                    .values.sortedByDescending { group -> group.maxOf { it.third } }
+                val bestGroup = groups.firstOrNull()
+                val bestScore = bestGroup?.maxOfOrNull { it.third }
+                val best = bestGroup?.maxByOrNull { it.first.score }
+                if (best != null && groups.drop(1).none { group -> group.maxOf { it.third } == bestScore }) {
                     return SummaryLead(
                         "${best.second.joinToString(" — ")} [Page ${best.first.pageNumber}]",
                         listOf(best.first),
@@ -308,29 +342,9 @@ class AnswerQuestionUseCase(
                     }
                 }
             }
-            val seeds = tables.sortedByDescending { citation ->
-                val text = normalizeForEvidenceMatch(citation.text)
-                queryNumbers.count { it in text } * 20 +
-                    queryWords.count { it in text } * 3 +
-                    NUMBER_TOKEN.findAll(text).count().coerceAtMost(8)
-            }.take(1)
-            val picked = LinkedHashSet<Citation>()
-            seeds.forEach { seed ->
-                candidates.filter {
-                    it.sectionId == seed.sectionId && it.pageNumber == seed.pageNumber &&
-                        kotlin.math.abs(it.chunkIndex - seed.chunkIndex) <= 1
-                }.sortedBy { it.chunkIndex }.forEach(picked::add)
-            }
-            if (picked.isEmpty()) return SummaryLead.EMPTY
-            val citations = picked.take(MAX_SUMMARY_LEAD_EXCERPTS)
-            val text = buildString {
-                append("Relevant source rows:\n")
-                citations.forEach { citation ->
-                    append("- ").append(citation.text.trim().take(MAX_SUMMARY_LEAD_CHARS))
-                    append(" [Page ").append(citation.pageNumber).append("]\n")
-                }
-            }.trimEnd()
-            return SummaryLead(text, citations)
+            // Non-decisive rows already exist in the selected prompt. Do not expose diagnostic
+            // source dumps in the user answer; grounded generation will format the result.
+            return SummaryLead.EMPTY
         }
 
         /** Resolves explicit "which section" asks from a uniquely matching printed cross-reference. */
@@ -383,12 +397,35 @@ class AnswerQuestionUseCase(
             )
         }
 
+        /** Preserves an exact unique multi-value requirement even when a small summary model omits it. */
+        internal fun buildEnumeratedSummaryLead(candidates: List<Citation>): SummaryLead {
+            val byIndex = candidates.associateBy { it.chunkIndex }
+            val matches = candidates.mapNotNull { heading ->
+                if (!AS_FOLLOWS.containsMatchIn(heading.text)) return@mapNotNull null
+                val values = byIndex[heading.chunkIndex + 1] ?: return@mapNotNull null
+                if (DECIMAL_VALUE.findAll(values.text).count() < 2) return@mapNotNull null
+                heading to values
+            }
+            if (matches.size != 1) return SummaryLead.EMPTY
+            val (heading, values) = matches.single()
+            val nextRequirement = NEXT_NUMBERED_REQUIREMENT.find(values.text)?.range?.first ?: values.text.length
+            val body = values.text.substring(0, nextRequirement).trim()
+            return SummaryLead(
+                "Key exact values:\n${heading.text.trim()}\n$body [Page ${values.pageNumber}]",
+                listOf(heading, values),
+            )
+        }
+
         private fun normalizeForEvidenceMatch(value: String): String = value.lowercase()
             .replace(",", "")
         private val NUMBER_TOKEN = Regex("\\d+(?:\\.\\d+)?")
         private val WORD_TOKEN = Regex("[a-z]{2,}")
         private val TABLE_QUERY_HINT = Regex("\\b(?:table|row|class|slump|cement content)\\b")
         private val TOLERANCE_QUERY_HINT = Regex("\\b(?:tolerance|variation)\\b")
+        private val TOLERANCE_PARAGRAPH = Regex(
+            "(?i)((?:variation|tolerance)[\\p{L}\\s,]{0,160}?)\\s+(\\d+/\\d+[\\\"”″]?\\s+in\\s+\\d+[’′']?)",
+        )
+        private val LEADING_REPEATED_WORD = Regex("(?i)^([\\p{L}]+)\\s+\\1\\b")
         private val SECTION_LOOKUP_HINT = Regex("\\b(?:what|which) section\\b")
         private val LIST_LOOKUP_HINT = Regex("\\b(?:list|what are)\\b")
         private val AS_FOLLOWS = Regex("(?i)\\bas follows\\s*:?$")
@@ -399,6 +436,7 @@ class AnswerQuestionUseCase(
         )
         private val TABLE_STOP_WORDS = setOf(
             "what", "which", "are", "the", "and", "for", "with", "has", "have", "from", "values", "value",
+            "about", "do", "got", "how", "in", "it", "much", "of", "okay", "on", "to", "we",
         )
 
         private fun markdownRows(citation: Citation): List<List<String>> =
@@ -421,6 +459,12 @@ class AnswerQuestionUseCase(
             }
             .filterNot { it in TABLE_STOP_WORDS }
             .toSet()
+
+        private fun canonicalTableRow(cells: List<String>): String =
+            normalizeForEvidenceMatch(cells.joinToString(" "))
+                .replace('±', '+')
+                .replace(Regex("[\\\"”″'’′]"), "")
+                .replace(Regex("\\s+"), " ")
 
         internal fun looksLikeStructuredFragment(citation: Citation): Boolean {
             if (citation.contentKind == "TABLE" || '|' in citation.text) return true

@@ -32,7 +32,7 @@ class ContextSelectorTest {
 
         val ordered = ContextSelector().coverageOrder(input)
 
-        assertEquals(listOf("p1-a", "p1-b", "p3-a", "p2-a", "p1-c", "p2-b"), ordered.map { it.chunkId })
+        assertEquals(listOf("p1-a", "p3-a", "p2-a", "p1-b", "p1-c", "p2-b"), ordered.map { it.chunkId })
     }
 
     @Test
@@ -47,7 +47,7 @@ class ContextSelectorTest {
 
     @Test
     fun `summary keeps opening anchors then presents high information nearest the question`() {
-        val heading = citation("heading", 1, "2.02 CONCRETE MIX")
+        val heading = citation("heading", 1, "2.02 CONCRETE MIX").copy(contentKind = "HEADING")
         val opening = citation("opening", 1, "General objective and testing responsibility")
         val generic = citation("generic", 2, "General mixing procedure")
         val ratio = citation("ratio", 2, "Maximum water cement ratio is 0.45")
@@ -58,8 +58,8 @@ class ContextSelectorTest {
             QuestionIntent.SECTION_SUMMARY,
         )
 
-        assertEquals("heading", selected.excerpts.first().chunkId)
-        assertTrue(selected.excerpts.indexOfFirst { it.chunkId == "opening" } > 0)
+        assertEquals(false, selected.excerpts.any { it.chunkId == "heading" })
+        assertEquals("opening", selected.excerpts.first().chunkId)
         assertTrue(selected.excerpts.indexOfFirst { it.chunkId == "ratio" } > selected.excerpts.indexOfFirst { it.chunkId == "generic" })
     }
 

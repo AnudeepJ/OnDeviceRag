@@ -16,7 +16,11 @@ class ContextSelector(
     fun select(question: String, candidates: List<Citation>, intent: QuestionIntent): Selection {
         val summary = intent == QuestionIntent.SECTION_SUMMARY
         val budget = if (summary) summaryBudget else factBudget
-        val unique = candidates.distinctBy { it.indexNamespace to it.chunkId }
+        val allUnique = candidates.distinctBy { it.indexNamespace to it.chunkId }
+        // A resolved heading is useful to choose the section, but it is not evidence for the
+        // section's requirements. Excluding it also prevents small models from treating identifiers
+        // such as "3.26" as quantities.
+        val unique = if (summary) allUnique.filterNot { it.contentKind == "HEADING" } else allUnique
         val ordered = if (summary) coverageOrder(unique) else unique
         val chosen = ArrayList<Citation>()
         var used = 0
@@ -48,6 +52,7 @@ class ContextSelector(
             }
             if (summary) {
                 append("Use at most 6 compact bullets and 110 words. Start with the answer; do not restate the question or section path. ")
+                append("Treat section numbers and headings only as navigation labels; never present a section number as a quantity, measurement, or requirement. ")
                 append("Finish every bullet as a complete sentence; omit a lower-priority bullet rather than ending mid-sentence. ")
                 append("Combine related values from one requirement into one bullet and cover distinct requirement categories. ")
                 append("Omit introductory purpose or objective statements when actionable requirements exist. If the source names who prepares, tests, or approves the work, give that responsibility its own bullet. ")
@@ -61,12 +66,12 @@ class ContextSelector(
             excerpts.forEachIndexed { index, citation ->
                 append('[').append(citation.excerptId).append("]\n")
                 if (citation.specificationNumber.isNotBlank()) append("Specification: ").append(citation.specificationNumber).append('\n')
-                if (citation.sectionPath.isNotBlank()) append("Section: ").append(citation.sectionPath).append('\n')
+                if (!summary && citation.sectionPath.isNotBlank()) append("Section: ").append(citation.sectionPath).append('\n')
                 append("Page: ").append(citation.pageNumber).append('\n')
                 append("Content: ").append(rendered[index]).append("\n\n")
             }
             if (summary) append("Before answering, check the final excerpts for ratios, percentage ranges, and table limits.\n")
-            append("Question: ").append(question.trim())
+            append("Question: ").append(if (summary) withoutStructuralPointers(question) else question.trim())
         }
         return Selection(
             prompt,
@@ -90,14 +95,20 @@ class ContextSelector(
         return rendered
     }
 
+    private fun withoutStructuralPointers(question: String): String = question
+        .replace(STRUCTURAL_POINTER, " ")
+        .replace(Regex("\\s+"), " ")
+        .trim()
+
     /**
-     * Direct section fetches arrive in manifest order. Keep the heading and opening requirement as
-     * anchors, then spend the bounded on-device prompt on high-information requirements across the
+     * Direct section fetches arrive in manifest order. Heading-only chunks are removed before this
+     * point, so keep the opening substantive requirement as the anchor, then spend the bounded
+     * on-device prompt on high-information requirements across the
      * section. This prevents a long section's introductory prose from crowding out later limits and
      * tables while remaining independent of any particular specification.
      */
     internal fun coverageOrder(candidates: List<Citation>): List<Citation> {
-        val anchors = candidates.take(2)
+        val anchors = candidates.take(1)
         return anchors + candidates.drop(anchors.size).sortedWith(
             compareByDescending<Citation>(::summaryPriority)
                 .thenBy { it.pageNumber }
@@ -161,6 +172,9 @@ class ContextSelector(
     }
 
     companion object {
+        private val STRUCTURAL_POINTER = Regex(
+            "(?i)\\b(?:specification|spec|section|clause)\\s+[0-9][0-9a-z.-]*\\b",
+        )
         private const val MIN_BOUNDARY_OVERLAP = 24
         private const val MAX_BOUNDARY_OVERLAP = 600
         private val NUMBER = Regex("(?<![\\p{L}\\p{N}])\\d[\\d,.]*(?:[/-]\\d[\\d,.]*)?%?")

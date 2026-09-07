@@ -52,6 +52,20 @@ class AnswerQuestionUseCaseRankingTest {
     }
 
     @Test
+    fun `summary preserves a unique adjacent multi-value block`() {
+        val heading = citation(10, "E. Maximum allowable ratios shall be as follows:")
+        val values = citation(11, "a. First: 0.45. b. Second: 0.40. c. Other: 0.55. 2. Continue procedure.")
+
+        val lead = AnswerQuestionUseCase.buildEnumeratedSummaryLead(listOf(heading, values))
+
+        assertEquals(false, lead.decisive)
+        assertTrue(lead.text.contains("0.45"))
+        assertTrue(lead.text.contains("0.40"))
+        assertTrue(lead.text.contains("0.55"))
+        assertEquals(false, lead.text.contains("Continue procedure"))
+    }
+
+    @Test
     fun `enumerated ratios do not hijack a nearby slump question`() {
         val heading = citation(10, "E. Water-Cement Ratios: Maximum allowable water-cement ratios shall be as follows:")
         val values = citation(11, "a. Liquid-containing: 0.45. b. Brackish water: 0.40. c. Other: 0.55.")
@@ -75,15 +89,61 @@ class AnswerQuestionUseCaseRankingTest {
         ).copy(contentKind = "TABLE")
 
         val answer = AnswerQuestionUseCase.buildTableLead(
-            "What tolerance applies to the cross-sectional dimensions of the column?",
-            listOf(table),
+            "Got it. What about the cross-sectional dimensions? How much tolerance do we have on the column thickness?",
+            listOf(
+                table,
+                table.copy(
+                    chunkId = "duplicate",
+                    pageNumber = 12,
+                    score = 0.9,
+                    text = table.text.replace("±", "+").replace("”", "\""),
+                ),
+            ),
         )
 
         assertTrue(answer.decisive)
         assertTrue(answer.text.contains("Cross section of columns"))
-        assertTrue(answer.text.contains("±1/2”"))
-        assertTrue(answer.text.contains("-1/4”"))
+        assertTrue(answer.text.contains("+1/2\""))
+        assertTrue(answer.text.contains("-1/4\""))
         assertEquals(false, answer.text.contains("deck slabs"))
+    }
+
+    @Test
+    fun `variation question returns exact value from flattened schedule paragraph`() {
+        val paragraph = citation(
+            357,
+            "Variation In Maximum From Plumb of Specified Surfaces of columns, piers and walls 1/2\" in 10’ Batter Level or Top surfaces of slabs",
+        )
+
+        val answer = AnswerQuestionUseCase.buildTableLead(
+            "What is the maximum allowable variation from plumb for the new piers?",
+            listOf(paragraph),
+        )
+
+        assertTrue(answer.decisive)
+        assertTrue(answer.text.contains("1/2\" in 10’"))
+        assertEquals(false, answer.text.contains("Top surfaces of slabs"))
+    }
+
+    @Test
+    fun `curb tolerance is not hijacked by plumb paragraph through function words`() {
+        val paragraph = citation(
+            357,
+            "Variation In Maximum From Plumb of Specified Surfaces of columns, piers and walls 1/2\" in 10’",
+        )
+        val table = citation(
+            358,
+            "| Grade | Top surfaces of curbs and railings | 3/16” in 10’ |",
+        ).copy(contentKind = "TABLE")
+
+        val answer = AnswerQuestionUseCase.buildTableLead(
+            "Okay, and what is the tolerance for the level of the top surfaces of the curbs?",
+            listOf(paragraph, table),
+        )
+
+        assertTrue(answer.decisive)
+        assertTrue(answer.text.contains("3/16” in 10’"))
+        assertEquals(false, answer.text.contains("From Plumb"))
     }
 
     private fun citation(index: Int, text: String) = Citation(

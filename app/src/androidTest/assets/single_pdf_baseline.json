@@ -62,6 +62,7 @@
     "expectedPages": [44, 45],
     "requireAllPages": true,
     "requiredPhrases": ["7 curing days", "3 curing days", "curing compound"],
+    "forbiddenPhrases": ["minimum concrete cover"],
     "forbiddenPages": [24, 72]
   },
   {

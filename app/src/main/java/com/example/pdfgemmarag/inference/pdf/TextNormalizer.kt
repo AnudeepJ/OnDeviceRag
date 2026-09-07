@@ -18,12 +18,17 @@ object TextNormalizer {
         val nfkc = Normalizer.normalize(raw, Normalizer.Form.NFKC)
         if (nfkc.none { it.code in 0x2E80..0x31EF }) return nfkc
         val sb = StringBuilder(nfkc.length)
-        for (ch in nfkc) sb.append(RADICAL_TO_IDEOGRAPH[ch] ?: ch)
+        for (ch in nfkc) {
+            val replacement = RADICAL_TO_IDEOGRAPH[ch]
+            if (replacement != null) sb.appendCodePoint(replacement) else sb.append(ch)
+        }
         return sb.toString()
     }
 
     /** src:dst hex pairs generated from EquivalentUnifiedIdeograph-17.0.0.txt. */
-    private val RADICAL_TO_IDEOGRAPH: Map<Char, Char> = listOf(
+    // Sources are BMP radicals, but several equivalent unified ideographs are supplementary
+    // code points. Keep destinations as code points rather than UTF-16 code units.
+    private val RADICAL_TO_IDEOGRAPH: Map<Char, Int> = listOf(
         "2E81:5382,2E82:4E5B,2E83:4E5A,2E84:4E59,2E85:4EBB,2E86:5182,2E87:20628,2E88:5200,2E89:5202,2E8A:535C,2E8B:353E,2E8C:5C0F",
         "2E8D:5C0F,2E8E:5140,2E8F:5C23,2E90:5C22,2E91:21BC2,2E92:5DF3,2E93:5E7A,2E94:5F51,2E95:2B739,2E96:5FC4,2E97:5FC3,2E98:624C",
         "2E99:6535,2E9B:65E1,2E9C:65E5,2E9D:6708,2E9E:6B7A,2EA0:6C11,2EA1:6C35,2EA2:6C3A,2EA3:706C,2EA4:722B,2EA5:722B,2EA6:4E2C",
@@ -37,6 +42,6 @@ object TextNormalizer {
         "31D6:4E5B,31D7:200CA,31D8:200CE,31D9:2010C,31DA:4E85,31DB:21FE8,31DC:200CB,31DD:4E40,31DE:200D1,31DF:4E5A,31E0:4E59,31E1:2010E",
     ).joinToString(",").split(',').associate { entry ->
         val (src, dst) = entry.split(':')
-        src.toInt(16).toChar() to dst.toInt(16).toChar()
+        src.toInt(16).toChar() to dst.toInt(16)
     }
 }

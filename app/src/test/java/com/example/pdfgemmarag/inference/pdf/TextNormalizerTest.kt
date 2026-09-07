@@ -14,6 +14,12 @@ class TextNormalizerTest {
     }
 
     @Test
+    fun `supplementary unified ideographs are not truncated to UTF-16`() {
+        // U+2E87 maps to U+20628. Truncating it to a Char produced U+0628 (Arabic BEH).
+        assertEquals("\uD841\uDE28", TextNormalizer.normalize("\u2E87"))
+    }
+
+    @Test
     fun `fullwidth ascii and ligatures are folded`() {
         assertEquals("ABC 123 fi fl", TextNormalizer.normalize("ＡＢＣ　１２３ ﬁ ﬂ"))
     }
