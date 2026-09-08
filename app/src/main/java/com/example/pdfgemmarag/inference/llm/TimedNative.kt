@@ -7,7 +7,9 @@ import java.util.concurrent.TimeoutException
 
 /**
  * Runs a native LiteRT call on a dedicated thread so a hang cannot block [GemmaEngine]'s closer.
- * Returns false if [timeoutSec] elapses; the worker is interrupted but JNI may ignore that.
+ * Returns false if [timeoutSec] elapses. JNI may ignore the worker interrupt, so a false result is
+ * fatal for the owning native runtime: callers must quarantine it and recycle the process instead
+ * of invoking another method on the same conversation or engine.
  */
 internal object TimedNative {
     fun run(timeoutSec: Long, label: String, block: () -> Unit): Boolean {

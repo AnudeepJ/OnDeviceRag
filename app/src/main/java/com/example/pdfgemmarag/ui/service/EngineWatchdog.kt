@@ -32,7 +32,12 @@ class EngineWatchdog(
         scope.launch {
             connection.events.collect { ev ->
                 if (ev is ServiceConnectionManager.Event.Died && gpuAttemptInFlight) {
-                    trip("inference process died during GPU initialisation")
+                    if (ev.controlledRecoveryReason != null) {
+                        Log.w(TAG, "GPU load interrupted by controlled process recycle")
+                        onLoadFinished()
+                    } else {
+                        trip("inference process died during GPU initialisation")
+                    }
                 }
             }
         }

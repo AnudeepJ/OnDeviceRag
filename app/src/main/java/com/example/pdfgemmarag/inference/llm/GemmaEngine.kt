@@ -40,11 +40,13 @@ class GemmaEngine(
     val modelPath: String,
     private val allowGpu: Boolean,
     private val maxNumTokens: Int = 8192,
+    private val onUnrecoverableNativeTimeout: (String) -> Unit,
 ) : Closeable {
 
     val backendName: String
     private val engine: Engine
     private val active = AtomicReference<Conversation?>(null)
+    private val closed = AtomicBoolean(false)
     private val closer = Executors.newSingleThreadExecutor { r -> Thread(r, "gemma-close").apply { isDaemon = true } }
 
     init {
@@ -137,23 +139,36 @@ class GemmaEngine(
         val firstTokenSeen = AtomicBoolean(false)
         val idleFuture = AtomicReference<ScheduledFuture<*>?>(null)
         val assembled = StringBuilder()
+        val recoveryRequested = AtomicBoolean(false)
 
-        fun releaseConversation(cancelProcess: Boolean) {
+        fun requestProcessRecovery(reason: String) {
+            if (!recoveryRequested.compareAndSet(false, true)) return
+            Log.e(TAG, "native runtime quarantined: $reason")
+            onUnrecoverableNativeTimeout(reason)
+        }
+
+        fun releaseConversation(cancelProcess: Boolean): Boolean {
             // cancelProcess can hang for the entire GPU prefill. Skip it until a token has
-            // arrived, and time-box it otherwise so closer can still close() and notify the sink.
+            // arrived. Any later native timeout quarantines this process; no second JNI call is
+            // made against a possibly still-running conversation.
             val invokeCancel = cancelProcess && firstTokenSeen.get()
             if (invokeCancel) {
-                runCatching {
-                    if (!TimedNative.run(CANCEL_PROCESS_TIMEOUT_SEC, "cancelProcess") { conversation.cancelProcess() }) {
-                        Log.w(TAG, "cancelProcess timed out after ${CANCEL_PROCESS_TIMEOUT_SEC}s")
-                    }
-                }.onFailure { Log.w(TAG, "cancelProcess: ${it.message}") }
-            }
-            runCatching {
-                if (!TimedNative.run(CONVERSATION_CLOSE_TIMEOUT_SEC, "conversation-close") { conversation.close() }) {
-                    Log.w(TAG, "conversation close timed out after ${CONVERSATION_CLOSE_TIMEOUT_SEC}s")
+                val completed = runCatching {
+                    TimedNative.run(CANCEL_PROCESS_TIMEOUT_SEC, "cancelProcess") { conversation.cancelProcess() }
+                }.onFailure { Log.w(TAG, "cancelProcess: ${it.message}") }.getOrDefault(true)
+                if (!completed) {
+                    requestProcessRecovery("cancelProcess timed out after ${CANCEL_PROCESS_TIMEOUT_SEC}s")
+                    return false
                 }
-            }.onFailure { Log.w(TAG, "conversation close: ${it.message}") }
+            }
+            val closed = runCatching {
+                TimedNative.run(CONVERSATION_CLOSE_TIMEOUT_SEC, "conversation-close") { conversation.close() }
+            }.onFailure { Log.w(TAG, "conversation close: ${it.message}") }.getOrDefault(true)
+            if (!closed) {
+                requestProcessRecovery("conversation close timed out after ${CONVERSATION_CLOSE_TIMEOUT_SEC}s")
+                return false
+            }
+            return true
         }
 
         fun notifySink(cancelled: Boolean, error: Throwable?) {
@@ -171,15 +186,12 @@ class GemmaEngine(
             idleFuture.getAndSet(null)?.cancel(false)
             try {
                 closer.execute {
-                    try {
-                        releaseConversation(cancelProcess)
-                    } finally {
+                    if (releaseConversation(cancelProcess)) {
                         notifySink(cancelled, error)
                     }
                 }
             } catch (_: RejectedExecutionException) {
-                // Engine shutdown already owns native cleanup. Still release the admission gate.
-                notifySink(cancelled, error)
+                requestProcessRecovery("conversation cleanup executor was unavailable")
             }
         }
 
@@ -188,21 +200,30 @@ class GemmaEngine(
                 terminal(cancelled = true, cancelProcess = true)
             } else {
                 // Pixel 10 GPU: close()/cancelProcess() during prefill kills :inference.
-                // Keep the cancelled flag so tokens are dropped; tear down after first token.
-                Log.i(TAG, "cancel during prefill; deferring native close until first token")
+                // Give the callback a short chance to arrive. If native prefill remains stuck, the
+                // only safe cancellation boundary is recycling this isolated process.
+                Log.i(TAG, "cancel during prefill; waiting briefly for a callback")
+                watchdog.schedule({
+                    if (!firstTokenSeen.get() && !finished.get() && cancelledFlag.get()) {
+                        if (finished.compareAndSet(false, true)) {
+                            idleFuture.getAndSet(null)?.cancel(false)
+                            requestProcessRecovery(
+                                "cancelled prefill produced no callback after ${PREFILL_CANCEL_RECOVERY_TIMEOUT_SEC}s",
+                            )
+                        }
+                    }
+                }, PREFILL_CANCEL_RECOVERY_TIMEOUT_SEC, TimeUnit.SECONDS)
             }
         }
 
         watchdog.schedule({
-            if (!firstTokenSeen.get() && !finished.get() && !generation.cancelled) {
+            if (!firstTokenSeen.get() && !finished.get() && !generation.cancelled &&
+                finished.compareAndSet(false, true)
+            ) {
                 Log.w(TAG, "no first token after ${FIRST_TOKEN_TIMEOUT_SEC}s")
-                terminal(
-                    cancelled = false,
-                    // A slow prompt, thermal pressure, or scheduler contention is not proof of a
-                    // broken GPU backend. Persist fallback only when the inference process dies or
-                    // GPU engine initialisation itself fails.
-                    error = IllegalStateException("Gemma did not start in time. Please retry the question."),
-                    cancelProcess = true,
+                idleFuture.getAndSet(null)?.cancel(false)
+                requestProcessRecovery(
+                    "first token timed out after ${FIRST_TOKEN_TIMEOUT_SEC}s",
                 )
             }
         }, FIRST_TOKEN_TIMEOUT_SEC, TimeUnit.SECONDS)
@@ -264,20 +285,33 @@ class GemmaEngine(
     }
 
     override fun close() {
+        if (!closed.compareAndSet(false, true)) return
         val task = closer.submit {
-            active.getAndSet(null)?.let { conv ->
-                runCatching {
-                    if (!TimedNative.run(CANCEL_PROCESS_TIMEOUT_SEC, "cancelProcess") { conv.cancelProcess() }) {
-                        Log.w(TAG, "engine close: cancelProcess timed out after ${CANCEL_PROCESS_TIMEOUT_SEC}s")
-                    }
-                }.onFailure { Log.w(TAG, "engine close cancelProcess: ${it.message}") }
-                runCatching {
-                    if (!TimedNative.run(CONVERSATION_CLOSE_TIMEOUT_SEC, "conversation-close") { conv.close() }) {
-                        Log.w(TAG, "engine close: conversation close timed out after ${CONVERSATION_CLOSE_TIMEOUT_SEC}s")
-                    }
-                }.onFailure { Log.w(TAG, "engine close conversation: ${it.message}") }
+            active.get()?.let { conv ->
+                val cancelled = runCatching {
+                    TimedNative.run(CANCEL_PROCESS_TIMEOUT_SEC, "cancelProcess") { conv.cancelProcess() }
+                }.onFailure { Log.w(TAG, "engine close cancelProcess: ${it.message}") }.getOrDefault(true)
+                if (!cancelled) {
+                    onUnrecoverableNativeTimeout("engine cancelProcess timed out after ${CANCEL_PROCESS_TIMEOUT_SEC}s")
+                    return@submit
+                }
+                val conversationClosed = runCatching {
+                    TimedNative.run(CONVERSATION_CLOSE_TIMEOUT_SEC, "conversation-close") { conv.close() }
+                }.onFailure { Log.w(TAG, "engine close conversation: ${it.message}") }.getOrDefault(true)
+                if (!conversationClosed) {
+                    onUnrecoverableNativeTimeout("engine conversation close timed out after ${CONVERSATION_CLOSE_TIMEOUT_SEC}s")
+                    return@submit
+                }
+                active.compareAndSet(conv, null)
             }
-            runCatching { if (engine.isInitialized()) engine.close() }
+            if (engine.isInitialized()) {
+                val engineClosed = runCatching {
+                    TimedNative.run(ENGINE_CLOSE_TIMEOUT_SEC, "engine-close") { engine.close() }
+                }.onFailure { Log.w(TAG, "engine close: ${it.message}") }.getOrDefault(true)
+                if (!engineClosed) {
+                    onUnrecoverableNativeTimeout("engine close timed out after ${ENGINE_CLOSE_TIMEOUT_SEC}s")
+                }
+            }
         }
         runCatching { task.get(60, TimeUnit.SECONDS) }.onFailure { Log.e(TAG, "engine close did not finish", it) }
         closer.shutdownNow()
@@ -289,8 +323,10 @@ class GemmaEngine(
         const val DEFAULT_MAX_OUTPUT_TOKENS = 512
         const val FIRST_TOKEN_TIMEOUT_SEC = 45L
         const val STALLED_GENERATION_TIMEOUT_SEC = 30L
+        const val PREFILL_CANCEL_RECOVERY_TIMEOUT_SEC = 10L
         const val CANCEL_PROCESS_TIMEOUT_SEC = 3L
         const val CONVERSATION_CLOSE_TIMEOUT_SEC = 10L
+        const val ENGINE_CLOSE_TIMEOUT_SEC = 15L
         fun gpuMarker(context: Context): File = GpuMarker.file(context)
 
         /** Warm only after a successful initialize, never merely because a partial cache exists. */

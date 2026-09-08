@@ -40,6 +40,8 @@ class QueryPlannerTest {
         )
 
         assertEquals(QuestionIntent.SECTION_SUMMARY, plan.intent)
+        assertEquals("03300", plan.explicitSpecificationNumber)
+        assertEquals("2.05", plan.explicitSectionNumber)
     }
 
     @Test
@@ -87,6 +89,40 @@ class QueryPlannerTest {
         assertEquals(QuestionIntent.FACT, plan.intent)
         assertNull(plan.explicitSpecificationNumber)
         assertNull(plan.resolvedSectionId)
+        assertTrue("table identity must remain searchable", "03210b" in plan.subjectText)
+    }
+
+    @Test
+    fun `unknown explicit specification remains an intentional search filter`() {
+        val plan = QueryPlanner().plan(
+            "What curing method is required in specification 09999?",
+            manifest,
+        )
+
+        assertEquals(QuestionIntent.FACT, plan.intent)
+        assertEquals("09999", plan.explicitSpecificationNumber)
+        assertTrue("curing method" in plan.subjectText)
+    }
+
+    @Test
+    fun `dotted table number stays searchable when it is not a document section`() {
+        val plan = QueryPlanner().plan(
+            "What value is listed in Table 3.20?",
+            manifest,
+        )
+
+        assertEquals(QuestionIntent.FACT, plan.intent)
+        assertNull(plan.explicitSectionNumber)
+        assertTrue("table identity must remain searchable", "3.20" in plan.subjectText)
+    }
+
+    @Test
+    fun `bare dotted id resolves when the manifest proves it is a section`() {
+        val plan = QueryPlanner().plan("Summarize 2.05 concrete mix", manifest)
+
+        assertEquals(QuestionIntent.SECTION_SUMMARY, plan.intent)
+        assertEquals("2.05", plan.explicitSectionNumber)
+        assertEquals("a", plan.resolvedSectionId)
     }
 
     @Test

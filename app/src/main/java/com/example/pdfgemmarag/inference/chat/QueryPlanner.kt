@@ -43,32 +43,50 @@ class QueryPlanner {
     ): QuestionPlan {
         val normalized = normalize(question)
         val summary = SUMMARY.containsMatchIn(normalized)
-        var spec = SPEC_REFERENCE.find(normalized)?.groupValues?.get(1)
-            ?: LEADING_ZERO_ID.find(normalized)?.value
-        val section = SECTION_REFERENCE.find(normalized)?.groupValues?.get(1)
-            ?: DOTTED_ID.find(normalized)?.value
+        val explicitSpec = SPEC_REFERENCE.find(normalized)?.groupValues?.get(1)
+        val inferredSpecCandidate = if (explicitSpec == null) LEADING_ZERO_ID.find(normalized)?.value else null
+        val explicitSection = SECTION_REFERENCE.find(normalized)?.groupValues?.get(1)
+        val inferredSectionCandidate = if (explicitSection == null) DOTTED_ID.find(normalized)?.value else null
         // "Specification 03300" identifies one specification; it is not a request to summarize
         // the entire document. Explicit identities always win over document-level vocabulary.
-        val overview = summary && spec == null && section == null && DOCUMENT_WORDS.containsMatchIn(normalized)
+        val overview = summary && explicitSpec == null && inferredSpecCandidate == null &&
+            explicitSection == null && inferredSectionCandidate == null &&
+            DOCUMENT_WORDS.containsMatchIn(normalized)
         var subject = normalized
             .replace(SUMMARY, " ")
             .replace(SPEC_WORD, " ")
             .replace(SECTION_WORD, " ")
-        if (spec != null) subject = subject.replace(spec, " ")
-        if (section != null) subject = subject.replace(section, " ")
+        // Explicitly-labelled identities are filters, not semantic query terms. A bare
+        // leading-zero token is only removed after the manifest proves it is a specification;
+        // otherwise it may be a table number, detail ID, drawing reference, or product code.
+        if (explicitSpec != null) subject = subject.replace(explicitSpec, " ")
+        if (explicitSection != null) subject = subject.replace(explicitSection, " ")
         subject = subject.replace(SPACES, " ").trim()
 
         if (manifest == null) {
-            return QuestionPlan(if (overview) QuestionIntent.DOCUMENT_OVERVIEW else if (summary) QuestionIntent.SECTION_SUMMARY else QuestionIntent.FACT, subject)
+            return QuestionPlan(
+                intent = if (overview) QuestionIntent.DOCUMENT_OVERVIEW else if (summary) QuestionIntent.SECTION_SUMMARY else QuestionIntent.FACT,
+                subjectText = subject,
+                explicitSpecificationNumber = explicitSpec,
+                explicitSectionNumber = explicitSection,
+                inheritedSectionId = inheritedSectionId,
+            )
         }
 
         val usable = manifest.sections.filter { it.title.isNotBlank() || it.sectionNumber.isNotBlank() }
         // Table numbers and cross-references often look like CSI ids (03210B, 01450).
         // Only treat a leading-zero token as a specification filter when this document
         // actually contains that specification.
-        if (spec != null && usable.none { it.specificationNumber.equals(spec, true) }) {
-            spec = null
+        val inferredSpec = inferredSpecCandidate?.takeIf { candidate ->
+            usable.any { it.specificationNumber.equals(candidate, true) }
         }
+        val inferredSection = inferredSectionCandidate?.takeIf { candidate ->
+            usable.any { it.sectionNumber.equals(candidate, true) }
+        }
+        val spec = explicitSpec ?: inferredSpec
+        val section = explicitSection ?: inferredSection
+        if (inferredSpec != null) subject = subject.replace(inferredSpec, " ").replace(SPACES, " ").trim()
+        if (inferredSection != null) subject = subject.replace(inferredSection, " ").replace(SPACES, " ").trim()
         val exactIdentity = usable.filter { candidate ->
             (spec == null || candidate.specificationNumber.equals(spec, true)) &&
                 (section == null || candidate.sectionNumber.equals(section, true)) &&

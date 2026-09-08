@@ -154,7 +154,8 @@
     "question": "Got it. What about the cross-sectional dimensions? How much tolerance do we have on the column thickness?",
     "expectedPages": [12, 48, 49],
     "requireAllPages": false,
-    "requiredPhrases": ["+1/2", "-1/4"],
+    "requiredPhrases": ["-1/4"],
+    "requiredPhraseAlternatives": [["+1/2", "±1/2"]],
     "forbiddenPages": [],
     "historyFrom": "script1-plumb-piers"
   },

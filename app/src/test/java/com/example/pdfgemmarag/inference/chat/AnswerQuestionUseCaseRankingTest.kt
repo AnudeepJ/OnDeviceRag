@@ -214,6 +214,88 @@ class AnswerQuestionUseCaseRankingTest {
         assertEquals(false, answer.text.contains("From Plumb"))
     }
 
+    @Test
+    fun `flattened table keeps parent scope attached to repeated row label`() {
+        val header = citation(
+            239,
+            "Minimum Surface Cover (in inches) Slabs and Joists - Top and bottom bars for dry conditions",
+        )
+        val flattened = citation(
+            240,
+            "No. 5 bars and smaller: 1 1/2 No. 6 through No. 18 bars: 2 " +
+                "Beams and Columns - For dry conditions - Stirrups, spirals and ties: 1 1/2 " +
+                "Principal reinforcement: 2 Exposed to earth, water, sewage or weather " +
+                "Stirrups and ties: 2 Principal reinforcement: 2 1/2 Walls - For dry conditions",
+        )
+
+        val answer = AnswerQuestionUseCase.buildTableLead(
+            "In Table 03210B, what minimum concrete cover is required for principal reinforcement " +
+                "in beams and columns exposed to earth, water, sewage or weather?",
+            listOf(header, flattened),
+        )
+
+        assertTrue(answer.decisive)
+        assertTrue(answer.text, answer.text.contains("Principal reinforcement — 2 1/2 inches"))
+        assertEquals(listOf("c240"), answer.citations.map { it.chunkId })
+        assertEquals(false, answer.text.contains("No. 5 bars"))
+    }
+
+    @Test
+    fun `flattened table declines equally matching sibling rows`() {
+        val flattened = citation(
+            240,
+            "Beams - Principal reinforcement: 2 Columns - Principal reinforcement: 3",
+        )
+
+        val answer = AnswerQuestionUseCase.buildTableLead(
+            "In the table, what is the principal reinforcement value?",
+            listOf(flattened),
+        )
+
+        assertEquals(false, answer.decisive)
+        assertTrue(answer.text.isEmpty())
+    }
+
+    @Test
+    fun `flattened signed tolerance row is returned verbatim`() {
+        val flattened = citation(
+            233,
+            "Uniform spacing of bars (but the required number of bars shall not be reduced): ±2 " +
+                "Uniform spacing of stirrups and ties (but the required number of stirrups and ties shall not be reduced): ±1",
+        )
+        val nearbyCoverTable = citation(
+            240,
+            "Principal reinforcement: 2 Exposed to earth, water, sewage or weather Stirrups and ties: 2 " +
+                "Principal reinforcement: 2 1/2",
+        ).copy(pageNumber = 33)
+
+        val answer = AnswerQuestionUseCase.buildTableLead(
+            "What placement tolerance applies to uniform spacing of stirrups and ties for reinforcement?",
+            listOf(nearbyCoverTable, flattened),
+        )
+
+        assertTrue(answer.decisive)
+        assertTrue(answer.text, answer.text.contains("±1"))
+        assertEquals(false, answer.text.contains("±2"))
+    }
+
+    @Test
+    fun `flattened shortcut declines a multi row values request`() {
+        val flattened = citation(
+            435,
+            "Portland Cement Concrete: 2 to 4 Concrete to be dosed with superplasticizer: 1 to 3",
+        )
+
+        val answer = AnswerQuestionUseCase.buildTableLead(
+            "What are the minimum and maximum slump values for Portland cement concrete and " +
+                "concrete dosed with superplasticizer?",
+            listOf(flattened),
+        )
+
+        assertEquals(false, answer.decisive)
+        assertTrue(answer.text.isEmpty())
+    }
+
     private fun citation(index: Int, text: String) = Citation(
         chunkId = "c$index",
         docHash = "doc",

@@ -69,7 +69,9 @@ class ContextSelector(
                 append("Describe it as key points, not a complete summary. Prefer scope and major requirement categories over isolated details. ")
             } else {
                 append("Answer directly in at most 3 short sentences or bullets and 55 words. Do not restate the question. ")
+                append("If an excerpt states an explicit minimum, maximum, or 'not less than' value, answer with it and never claim that value is unspecified. ")
                 append("Keep table row labels with their values. If similar rows have different scopes or structure types, name each scope and do not merge their values. ")
+                append("For a table lookup, match the complete hierarchy in the question—table, structure type, condition, and row label—and ignore values belonging to sibling paths. ")
             }
             append("Reply in the language of the question.\n\nExcerpts:\n")
             excerpts.forEachIndexed { index, citation ->

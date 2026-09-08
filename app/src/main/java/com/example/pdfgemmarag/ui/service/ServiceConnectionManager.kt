@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
 import android.util.Log
+import com.example.pdfgemmarag.core.model.InferenceRecoveryMarker
 import com.example.pdfgemmarag.inference.service.AiInferenceService
 import com.example.pdfgemmarag.inference.service.IAiInferenceService
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -24,8 +25,8 @@ class ServiceConnectionManager(private val context: Context) {
 
     sealed class Event {
         data object Connected : Event()
-        /** The :inference process died (LMK, native crash). Binder will reconnect automatically. */
-        data object Died : Event()
+        /** The :inference process died. A reason is present for a deliberate native-timeout recycle. */
+        data class Died(val controlledRecoveryReason: String?) : Event()
     }
 
     private val _service = MutableStateFlow<IAiInferenceService?>(null)
@@ -44,16 +45,21 @@ class ServiceConnectionManager(private val context: Context) {
 
         override fun onServiceDisconnected(name: ComponentName) {
             Log.w(TAG, ":inference disconnected (process died)")
-            _service.value = null
-            _events.tryEmit(Event.Died)
+            emitDeathOnce()
         }
 
         override fun onBindingDied(name: ComponentName) {
             Log.w(TAG, "binding died; rebinding")
-            _service.value = null
-            _events.tryEmit(Event.Died)
+            emitDeathOnce()
             unbind(); bind()
         }
+    }
+
+    /** Android may report both callbacks for one death; publish one consistently classified event. */
+    private fun emitDeathOnce() {
+        if (_service.value == null) return
+        _service.value = null
+        _events.tryEmit(Event.Died(InferenceRecoveryMarker.consume(context)))
     }
 
     fun bind() {

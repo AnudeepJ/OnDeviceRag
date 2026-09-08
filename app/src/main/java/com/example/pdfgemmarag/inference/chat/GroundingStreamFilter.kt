@@ -64,7 +64,11 @@ class GroundingStreamFilter(
                 val close = pending.indexOf("]", cursor + 1)
                 if (close < 0) {
                     if (!final && pending.length - cursor <= MAX_CITATION_LENGTH) break
-                    output.append(ch); cursor++; continue
+                    // Never expose a half-written internal excerpt marker such as "[E". It is
+                    // neither a valid user citation nor safe text to feed into the numeric scanner.
+                    hadGroundingFailure = true
+                    cursor = pending.length
+                    continue
                 }
                 val marker = pending.substring(cursor + 1, close).trim()
                 val markerIds = marker.split(',').map(String::trim)

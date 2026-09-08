@@ -7,6 +7,17 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class GroundingStreamFilterTest {
+    @Test
+    fun `incomplete internal citation is discarded and marked as grounding failure`() {
+        val source = citation.copy(text = "Values are 2 and 3.")
+        val filter = GroundingStreamFilter("summarize", listOf(source))
+
+        val output = filter.accept("Supported point [E") + filter.finish()
+
+        assertEquals("Supported point ", output)
+        assertTrue(filter.hadGroundingFailure)
+    }
+
 
     @Test
     fun `table value remains grounded when its unit is in a separate header chunk`() {

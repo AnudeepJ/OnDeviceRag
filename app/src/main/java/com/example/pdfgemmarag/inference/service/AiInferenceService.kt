@@ -22,6 +22,7 @@ import com.example.pdfgemmarag.core.model.EngineStatus
 import com.example.pdfgemmarag.core.model.GenerationStats
 import com.example.pdfgemmarag.core.model.GpuMarker
 import com.example.pdfgemmarag.core.model.IndexingProgress
+import com.example.pdfgemmarag.core.model.InferenceRecoveryMarker
 import com.example.pdfgemmarag.core.model.ModelInstaller
 import com.example.pdfgemmarag.core.model.ModelPaths
 import com.example.pdfgemmarag.core.model.QaPair
@@ -79,7 +80,9 @@ class AiInferenceService : Service() {
     /** Service-side admission gate: UI state is never the authority for native conversation safety. */
     private val generationMutex = Mutex()
     private val generations = ConcurrentHashMap<Long, GemmaEngine.Generation>()
+    private val knownGenerations = ConcurrentHashMap.newKeySet<Long>()
     private val cancelledGenerations = ConcurrentHashMap.newKeySet<Long>()
+    private val recoveryRequested = AtomicBoolean(false)
     @Volatile private var indexingJob: Job? = null
     private val installMutex = Mutex()
     private val pendingInstalls = AtomicInteger(0)
@@ -141,6 +144,20 @@ class AiInferenceService : Service() {
 
     private suspend fun requireOcr(): MlKitOcr = runtimeLock.withLock { ocr ?: MlKitOcr().also { ocr = it } }
 
+    private fun createGemmaEngine(modelPath: String, allowGpu: Boolean): GemmaEngine = GemmaEngine(
+        context = this,
+        modelPath = modelPath,
+        allowGpu = allowGpu,
+        onUnrecoverableNativeTimeout = ::recycleInferenceProcess,
+    )
+
+    private fun recycleInferenceProcess(reason: String) {
+        if (!recoveryRequested.compareAndSet(false, true)) return
+        Log.e(TAG, "recycling inference process after unrecoverable native timeout: $reason")
+        InferenceRecoveryMarker.write(this, reason)
+        android.os.Process.killProcess(android.os.Process.myPid())
+    }
+
     // ------------------------------------------------------------------ binder
 
     private val binder = object : IAiInferenceService.Stub() {
@@ -169,7 +186,7 @@ class AiInferenceService : Service() {
                         safe { callback.onProgress("Creating engine (${if (useGpu) "GPU" else "CPU"})") }
                         var candidate: GemmaEngine? = null
                         try {
-                            val e = GemmaEngine(this@AiInferenceService, modelPath, allowGpu).also { candidate = it }
+                            val e = createGemmaEngine(modelPath, allowGpu).also { candidate = it }
                             safe { callback.onProgress("Initialising on ${e.backendName}. First GPU start compiles shaders and can take up to two minutes.") }
                             withContext(Dispatchers.IO) { e.initialize() }
                             if (e.backendName == "GPU") GpuMarker.markCacheReady(this@AiInferenceService, modelFile)
@@ -188,7 +205,7 @@ class AiInferenceService : Service() {
                                 GpuMarker.write(this@AiInferenceService, "init exception: ${t.message}")
                                 safe { callback.onProgress("GPU initialisation failed; retrying on CPU") }
                                 try {
-                                    val e = GemmaEngine(this@AiInferenceService, modelPath, allowGpu = false).also { candidate = it }
+                                    val e = createGemmaEngine(modelPath, allowGpu = false).also { candidate = it }
                                     withContext(Dispatchers.IO) { e.initialize() }
                                     gemma = e
                                     candidate = null
@@ -238,14 +255,17 @@ class AiInferenceService : Service() {
             callback: IStreamCallback,
         ): Long {
             val id = generationIds.incrementAndGet()
+            knownGenerations.add(id)
             scope.launch {
                 generationMutex.withLock {
                     if (cancelledGenerations.remove(id)) {
+                        knownGenerations.remove(id)
                         safe { callback.onError(id, "Stopped") }
                         return@withLock
                     }
                     val e = gemma
                     if (e == null || !e.isInitialized) {
+                        knownGenerations.remove(id)
                         safe { callback.onError(id, "Model is not loaded") }
                         return@withLock
                     }
@@ -255,6 +275,7 @@ class AiInferenceService : Service() {
                     fun finish(block: () -> Unit) {
                         if (!terminalDelivered.compareAndSet(false, true)) return
                         generations.remove(id)
+                        knownGenerations.remove(id)
                         cancelledGenerations.remove(id)
                         safe(block)
                         terminal.complete(Unit)
@@ -292,7 +313,7 @@ class AiInferenceService : Service() {
                                 generations[id]?.cancel()
                                 val drained = withTimeoutOrNull(GENERATION_CANCEL_DRAIN_MS) { terminal.await() }
                                 if (drained == null) {
-                                    finish { callback.onError(id, "Gemma did not finish in time. Please retry the question.") }
+                                    recycleInferenceProcess("generation $id did not reach a terminal callback")
                                 }
                             }
                         }
@@ -307,11 +328,7 @@ class AiInferenceService : Service() {
 
         override fun cancelGeneration(generationId: Long) {
             Log.i(TAG, "cancel requested id=$generationId active=${generations.keys}")
-            cancelledGenerations.add(generationId)
-            val handle = generations[generationId]
-            if (handle != null) {
-                handle.cancel()
-            }
+            requestGenerationCancellation(generationId)
         }
 
         override fun indexDocument(docHash: String, pdfPath: String, displayName: String, callback: IIndexingCallback) {
@@ -413,15 +430,25 @@ class AiInferenceService : Service() {
 
     private fun onClientGone(generationId: Long) {
         Log.w(TAG, "client died mid-stream; cancelling generation $generationId")
+        requestGenerationCancellation(generationId)
+    }
+
+    private fun requestGenerationCancellation(generationId: Long) {
+        if (!knownGenerations.contains(generationId)) return
         cancelledGenerations.add(generationId)
+        // Close the contains/add race with a terminal callback so a late stop cannot leave an
+        // arbitrary ID in this long-lived process for the remainder of the app session.
+        if (!knownGenerations.contains(generationId)) {
+            cancelledGenerations.remove(generationId)
+            return
+        }
         generations[generationId]?.cancel()
     }
 
     private fun requestCancelAllGenerations() {
-        val snapshot = generations.entries.toList()
-        for ((id, handle) in snapshot) {
+        for (id in knownGenerations.toList()) {
             cancelledGenerations.add(id)
-            handle.cancel()
+            generations[id]?.cancel()
         }
     }
 

@@ -223,7 +223,7 @@ class AnswerQuestionUseCase(
             // syntactically valid but visibly truncated answer.
             maxOutputTokens = when (plan.intent) {
                 QuestionIntent.SECTION_SUMMARY -> 256
-                QuestionIntent.DOCUMENT_OVERVIEW -> 128
+                QuestionIntent.DOCUMENT_OVERVIEW -> 192
                 else -> 112
             },
             sink = object : GemmaEngine.TokenSink {
@@ -409,6 +409,13 @@ class AnswerQuestionUseCase(
                     )
                 }
             }
+            // Apryse can preserve the reading order of a visually ruled table while flattening
+            // its cells into a paragraph. Resolve only a high-confidence row: the row label must
+            // occur in the question, and the preceding scope window must beat every competing
+            // label/value path by a safe margin. This keeps parent scopes such as structure type
+            // and exposure condition attached to repeated child labels.
+            val flattened = buildFlattenedTableLead(query, candidates)
+            if (flattened.decisive) return flattened
             // Some extractors preserve a table as pipe-delimited text even when geometry was too
             // weak for the conservative TABLE label. The delimiters are still explicit evidence.
             val tables = candidates.filter { it.contentKind == "TABLE" || '|' in it.text }
@@ -548,6 +555,17 @@ class AnswerQuestionUseCase(
         private val TOLERANCE_PARAGRAPH = Regex(
             "(?i)((?:variation|tolerance)[\\p{L}\\s,]{0,160}?)\\s+(\\d+/\\d+[\\\"”″]?\\s+in\\s+\\d+[’′']?)",
         )
+        private val FLATTENED_TABLE_ROW = Regex(
+            "(?i)([\\p{L}][\\p{L}\\p{N} .,/()'’&-]{1,180}?)\\s*:\\s*" +
+                "([+\\-±]?\\d+(?:\\s+\\d+/\\d+|/\\d+|\\.\\d+|\\s*(?:-|–|—|to)\\s*\\d+(?:\\.\\d+)?)?%?[\\\"”″]?)",
+        )
+        private val TABLE_UNIT_HEADER = Regex("(?i)\\(\\s*in\\s+([\\p{L}][\\p{L} /-]{1,24})\\s*\\)")
+        private val MULTI_ROW_QUERY_HINT = Regex(
+            "(?i)\\b(?:values|rows|both|each|respectively)\\b|" +
+                "\\b(?:minimum|maximum)\\b.{0,30}\\band\\b.{0,30}\\b(?:minimum|maximum)\\b",
+        )
+        private const val FLATTENED_SCOPE_CHARS = 240
+        private const val FLATTENED_SAFE_MARGIN = 2
         private val LEADING_REPEATED_WORD = Regex("(?i)^([\\p{L}]+)\\s+\\1\\b")
         private val SECTION_LOOKUP_HINT = Regex("\\b(?:what|which) section\\b")
         private val LIST_LOOKUP_HINT = Regex("\\b(?:list|what are)\\b")
@@ -561,6 +579,63 @@ class AnswerQuestionUseCase(
             "what", "which", "are", "the", "and", "for", "with", "has", "have", "from", "values", "value",
             "about", "do", "got", "how", "in", "it", "much", "of", "okay", "on", "to", "we",
         )
+
+        private data class FlattenedRow(
+            val citation: Citation,
+            val label: String,
+            val value: String,
+            val score: Int,
+        )
+
+        private fun buildFlattenedTableLead(query: String, candidates: List<Citation>): SummaryLead {
+            val queryWords = evidenceWords(query)
+            if (queryWords.isEmpty()) return SummaryLead.EMPTY
+            val matches = candidates.flatMap { citation ->
+                FLATTENED_TABLE_ROW.findAll(citation.text).mapNotNull { match ->
+                    val label = match.groupValues[1].replace(Regex("\\s+"), " ").trim()
+                    val labelWords = evidenceWords(label)
+                    val labelHits = labelWords.count(queryWords::contains)
+                    // One shared noun (for example "reinforcement") is not enough to select a
+                    // row from a different nearby table. Deterministic answers require a compound
+                    // label match; lower-confidence lookups remain with grounded generation.
+                    if (labelHits < 2) return@mapNotNull null
+                    val scopeStart = (match.range.first - FLATTENED_SCOPE_CHARS).coerceAtLeast(0)
+                    val scopedPath = citation.text.substring(scopeStart, match.range.last + 1)
+                    val scopeHits = evidenceWords(scopedPath).count(queryWords::contains)
+                    if (scopeHits < 3) return@mapNotNull null
+                    // Coverage makes a concise matching row label outrank a parser fragment that
+                    // accidentally swallowed several words from its parent scope. Scope matches
+                    // then distinguish repeated labels under different parents.
+                    val labelCoverage = labelHits * 1_000 / labelWords.size.coerceAtLeast(1)
+                    FlattenedRow(citation, label, match.groupValues[2].trim(), labelCoverage * 10 + scopeHits)
+                }.toList()
+            }
+            val groups = matches.groupBy { canonicalTableRow(listOf(it.label, it.value)) }
+                .values
+                .sortedByDescending { group -> group.maxOf { it.score } }
+            val bestGroup = groups.firstOrNull() ?: return SummaryLead.EMPTY
+            // A single-row deterministic shortcut must never collapse a request for several
+            // rows/values. Preserve the whole evidence set for the grounded multi-row path.
+            if (MULTI_ROW_QUERY_HINT.containsMatchIn(query) && groups.size > 1) return SummaryLead.EMPTY
+            val bestScore = bestGroup.maxOf { it.score }
+            val runnerUp = groups.getOrNull(1)?.maxOf { it.score }
+            if (runnerUp != null && bestScore - runnerUp < FLATTENED_SAFE_MARGIN) {
+                return SummaryLead.EMPTY
+            }
+            val best = bestGroup.maxWithOrNull(
+                compareBy<FlattenedRow> { it.score }.thenBy { it.citation.score },
+            ) ?: return SummaryLead.EMPTY
+            val unit = candidates.mapNotNull { TABLE_UNIT_HEADER.find(it.text)?.groupValues?.get(1)?.trim() }
+                .distinctBy { it.lowercase() }
+                .singleOrNull()
+                .orEmpty()
+            val displayedValue = listOf(best.value, unit).filter(String::isNotBlank).joinToString(" ")
+            return SummaryLead(
+                "${best.label} — $displayedValue [Page ${best.citation.pageNumber}]",
+                listOf(best.citation),
+                decisive = true,
+            )
+        }
 
         private fun markdownRows(citation: Citation): List<List<String>> =
             citation.text.split(Regex("\\|\\s*\\|")).mapNotNull { row ->

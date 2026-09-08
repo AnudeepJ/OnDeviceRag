@@ -10,6 +10,7 @@ import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.pdfgemmarag.core.model.Citation
+import com.example.pdfgemmarag.core.model.DocumentInfo
 import com.example.pdfgemmarag.core.model.EngineStatus
 import com.example.pdfgemmarag.core.model.GenerationStats
 import com.example.pdfgemmarag.core.model.ModelPaths
@@ -36,7 +37,7 @@ import java.util.Locale
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
-/** Records a real-model baseline without making today's known RAG shortcomings fail the build. */
+/** Runs strict source-backed regression checks against the indexed real PDF and installed model. */
 @RunWith(AndroidJUnit4::class)
 class SinglePdfBaselineDeviceTest {
 
@@ -52,6 +53,8 @@ class SinglePdfBaselineDeviceTest {
         val expectedRefusal: Boolean,
         val expectedClarification: Boolean,
         val historyFrom: String?,
+        /** Every group requires at least one alternative; useful for source-valid notation variants. */
+        val requiredPhraseAlternatives: List<List<String>> = emptyList(),
     )
 
     private data class Turn(
@@ -115,9 +118,42 @@ class SinglePdfBaselineDeviceTest {
             }
             return
         }
+        runBaseline(
+            svc,
+            doc,
+            arguments.getString("casesAsset") ?: DEFAULT_CASES_ASSET,
+            arguments.getString("caseId"),
+        )
+    }
+
+    /** Runs the generated real-user question bank in a normal instrumentation suite. */
+    @Test
+    fun captureGeneratedLiveQa() = runGeneratedBaseline(GENERATED_CASES_ASSET)
+
+    /** The legacy "more" asset is retained for focused runs; verify it cannot silently diverge. */
+    @Test
+    fun generatedAssetDuplicatesRemainIdentical() {
+        val primary = loadCases(GENERATED_CASES_ASSET).associateBy { it.id }
+        val legacy = loadCases(GENERATED_MORE_CASES_ASSET)
+        assertEquals("duplicate ids inside legacy generated bank", legacy.size, legacy.map { it.id }.distinct().size)
+        legacy.forEach { case -> assertEquals("divergent duplicate fixture ${case.id}", case, primary[case.id]) }
+    }
+
+    private fun runGeneratedBaseline(assetName: String) {
+        val svc = requireNotNull(service)
+        val doc = runBlocking { svc.listDocumentsAsync() }.firstOrNull { it.pageCount >= 70 }
+            ?: error("The test PDF is not indexed on this device")
+        runBaseline(svc, doc, assetName, requestedCase = null)
+    }
+
+    private fun runBaseline(
+        svc: IAiInferenceService,
+        doc: DocumentInfo,
+        assetName: String,
+        requestedCase: String?,
+    ) {
         ensureEngine(svc)
-        val requestedCase = arguments.getString("caseId")
-        val cases = loadCases(arguments.getString("casesAsset")).filter { requestedCase == null || it.id == requestedCase }
+        val cases = loadCases(assetName).filter { requestedCase == null || it.id == requestedCase }
         check(cases.isNotEmpty()) { "Unknown baseline caseId: $requestedCase" }
         val completed = LinkedHashMap<String, Turn>()
         val reportCases = JSONArray()
@@ -146,10 +182,13 @@ class SinglePdfBaselineDeviceTest {
             .put("retrievalPassed", retrievalPassed)
             .put("answerPassed", answerPassed)
             .put("cases", reportCases)
-        val output = File(requireNotNull(ctx.getExternalFilesDir(null)), "single_pdf_baseline.json")
+        val suiteName = assetName.substringBeforeLast('.').replace(Regex("[^a-zA-Z0-9_-]"), "_")
+        val output = File(requireNotNull(ctx.getExternalFilesDir(null)), "single_pdf_baseline-$suiteName.json")
         output.writeText(report.toString(2))
         Log.i(TAG, "BASELINE retrieval=$retrievalPassed/${completed.size} answer=$answerPassed/${completed.size}; report=${output.absolutePath}")
         assertTrue("baseline did not execute any cases", completed.isNotEmpty())
+        assertEquals("retrieval regressions; report=$output", completed.size, retrievalPassed)
+        assertEquals("answer regressions; report=$output", completed.size, answerPassed)
     }
 
     @Test
@@ -287,7 +326,8 @@ class SinglePdfBaselineDeviceTest {
             )
         }
         val retrievalReasons = scoreRetrieval(case, pages)
-        val answerReasons = scoreAnswer(case, text, error)
+        val groundingFailure = stats?.groundingFailure ?: false
+        val answerReasons = scoreAnswer(case, text, error, groundingFailure)
         return Turn(
             case = case,
             answer = text,
@@ -300,7 +340,7 @@ class SinglePdfBaselineDeviceTest {
             backend = stats?.backend ?: "unknown",
             retrievedChunks = stats?.retrievedChunks ?: 0,
             contextTokens = stats?.contextTokensApprox ?: 0,
-            groundingFailure = stats?.groundingFailure ?: false,
+            groundingFailure = groundingFailure,
             sourceSectionId = stats?.sourceSectionId.orEmpty(),
             retrievalPassed = retrievalReasons.isEmpty(),
             answerPassed = answerReasons.isEmpty(),
@@ -322,16 +362,40 @@ class SinglePdfBaselineDeviceTest {
         return reasons
     }
 
-    private fun scoreAnswer(case: Case, answer: String, error: String?): List<String> {
+    private fun scoreAnswer(
+        case: Case,
+        answer: String,
+        error: String?,
+        groundingFailure: Boolean,
+    ): List<String> {
         val reasons = ArrayList<String>()
         if (error != null) reasons += "error: $error"
         val normalized = canonical(answer)
+        if (normalized.isBlank()) reasons += "empty answer"
+        if (groundingFailure) reasons += "grounding filter rejected generated content"
+        if ("[unverified value]" in normalized || INTERNAL_OR_MALFORMED_CITATION.containsMatchIn(normalized)) {
+            reasons += "internal or malformed citation/value marker"
+        }
+        if (RAW_LATEX.containsMatchIn(answer)) reasons += "raw LaTeX control sequence in user-visible answer"
         val missing = case.requiredPhrases.filterNot { canonical(it) in normalized }
         if (missing.isNotEmpty()) reasons += "missing phrases $missing"
+        val missingAlternatives = case.requiredPhraseAlternatives.filter { alternatives ->
+            alternatives.none { canonical(it) in normalized }
+        }
+        if (missingAlternatives.isNotEmpty()) reasons += "missing phrase alternatives $missingAlternatives"
         val forbidden = case.forbiddenPhrases.filter { canonical(it) in normalized }
         if (forbidden.isNotEmpty()) reasons += "forbidden phrases $forbidden"
         if (case.expectedRefusal && !looksLikeRefusal(normalized)) reasons += "expected refusal"
+        if (!case.expectedRefusal &&
+            (case.requiredPhrases.isNotEmpty() || case.requiredPhraseAlternatives.isNotEmpty()) &&
+            looksLikeRefusal(normalized)
+        ) {
+            reasons += "unexpected refusal contradicts a source-backed expected answer"
+        }
         if (case.expectedClarification && !looksLikeClarification(normalized)) reasons += "expected clarification or both matching sections"
+        if (case.expectedPages.isNotEmpty() && !case.expectedRefusal && !case.expectedClarification &&
+            !PAGE_CITATION.containsMatchIn(answer)
+        ) reasons += "missing user-visible page citation"
         return reasons
     }
 
@@ -353,6 +417,7 @@ class SinglePdfBaselineDeviceTest {
                 expectedRefusal = item.optBoolean("expectedRefusal"),
                 expectedClarification = item.optBoolean("expectedClarification"),
                 historyFrom = item.optString("historyFrom").takeIf { it.isNotEmpty() },
+                requiredPhraseAlternatives = item.optJSONArray("requiredPhraseAlternatives")?.stringLists().orEmpty(),
             )
         }
     }
@@ -380,9 +445,14 @@ class SinglePdfBaselineDeviceTest {
 
     private fun JSONArray.ints(): Set<Int> = (0 until length()).map(::getInt).toSet()
     private fun JSONArray.strings(): List<String> = (0 until length()).map(::getString)
+    private fun JSONArray.stringLists(): List<List<String>> =
+        (0 until length()).map { getJSONArray(it).strings() }.also { groups ->
+            require(groups.all { it.isNotEmpty() }) { "requiredPhraseAlternatives cannot contain an empty group" }
+        }
 
     private fun canonical(value: String): String = value.lowercase(Locale.ROOT)
-        .replace("±", "+")
+        .replace("\\pm", "+/-")
+        .replace("±", "+/-")
         .replace(",", "")
         .replace(Regex("\\s+"), " ")
 
@@ -396,5 +466,11 @@ class SinglePdfBaselineDeviceTest {
 
     companion object {
         private const val TAG = "SINGLE_PDF_BASELINE"
+        private const val DEFAULT_CASES_ASSET = "single_pdf_baseline.json"
+        private const val GENERATED_CASES_ASSET = "generated_live_qa.json"
+        private const val GENERATED_MORE_CASES_ASSET = "generated_live_qa_more.json"
+        private val PAGE_CITATION = Regex("(?i)\\[page\\s+\\d+]")
+        private val INTERNAL_OR_MALFORMED_CITATION = Regex("(?i)\\[e(?:\\d+|\\[|$)")
+        private val RAW_LATEX = Regex("\\$[^$]*\\\\(?:pm|frac|text|mathrm)[^$]*\\$")
     }
 }

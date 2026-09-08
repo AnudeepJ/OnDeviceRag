@@ -123,7 +123,7 @@ class RagViewModel(app: Application) : AndroidViewModel(app) {
                         _ui.update { it.copy(serviceAlive = true) }
                         syncEngineStatus()
                     }
-                    ServiceConnectionManager.Event.Died -> onInferenceDied()
+                    is ServiceConnectionManager.Event.Died -> onInferenceDied(ev.controlledRecoveryReason)
                 }
             }
         }
@@ -540,7 +540,7 @@ class RagViewModel(app: Application) : AndroidViewModel(app) {
 
     // ------------------------------------------------------------------ recovery / diagnostics
 
-    private fun onInferenceDied() {
+    private fun onInferenceDied(controlledRecovery: String?) {
         Log.w(TAG, "inference process died")
         // A Binder death cannot deliver the load callback that normally clears this guard. Without
         // resetting it, the recovery load below is silently rejected forever.
@@ -548,10 +548,20 @@ class RagViewModel(app: Application) : AndroidViewModel(app) {
         val wasGenerating = _chat.value.generating
         val wasIndexing = _ui.value.indexing != null
         synchronized(turnLock) { activeTurn = null }
-        if (wasGenerating && _ui.value.engine.backend == "GPU") {
+        if (wasGenerating && _ui.value.engine.backend == "GPU" && controlledRecovery == null) {
             GpuMarker.write(getApplication(), "inference process died during GPU generation")
         }
-        _chat.update { if (wasGenerating) it.copy(generating = false, error = "The model process was restarted by the system.", generationId = -1) else it }
+        _chat.update {
+            if (wasGenerating) it.copy(
+                generating = false,
+                error = if (controlledRecovery != null) {
+                    "The model recovered from a stalled operation. Please retry the question."
+                } else {
+                    "The model process was restarted by the system."
+                },
+                generationId = -1,
+            ) else it
+        }
         _ui.update {
             it.copy(
                 serviceAlive = false,

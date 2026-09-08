@@ -50,7 +50,7 @@
     "question": "What placement tolerance applies to uniform spacing of stirrups and ties for reinforcement?",
     "expectedPages": [32],
     "requireAllPages": false,
-    "requiredPhrases": ["1"],
+    "requiredPhrases": ["±1"],
     "forbiddenPages": []
   },
   {
