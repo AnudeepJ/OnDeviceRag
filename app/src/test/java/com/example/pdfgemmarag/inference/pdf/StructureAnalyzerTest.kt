@@ -39,6 +39,49 @@ class StructureAnalyzerTest {
     }
 
     @Test
+    fun `same-indent lower-case wrapped lines remain attached to list items`() {
+        val page = PageLayout(
+            1, 600f, 800f,
+            listOf(
+                line(40f, "1) Correct unsafe conditions are", x = 40f),
+                line(52f, "corrected immediately.", x = 42f),
+                line(64f, "2) Leave the laboratory in better condition.", x = 40f),
+                line(76f, "take responsibility for safe work.", x = 42f),
+                line(102f, "Rules specific to this laboratory follow.", x = 40f),
+            ),
+            false, PageLayout.Source.TEXT,
+        )
+
+        val segments = StructureAnalyzer().analyse(page).segments
+        val list = segments.first() as Segment.ListBlock
+        assertEquals(2, list.items.size)
+        assertTrue(list.items[0].text.contains("corrected immediately"))
+        assertTrue(list.items[1].text.contains("take responsibility"))
+        assertTrue((segments[1] as Segment.Paragraph).text.startsWith("Rules specific"))
+    }
+
+    @Test
+    fun `contents rows are never made into section headings`() {
+        val page = PageLayout(
+            3, 600f, 800f,
+            listOf(
+                line(40f, "Index:"),
+                line(60f, "Sl No Subject Pages"),
+                line(80f, "1 Introduction 4"),
+                line(92f, "1.1 Safety Principle 4"),
+                line(104f, "2 Laboratory Rules 8"),
+                line(116f, "3 Safety Equipment 15"),
+                line(128f, "3.3 Fume Hood Usage 24"),
+                line(140f, "4 Emergency Procedures 30"),
+            ),
+            false, PageLayout.Source.TEXT,
+        )
+
+        val headings = StructureAnalyzer().analyse(page).segments.filterIsInstance<Segment.Heading>()
+        assertTrue(headings.isEmpty())
+    }
+
+    @Test
     fun `section cross reference does not become a specification boundary`() {
         val page = PageLayout(
             1, 600f, 800f,

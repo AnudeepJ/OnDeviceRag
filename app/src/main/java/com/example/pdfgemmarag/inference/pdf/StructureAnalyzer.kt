@@ -16,6 +16,9 @@ class StructureAnalyzer(
     fun analyse(page: PageLayout): PageContent {
         if (page.lines.isEmpty()) return PageContent(page.pageNumber, emptyList())
         val medianHeight = median(page.lines.map { it.lineHeight }).coerceAtLeast(1f)
+        // Contents rows are navigational pointers, not section boundaries. Suppressing their
+        // headings avoids matching a contents entry and the actual section as two candidates.
+        val isContentsPage = isContentsPage(page)
         val segments = ArrayList<Segment>()
         var plainStart = 0
         var i = 0
@@ -27,7 +30,7 @@ class StructureAnalyzer(
         }
 
         while (i < page.lines.size) {
-            val heading = headingAt(page, i, medianHeight)
+            val heading = if (isContentsPage) null else headingAt(page, i, medianHeight)
             if (heading != null) {
                 flushPlain(i)
                 segments += heading.segment
@@ -50,12 +53,20 @@ class StructureAnalyzer(
                         continue
                     }
                     val previousLine = page.lines[j - 1]
+                    val continuation = line.text.trim()
+                    // Some PDF producers place a wrapped list line at the same left edge as the
+                    // enumerator instead of indenting it beneath the item text. Accept that only
+                    // when it continues in lower case and is geometrically adjacent; this keeps a
+                    // following ordinary, capitalised paragraph out of the list.
+                    val alignedWithList = line.indent >= page.lines[i].indent - page.width * 0.01f
+                    val continuationStyle = continuation.firstOrNull()?.isLowerCase() == true ||
+                        line.indent > page.lines[i].indent + page.width * 0.015f
                     val wrapsPrevious = items.isNotEmpty() && !isExplicitHeading(line.text.trim()) &&
-                        line.indent > page.lines[i].indent + page.width * 0.015f &&
+                        alignedWithList && continuationStyle &&
                         line.box.top - previousLine.box.bottom <= medianHeight * 1.2f
                     if (!wrapsPrevious) break
                     val previousItem = items.removeAt(items.lastIndex)
-                    items += previousItem.copy(text = previousItem.text + " " + line.text.trim())
+                    items += previousItem.copy(text = previousItem.text + " " + continuation)
                     j++
                 }
                 // One enumerated clause is still a logical list item; retaining the label prevents
@@ -183,6 +194,15 @@ class StructureAnalyzer(
     private fun isExplicitHeading(text: String): Boolean =
         SPEC_HEADING.matches(text) || PART_HEADING.matches(text) || NUMBERED_HEADING.matches(text)
 
+    private fun isContentsPage(page: PageLayout): Boolean {
+        val lines = page.lines.map { it.text.trim().replace(SPACES, " ") }
+        val entryCount = lines.count { CONTENTS_ENTRY.matches(it) }
+        val hasContentsTitle = lines.take(CONTENTS_TITLE_LOOKAHEAD)
+            .any { CONTENTS_TITLE.matches(it.removeSuffix(":")) }
+        return (hasContentsTitle && entryCount >= MIN_CONTENTS_ENTRIES_WITH_TITLE) ||
+            entryCount >= MIN_CONTENTS_ENTRIES
+    }
+
     private fun isPartOneRoot(raw: String): Boolean {
         val text = raw.trim().replace(SPACES, " ")
         return PART_ONE_ROOT.matches(text) || NUMBERED_PART_ONE_ROOT.matches(text)
@@ -218,6 +238,9 @@ class StructureAnalyzer(
         private const val SPEC_HEADING_HEIGHT_RATIO = 1.15f
         private const val SPEC_HEADING_TOP_FRACTION = 0.18f
         private const val SPEC_TITLE_MAX_GAP_RATIO = 2.0f
+        private const val CONTENTS_TITLE_LOOKAHEAD = 12
+        private const val MIN_CONTENTS_ENTRIES_WITH_TITLE = 3
+        private const val MIN_CONTENTS_ENTRIES = 6
         private val SPACES = Regex("[\\s\\u00a0]+")
         private val BODY_END = Regex("[.;:]\\s*$")
         private val SPEC_HEADING = Regex("(?i)^SECTION\\s+([0-9]{3,8}(?:[-.]?[0-9A-Z]+)?)\\s*[-–—:]?\\s*(.*)$")
@@ -225,6 +248,8 @@ class StructureAnalyzer(
         private val PART_ONE_ROOT = Regex("(?i)^PART\\s+(?:1|I)(?:\\s*[-–—:]\\s*|\\s+).+$")
         private val NUMBERED_PART_ONE_ROOT = Regex("(?i)^1\\.0+\\s+.+$")
         private val NUMBERED_HEADING = Regex("^((?:[0-9]+\\.)+[0-9A-Z]+)\\s+(.+)$")
+        private val CONTENTS_TITLE = Regex("(?i)^(?:table\\s+of\\s+contents|contents|index)$")
+        private val CONTENTS_ENTRY = Regex("^\\d+(?:\\.\\d+){0,5}\\s+.+?\\s+\\d{1,4}$")
         private val LIST_ITEM = Regex("^((?:[A-Za-z]|[0-9]+)[.)]|\\([A-Za-z0-9]+\\))\\s+(.+)$")
 
         fun normalizeHeading(text: String): String = Normalizer.normalize(text, Normalizer.Form.NFKC)

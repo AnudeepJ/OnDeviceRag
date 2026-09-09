@@ -1,0 +1,416 @@
+[
+  {
+    "id": "safety-golden-rules",
+    "intent": "LIST",
+    "question": "What are the two golden rules for a safe and productive laboratory?",
+    "expectedPages": [2],
+    "requiredPhrases": ["corrected immediately", "better condition"],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-manual-purpose",
+    "intent": "FACT",
+    "question": "What is the purpose of this safety manual, and who ultimately owns experiment safety?",
+    "expectedPages": [5],
+    "requiredPhrases": ["safety and emergency protocols", "experimentalist"],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-five-principles",
+    "intent": "LIST",
+    "question": "List the five essential laboratory safety principles in section 1.1.",
+    "expectedPages": [5],
+    "requiredPhrases": ["following rules", "personal responsibility", "risk assessment", "prompt response"],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-personal-responsibility",
+    "intent": "FACT",
+    "question": "Why can laboratory staff not be treated as the sole safeguard for every operation?",
+    "expectedPages": [6],
+    "requiredPhrases": ["cannot oversee"],
+    "requiredPhraseAlternatives": [["all the time", "operations"]],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-hira-purpose",
+    "intent": "FACT",
+    "question": "What does HIRA require laboratories to do with workplace risks?",
+    "expectedPages": [6],
+    "requiredPhrases": ["identify", "risk"],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-network-escalation",
+    "intent": "FACT",
+    "question": "Who is the first contact for a departmental lab safety concern, and where is an unresolved issue escalated?",
+    "expectedPages": [7],
+    "requiredPhrases": ["Safety Champion", "safety committee"],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-hazard-definition",
+    "intent": "FACT",
+    "question": "How does section 2.1 define a hazard?",
+    "expectedPages": [8],
+    "requiredPhrases": ["substance", "object", "situation", "accident"],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-risk-formula",
+    "intent": "FACT",
+    "question": "What formula is used for qualitative risk assessment?",
+    "expectedPages": [10],
+    "requiredPhrases": ["Severity", "Likelihood"],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-accident-effects",
+    "intent": "LIST",
+    "question": "Name the effects of accidents listed in the manual.",
+    "expectedPages": [8],
+    "requiredPhrases": ["Injury", "Equipment Damage", "Material Loss", "Financial Loss", "Loss of Business"],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-mechanical-hazards",
+    "intent": "LIST",
+    "question": "Give four examples of mechanical hazards from section 2.3.1.",
+    "expectedPages": [9],
+    "requiredPhrases": ["Blades", "belts", "Gears", "Pinch points"],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-risk-matrix-certain-catastrophic",
+    "intent": "TABLE",
+    "question": "In Table 1.1, what risk score results from Almost Certain likelihood and Catastrophic consequence?",
+    "expectedPages": [10],
+    "requiredPhrases": ["25"],
+    "requiredPhraseAlternatives": [["Catastrophic", "Almost Certain"]],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-risk-matrix-possible-moderate",
+    "intent": "TABLE",
+    "question": "Using Table 1.1, what is the assessed risk for Possible likelihood and Moderate consequence?",
+    "expectedPages": [10],
+    "requiredPhrases": ["9", "Moderate"],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-severity-four",
+    "intent": "TABLE",
+    "question": "According to Table 1.2, what does severity level 4 mean?",
+    "expectedPages": [11],
+    "requiredPhrases": ["Serious injury"],
+    "requiredPhraseAlternatives": [["special Medical Treatment", "Hospitalization"]],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-probability-d",
+    "intent": "TABLE",
+    "question": "In Table 1.3, which probability category is D and how is it described?",
+    "expectedPages": [11],
+    "requiredPhrases": ["Unlikely", "foreseeable future"],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-extreme-risk-response",
+    "intent": "TABLE",
+    "question": "What actions does Table 1.4 prescribe for an Extreme assessed risk?",
+    "expectedPages": [12],
+    "requiredPhrases": ["alternatives", "Immediate action"],
+    "requiredPhraseAlternatives": [["Significant control measures", "Management"]],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-control-elimination",
+    "intent": "TABLE",
+    "question": "In Table 1.6, what does elimination mean?",
+    "expectedPages": [13],
+    "requiredPhrases": ["remove the hazard completely"],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-engineering-controls",
+    "intent": "TABLE",
+    "question": "What two engineering-control examples are given in Table 1.6?",
+    "expectedPages": [13],
+    "requiredPhrases": ["redesign", "Isolation"],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-ppe-last-control",
+    "intent": "FACT",
+    "question": "When should PPE be considered as a risk-control method?",
+    "expectedPages": [14],
+    "requiredPhrases": ["all other control methods", "impractical"],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-restricted-material-approval",
+    "intent": "FACT",
+    "question": "Whose prior approval is needed before using restricted chemicals or materials?",
+    "expectedPages": [14],
+    "requiredPhrases": ["PI", "laboratory supervisor"],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-food-policy",
+    "intent": "FACT",
+    "question": "Is food or drink allowed inside Mechanical and Aerospace laboratories?",
+    "expectedPages": [15],
+    "requiredPhrases": [],
+    "requiredPhraseAlternatives": [["NO FOOD", "not allowed"]],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-buddy-system",
+    "intent": "FACT",
+    "question": "Who counts as a laboratory buddy, and do friends reachable only by phone count?",
+    "expectedPages": [16],
+    "requiredPhrases": ["close enough", "do not count"],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-housekeeping",
+    "intent": "LIST",
+    "question": "What does the housekeeping guidance say about spills and hallways?",
+    "expectedPages": [17],
+    "requiredPhrases": ["immediately", "storage areas"],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-long-hair-clothing",
+    "intent": "FACT",
+    "question": "Why must long hair and loose clothing be confined in a laboratory?",
+    "expectedPages": [17],
+    "requiredPhrases": ["catching fire"],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-eye-protection-difference",
+    "intent": "FACT",
+    "question": "What is the difference between safety glasses and chemical splash goggles?",
+    "expectedPages": [18, 19],
+    "requiredPhrases": ["mechanical hazards", "liquid hazards"],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-face-shield",
+    "intent": "FACT",
+    "question": "When does the manual recommend a face shield together with safety goggles?",
+    "expectedPages": [18],
+    "requiredPhrases": ["large amounts", "chemicals"],
+    "requiredPhraseAlternatives": [["explosive", "vacuum systems"]],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-ppe-table-eye-seal",
+    "intent": "TABLE",
+    "question": "Which eye-protection option in Table 1 seals around the eyes?",
+    "expectedPages": [19],
+    "requiredPhrases": ["Splash Goggles"],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-ppe-table-face-coverage",
+    "intent": "TABLE",
+    "question": "According to Table 1, what areas does a face shield cover?",
+    "expectedPages": [19],
+    "requiredPhrases": ["Eyes", "face", "nose", "mouth"],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-thin-nitrile",
+    "intent": "TABLE",
+    "question": "What are thin nitrile gloves used for, and what thickness does Table 2 give?",
+    "expectedPages": [20],
+    "requiredPhrases": ["light-duty", "<2 mil"],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-thick-nitrile",
+    "intent": "TABLE",
+    "question": "What use cases and thickness are listed for thick nitrile gloves?",
+    "expectedPages": [20],
+    "requiredPhrases": ["chemical handling", "2-4 mil"],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-broken-glass",
+    "intent": "FACT",
+    "question": "How should broken glass be picked up and disposed of?",
+    "expectedPages": [22],
+    "requiredPhrases": ["broom", "dustpan", "designated bin"],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-msds-folder",
+    "intent": "FACT",
+    "question": "Where must the laboratory keep hard copies of chemical MSDSs?",
+    "expectedPages": [23],
+    "requiredPhrases": ["clearly labelled folder", "near the door"],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-acid-water-order",
+    "intent": "FACT",
+    "question": "Should water be added to acid, or acid to water?",
+    "expectedPages": [24],
+    "requiredPhrases": ["Never add water to acid", "add acid to water"],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-fume-hood-summary",
+    "intent": "SECTION_SUMMARY",
+    "question": "Summarize section 3.3 Fume Hood Usage.",
+    "expectedPages": [25],
+    "requiredPhrases": ["sash", "6 inches", "outside the hood"],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-bottle-shelf-height",
+    "intent": "FACT",
+    "question": "What is the maximum shelf height for large bottles and toxic, flammable, or corrosive liquids?",
+    "expectedPages": [26],
+    "requiredPhrases": ["below eye level", "5 feet"],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-peroxide-disposal",
+    "intent": "FACT",
+    "question": "How soon after opening should peroxide-forming materials such as diethyl ether be discarded?",
+    "expectedPages": [26],
+    "requiredPhrases": ["within one year"],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-waste-collection",
+    "intent": "FACT",
+    "question": "How often must lab in-charges bring accumulated waste to the collection point, and what waste will be accepted?",
+    "expectedPages": [27],
+    "requiredPhrases": ["Once a month", "labelled", "segregated"],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-fire-walking-space",
+    "intent": "FACT",
+    "question": "What minimum walking space must be maintained for fire safety?",
+    "expectedPages": [27],
+    "requiredPhrases": ["2 feet"],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-electrical-overload",
+    "intent": "FACT",
+    "question": "What example does the manual give of overloading an electrical outlet?",
+    "expectedPages": [28],
+    "requiredPhrases": ["15A", "5A"],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-electrical-fire",
+    "intent": "FACT",
+    "question": "May water be used on an electrical fire?",
+    "expectedPages": [28],
+    "requiredPhrases": ["water", "electric shock"],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-heated-oil-bath",
+    "intent": "FACT",
+    "question": "Where must an oil bath be operated, and what solvents must be kept away from a heated bath?",
+    "expectedPages": [29],
+    "requiredPhrases": ["chemical fume hood", "Flammable"],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-fire-class-d",
+    "intent": "TABLE",
+    "question": "In the fire-extinguisher table, what class covers metal fires and how should they be extinguished?",
+    "expectedPages": [30],
+    "requiredPhrases": ["Special metal extinguishers"],
+    "requiredPhraseAlternatives": [["Class D", "class for metal fires is D", "| D |"]],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-fire-class-b",
+    "intent": "TABLE",
+    "question": "Which extinguisher methods are listed for Class B flammable-liquid fires?",
+    "expectedPages": [30],
+    "requiredPhrases": ["Foam", "ABC powder"],
+    "requiredPhraseAlternatives": [["carbon dioxide", "CO2"]],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-fire-class-e",
+    "intent": "TABLE",
+    "question": "What class and extinguisher types does Table 3 specify for electrical fires?",
+    "expectedPages": [31],
+    "requiredPhrases": ["Class E"],
+    "requiredPhraseAlternatives": [["Carbon dioxide", "powder"]],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-laser-class-3b",
+    "intent": "TABLE",
+    "question": "For a Class 3B laser, what energy range and procedural requirements appear in Table 4?",
+    "expectedPages": [33],
+    "requiredPhrases": ["5-500 mW", "Required"],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-laser-class-four",
+    "intent": "TABLE",
+    "question": "According to Table 4, what energy and hazards characterize a Class 4 laser?",
+    "expectedPages": [33],
+    "requiredPhrases": ["> 500 mW", "Fire hazard"],
+    "requiredPhraseAlternatives": [["eye and skin", "direct, specular, or diffuse"]],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-laser-distance-class-two",
+    "intent": "TABLE",
+    "question": "For the 0.99 mW Class 2 laser in Table 5, what are the flash-blindness and eye-hazard distances?",
+    "expectedPages": [34],
+    "requiredPhrases": ["67 m", "14 m"],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-cylinder-restraint",
+    "intent": "FACT",
+    "question": "At what heights must a gas cylinder be chained to the wall?",
+    "expectedPages": [38],
+    "requiredPhraseAlternatives": [["half height", "1/2"], ["1/3 and 2/3", "one-third and two-thirds"]],
+    "requiredPhrases": [],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-ert-all-clear",
+    "intent": "FACT",
+    "question": "Who may issue the all-clear after evacuation, and may anyone re-enter before it is issued?",
+    "expectedPages": [44],
+    "requiredPhrases": ["ERT", "No one"],
+    "requiredPhraseAlternatives": [["cannot enter", "until"]],
+    "forbiddenPages": [3, 4]
+  },
+  {
+    "id": "safety-missing-occupancy",
+    "intent": "NEGATIVE",
+    "question": "What is the maximum number of people permitted in each laboratory?",
+    "expectedPages": [],
+    "requiredPhrases": [],
+    "forbiddenPages": [3, 4],
+    "expectedRefusal": true
+  },
+  {
+    "id": "safety-missing-health-phone",
+    "intent": "NEGATIVE",
+    "question": "What exact telephone number should I call for the IITH health centre?",
+    "expectedPages": [],
+    "requiredPhrases": [],
+    "forbiddenPages": [3, 4],
+    "expectedRefusal": true
+  }
+]

@@ -3,6 +3,9 @@
 > The foundation and the single-PDF V2.1 hardening increment are implemented. V2.1 is specified in
 > [`docs/SINGLE_PDF_RAG_V2_1_PLAN.md`](docs/SINGLE_PDF_RAG_V2_1_PLAN.md) and validated on a Pixel 10
 > in [`docs/SINGLE_PDF_BASELINE_RESULTS.md`](docs/SINGLE_PDF_BASELINE_RESULTS.md).
+> The next planned increment is structured-content V2.2, specified in
+> [`docs/STRUCTURED_PDF_RAG_V2_2_PLAN.md`](docs/STRUCTURED_PDF_RAG_V2_2_PLAN.md). It addresses the
+> dense-table and compound-value failures found by the 50-case Safety Manual device evaluation.
 
 ## Locked Decisions
 

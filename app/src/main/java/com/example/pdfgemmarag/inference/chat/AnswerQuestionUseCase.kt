@@ -140,6 +140,13 @@ class AnswerQuestionUseCase(
             }
         }
         if (plan.intent == QuestionIntent.FACT) {
+            val numberedList = buildNumberedListLead(question, ranked)
+            if (numberedList.decisive) {
+                return deterministic(
+                    generationId, t0, numberedList.text, listener, numberedList.citations,
+                    plan.resolvedSectionId.orEmpty(), manifestFallback,
+                )
+            }
             val enumerated = buildEnumeratedValueAnswer(question, ranked)
             if (enumerated.text.isNotEmpty()) {
                 return deterministic(
@@ -290,6 +297,7 @@ class AnswerQuestionUseCase(
         private const val REPAIR_MESSAGE =
             "The document index needs repair before I can safely answer. Please re-index the document."
         private const val MAX_STRUCTURAL_NEIGHBOR_DISTANCE = 3
+        private const val MAX_NUMBERED_LIST_ITEMS = 8
 
         internal fun canFallbackWithoutManifest(
             intent: QuestionIntent,
@@ -527,6 +535,48 @@ class AnswerQuestionUseCase(
             )
         }
 
+        /**
+         * Returns a uniquely matched, physically adjacent numbered list without asking the model to
+         * paraphrase or omit its items. PDF extraction commonly stores a list introduction and its
+         * items as separate chunks, even though they form one semantic requirement.
+         */
+        internal fun buildNumberedListLead(question: String, candidates: List<Citation>): SummaryLead {
+            val query = normalizeForEvidenceMatch(question)
+            if (!NUMBERED_LIST_QUERY_HINT.containsMatchIn(query)) return SummaryLead.EMPTY
+            val queryWords = evidenceWords(query)
+            val byIndex = candidates.associateBy { it.chunkIndex }
+            val requestedCount = requestedListItemCount(query)
+            val matches = candidates.mapNotNull { introduction ->
+                if (!LIST_INTRODUCTION.containsMatchIn(introduction.text.trim())) return@mapNotNull null
+                if (evidenceWords(introduction.text).count(queryWords::contains) < 2) return@mapNotNull null
+                val listChunks = generateSequence(introduction.chunkIndex + 1) { it + 1 }
+                    .mapNotNull(byIndex::get)
+                    .takeWhile { it.pageNumber == introduction.pageNumber && it.contentKind == "LIST" }
+                    .take(MAX_NUMBERED_LIST_ITEMS)
+                    .toList()
+                val items = listChunks.flatMap { chunk ->
+                    splitNumberedListItems(chunk.text).map { text -> chunk to text }
+                }
+                if (items.isEmpty() || (requestedCount != null && items.size < requestedCount)) null
+                else introduction to items.take(requestedCount ?: items.size)
+            }
+            if (matches.size != 1) return SummaryLead.EMPTY
+            val (_, items) = matches.single()
+            return SummaryLead(
+                items.joinToString("\n") { (citation, text) -> "$text [Page ${citation.pageNumber}]" },
+                items.map { it.first }.distinctBy { it.chunkId },
+                decisive = true,
+            )
+        }
+
+        private fun splitNumberedListItems(text: String): List<String> {
+            val starts = NUMBERED_LIST_ITEM.findAll(text).mapNotNull { it.groups[1]?.range?.first }.toList()
+            if (starts.isEmpty()) return listOf(text.trim()).filter(String::isNotBlank)
+            return starts.mapIndexed { index, start ->
+                text.substring(start, starts.getOrElse(index + 1) { text.length }).trim()
+            }.filter(String::isNotBlank)
+        }
+
         /** Preserves an exact unique multi-value requirement even when a small summary model omits it. */
         internal fun buildEnumeratedSummaryLead(candidates: List<Citation>): SummaryLead {
             val byIndex = candidates.associateBy { it.chunkIndex }
@@ -569,6 +619,21 @@ class AnswerQuestionUseCase(
         private val LEADING_REPEATED_WORD = Regex("(?i)^([\\p{L}]+)\\s+\\1\\b")
         private val SECTION_LOOKUP_HINT = Regex("\\b(?:what|which) section\\b")
         private val LIST_LOOKUP_HINT = Regex("\\b(?:list|what are)\\b")
+        private val NUMBERED_LIST_QUERY_HINT = Regex(
+            "(?i)\\b(?:what are|list|name|give|which)\\b.{0,80}\\b(?:rules|steps|precautions|guidelines|requirements|responsibilities|principles|measures)\\b",
+        )
+        private val LIST_INTRODUCTION = Regex(
+            "(?i)\\b(?:rules|steps|precautions|guidelines|requirements|responsibilities|principles|measures)\\b[^.!?]{0,180}:$",
+        )
+        private val NUMBERED_LIST_ITEM = Regex("(?m)(?:^|\\s+)((?:\\d{1,2}|[a-z])[.)]\\s+)")
+        private fun requestedListItemCount(question: String): Int? = when {
+            Regex("\\b(?:one|1)\\b").containsMatchIn(question) -> 1
+            Regex("\\b(?:two|2)\\b").containsMatchIn(question) -> 2
+            Regex("\\b(?:three|3)\\b").containsMatchIn(question) -> 3
+            Regex("\\b(?:four|4)\\b").containsMatchIn(question) -> 4
+            Regex("\\b(?:five|5)\\b").containsMatchIn(question) -> 5
+            else -> null
+        }
         private val AS_FOLLOWS = Regex("(?i)\\bas follows\\s*:?$")
         private val DECIMAL_VALUE = Regex("(?<![\\p{L}\\p{N}])\\d+\\.\\d+(?![\\p{L}\\p{N}])")
         private val NEXT_NUMBERED_REQUIREMENT = Regex("\\s+\\d+[.)]\\s+")
@@ -667,7 +732,8 @@ class AnswerQuestionUseCase(
         internal fun looksLikeStructuredFragment(citation: Citation): Boolean {
             if (citation.contentKind == "TABLE" || '|' in citation.text) return true
             val text = citation.text.lowercase()
-            return "tolerance" in text || "concrete type" in text || "classification" in text ||
+            return LIST_INTRODUCTION.containsMatchIn(text.trim()) ||
+                "tolerance" in text || "concrete type" in text || "classification" in text ||
                 ("variation" in text && ("plumb" in text || "dimension" in text || "maximum" in text)) ||
                 ("cross section" in text && ("column" in text || "wall" in text || "beam" in text)) ||
                 ("minimum" in text && "maximum" in text) ||

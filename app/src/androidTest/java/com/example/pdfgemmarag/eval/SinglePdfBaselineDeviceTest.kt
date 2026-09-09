@@ -105,9 +105,12 @@ class SinglePdfBaselineDeviceTest {
     @Test
     fun captureFocusedBaseline() {
         val svc = requireNotNull(service)
-        val doc = runBlocking { svc.listDocumentsAsync() }.firstOrNull { it.pageCount >= 70 }
-            ?: error("The test PDF is not indexed on this device")
         val arguments = InstrumentationRegistry.getArguments()
+        val requestedDocument = arguments.getString("documentName")
+        val doc = runBlocking { svc.listDocumentsAsync() }.firstOrNull {
+            requestedDocument?.let { name -> it.displayName == name } ?: (it.pageCount >= 70)
+        }
+            ?: error("The test PDF is not indexed on this device")
         arguments.getString("dumpChunkRange")?.let { requested ->
             val bounds = requested.split('-').map(String::toInt)
             val manifest = requireNotNull(DocumentStructureManifestStore(ctx).load(doc.docHash))

@@ -1,5 +1,6 @@
 package com.example.pdfgemmarag.inference.ocr
 
+import android.content.Context
 import android.graphics.Bitmap
 import android.util.Log
 import com.example.pdfgemmarag.inference.pdf.Box
@@ -13,6 +14,7 @@ import com.google.mlkit.vision.text.chinese.ChineseTextRecognizerOptions
 import com.google.mlkit.vision.text.japanese.JapaneseTextRecognizerOptions
 import com.google.mlkit.vision.text.korean.KoreanTextRecognizerOptions
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import com.google.mlkit.common.MlKit
 import kotlinx.coroutines.tasks.await
 import java.io.Closeable
 
@@ -24,8 +26,25 @@ import java.io.Closeable
  * has any, otherwise by probing the first image-only page with the Japanese model (which reads
  * kana, kanji and Latin) and falling back to Korean when it finds nothing usable.
  */
-class MlKitOcr : Closeable {
+class MlKitOcr(context: Context) : Closeable {
     private val clients = HashMap<Script, TextRecognizer>()
+
+    init {
+        // ML Kit's manifest provider initialises only the process in which it is created. OCR is
+        // intentionally owned by :inference, so initialise it explicitly here rather than rely on
+        // the UI process having started first. This is safe to call once in every app process.
+        try {
+            MlKit.initialize(context.applicationContext)
+        } catch (alreadyInitialized: IllegalStateException) {
+            // A host app (or ML Kit's manifest provider in the main process) may have initialized
+            // the singleton before this library component is constructed. The explicit call is
+            // still required in :inference, where that provider is not guaranteed to run.
+            if (!alreadyInitialized.message.orEmpty().contains("already initialized", ignoreCase = true)) {
+                throw alreadyInitialized
+            }
+            Log.d(TAG, "ML Kit was already initialized in this process")
+        }
+    }
 
     private fun client(script: Script): TextRecognizer = clients.getOrPut(script) {
         when (script) {

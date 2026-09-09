@@ -142,7 +142,7 @@ class AiInferenceService : Service() {
         pdf ?: AprysePdfExtractor(this).also { pdf = it }
     }
 
-    private suspend fun requireOcr(): MlKitOcr = runtimeLock.withLock { ocr ?: MlKitOcr().also { ocr = it } }
+    private suspend fun requireOcr(): MlKitOcr = runtimeLock.withLock { ocr ?: MlKitOcr(this).also { ocr = it } }
 
     private fun createGemmaEngine(modelPath: String, allowGpu: Boolean): GemmaEngine = GemmaEngine(
         context = this,

@@ -120,6 +120,47 @@ class AnswerQuestionUseCaseRankingTest {
     }
 
     @Test
+    fun `numbered rule list keeps adjacent items associated with its introduction`() {
+        val introduction = citation(
+            3,
+            "There are two golden rules for developing a safe and productive environment:",
+        )
+        val first = citation(4, "1) Correct unsafe conditions immediately.")
+            .copy(contentKind = "LIST")
+        val second = citation(5, "2) Leave a laboratory in better condition than when you found it.")
+            .copy(contentKind = "LIST")
+
+        val answer = AnswerQuestionUseCase.buildNumberedListLead(
+            "What are the two golden rules for laboratory safety?",
+            listOf(introduction, first, second),
+        )
+
+        assertTrue(answer.decisive)
+        assertTrue(answer.text.contains("Correct unsafe conditions immediately"))
+        assertTrue(answer.text.contains("Leave a laboratory in better condition"))
+        assertEquals(listOf("c4", "c5"), answer.citations.map { it.chunkId })
+    }
+
+    @Test
+    fun `numbered items in one compact list chunk remain individually answerable`() {
+        val introduction = citation(3, "The two safety rules are:")
+        val compactList = citation(
+            4,
+            "1) Correct unsafe conditions immediately. 2) Leave the laboratory in better condition.",
+        ).copy(contentKind = "LIST")
+
+        val answer = AnswerQuestionUseCase.buildNumberedListLead(
+            "List the two safety rules.",
+            listOf(introduction, compactList),
+        )
+
+        assertTrue(answer.decisive)
+        assertTrue(answer.text.contains("1) Correct unsafe conditions immediately"))
+        assertTrue(answer.text.contains("2) Leave the laboratory"))
+        assertEquals(listOf("c4"), answer.citations.map { it.chunkId })
+    }
+
+    @Test
     fun `summary preserves a unique adjacent multi-value block`() {
         val heading = citation(10, "E. Maximum allowable ratios shall be as follows:")
         val values = citation(11, "a. First: 0.45. b. Second: 0.40. c. Other: 0.55. 2. Continue procedure.")
