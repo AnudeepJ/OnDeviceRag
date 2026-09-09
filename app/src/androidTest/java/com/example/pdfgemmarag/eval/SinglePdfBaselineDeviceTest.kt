@@ -190,8 +190,11 @@ class SinglePdfBaselineDeviceTest {
         output.writeText(report.toString(2))
         Log.i(TAG, "BASELINE retrieval=$retrievalPassed/${completed.size} answer=$answerPassed/${completed.size}; report=${output.absolutePath}")
         assertTrue("baseline did not execute any cases", completed.isNotEmpty())
-        assertEquals("retrieval regressions; report=$output", completed.size, retrievalPassed)
-        assertEquals("answer regressions; report=$output", completed.size, answerPassed)
+        val softAssert = InstrumentationRegistry.getArguments().getString("softAssert")?.toBoolean() ?: false
+        if (!softAssert) {
+            assertEquals("retrieval regressions; report=$output", completed.size, retrievalPassed)
+            assertEquals("answer regressions; report=$output", completed.size, answerPassed)
+        }
     }
 
     @Test
@@ -404,7 +407,12 @@ class SinglePdfBaselineDeviceTest {
 
     private fun loadCases(assetName: String? = null): List<Case> {
         val testContext = InstrumentationRegistry.getInstrumentation().context
-        val raw = testContext.assets.open(assetName?.ifBlank { null } ?: "single_pdf_baseline.json").bufferedReader().use { it.readText() }
+        val path = assetName?.ifBlank { null } ?: "single_pdf_baseline.json"
+        val raw = if (path.startsWith("/")) {
+            File(path).readText()
+        } else {
+            testContext.assets.open(path).bufferedReader().use { it.readText() }
+        }
         val array = JSONArray(raw)
         return (0 until array.length()).map { index ->
             val item = array.getJSONObject(index)

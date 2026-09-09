@@ -68,7 +68,14 @@ class ContextSelector(
                 append("For the document overview, add at most 3 compact bullets and 75 words describing key scope or requirement categories across the supplied outline sample. ")
                 append("Describe it as key points, not a complete summary. Prefer scope and major requirement categories over isolated details. ")
             } else {
-                append("Answer directly in at most 3 short sentences or bullets and 55 words. Do not restate the question. ")
+                val lower = question.lowercase()
+                val isProcedural = lower.contains("steps") || lower.contains("procedure") || lower.contains("first aid") ||
+                    lower.contains("how to") || lower.contains("explain") || lower.contains("technique") || lower.contains("precautions")
+                if (isProcedural) {
+                    append("Answer directly with the required steps or instructions in complete sentences. Do not restate the question. ")
+                } else {
+                    append("Answer directly in at most 3 short sentences or bullets and 55 words. Do not restate the question. ")
+                }
                 append("If an excerpt states an explicit minimum, maximum, or 'not less than' value, answer with it and never claim that value is unspecified. ")
                 append("Keep table row labels with their values. If similar rows have different scopes or structure types, name each scope and do not merge their values. ")
                 append("For a table lookup, match the complete hierarchy in the question—table, structure type, condition, and row label—and ignore values belonging to sibling paths. ")

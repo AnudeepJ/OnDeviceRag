@@ -229,9 +229,15 @@ class AnswerQuestionUseCase(
             // included. Keep enough headroom to finish the last sentence instead of displaying a
             // syntactically valid but visibly truncated answer.
             maxOutputTokens = when (plan.intent) {
-                QuestionIntent.SECTION_SUMMARY -> 256
-                QuestionIntent.DOCUMENT_OVERVIEW -> 192
-                else -> 112
+                QuestionIntent.SECTION_SUMMARY -> 288
+                QuestionIntent.DOCUMENT_OVERVIEW -> 224
+                else -> {
+                    val lower = question.lowercase()
+                    if (lower.contains("steps") || lower.contains("procedure") || lower.contains("first aid") ||
+                        lower.contains("list") || lower.contains("how to") || lower.contains("explain") ||
+                        lower.contains("technique") || lower.contains("precautions")
+                    ) 288 else 160
+                }
             },
             sink = object : GemmaEngine.TokenSink {
                 override fun onToken(text: String) {
@@ -800,6 +806,17 @@ class AnswerQuestionUseCase(
                         .takeIf { it in availableChunkIds }
                         ?.let(wanted::add)
                 }
+            } else if (citation == primary.firstOrNull() || citation.score <= 1.0) {
+                // For high-ranking paragraphs and lists, include 1-hop adjacent same-page chunks
+                // to prevent heading/paragraph splits from dropping rule names or numerical criteria.
+                if (citation.chunkIndex > 0) {
+                    DocumentStructureManifest.chunkId(citation.chunkIndex - 1)
+                        .takeIf { it in availableChunkIds }
+                        ?.let(wanted::add)
+                }
+                DocumentStructureManifest.chunkId(citation.chunkIndex + 1)
+                    .takeIf { it in availableChunkIds }
+                    ?.let(wanted::add)
             }
         }
         val extras = neighbors.values.flatten().distinct().filter { id -> primary.none { it.chunkId == id } }

@@ -1,0 +1,201 @@
+[
+  {
+    "id": "cs-explosives-speed",
+    "intent": "FACT",
+    "question": "What is the maximum speed limit for vehicles transporting explosives on rough roads and elsewhere?",
+    "expectedPages": [108, 109, 110],
+    "requireAllPages": false,
+    "requiredPhrases": [],
+    "requiredPhraseAlternatives": [
+      ["25 km/h", "25km/h", "25 km", "25"],
+      ["40 km/h", "40km/h", "40 km", "40"]
+    ],
+    "forbiddenPhrases": [],
+    "forbiddenPages": [],
+    "expectedRefusal": false,
+    "expectedClarification": false,
+    "historyFrom": null
+  },
+  {
+    "id": "cs-excavator-clearance",
+    "intent": "FACT",
+    "question": "What minimum clearance must an excavator maintain from any fixed object while performing a swinging motion?",
+    "expectedPages": [136, 137],
+    "requireAllPages": false,
+    "requiredPhrases": [],
+    "requiredPhraseAlternatives": [
+      ["0.6 m", "0.6m", "2 ft", "2 feet", "0.6 metre", "0.6 meters"]
+    ],
+    "forbiddenPhrases": [],
+    "forbiddenPages": [],
+    "expectedRefusal": false,
+    "expectedClarification": false,
+    "historyFrom": null
+  },
+  {
+    "id": "cs-safetynet-mesh",
+    "intent": "FACT",
+    "question": "What are the maximum allowable mesh opening dimensions and length for safety nets?",
+    "expectedPages": [76, 77],
+    "requireAllPages": false,
+    "requiredPhrases": [],
+    "requiredPhraseAlternatives": [
+      ["36 square inches", "36 sq", "36"],
+      ["6 inches", "6 in", "6"]
+    ],
+    "forbiddenPhrases": [],
+    "forbiddenPages": [],
+    "expectedRefusal": false,
+    "expectedClarification": false,
+    "historyFrom": null
+  },
+  {
+    "id": "cs-trench-exit",
+    "intent": "FACT",
+    "question": "What is the maximum distance allowed for a means of exit from any worker inside a trench?",
+    "expectedPages": [102, 103],
+    "requireAllPages": false,
+    "requiredPhrases": [],
+    "requiredPhraseAlternatives": [
+      ["8m", "8 m", "8 meters", "25 ft", "25 feet"]
+    ],
+    "forbiddenPhrases": [],
+    "forbiddenPages": [],
+    "expectedRefusal": false,
+    "expectedClarification": false,
+    "historyFrom": null
+  },
+  {
+    "id": "cs-cylinder-colors",
+    "intent": "TABLE",
+    "question": "According to IS 4379, what are the ground colour and band colour for Carbon dioxide and Nitrogen gas cylinders?",
+    "expectedPages": [152, 153],
+    "requireAllPages": false,
+    "requiredPhrases": [],
+    "requiredPhraseAlternatives": [
+      ["Black", "black"],
+      ["French grey", "grey", "gray"]
+    ],
+    "forbiddenPhrases": [],
+    "forbiddenPages": [],
+    "expectedRefusal": false,
+    "expectedClarification": false,
+    "historyFrom": null
+  },
+  {
+    "id": "cs-risk-matrix-level",
+    "intent": "TABLE",
+    "question": "In the risk assessment matrix, what is the description and control level for a relative risk rating between 21 and 25?",
+    "expectedPages": [28, 29],
+    "requireAllPages": false,
+    "requiredPhrases": [],
+    "requiredPhraseAlternatives": [
+      ["Very high", "very high", "High", "immediate attention"]
+    ],
+    "forbiddenPhrases": [],
+    "forbiddenPages": [],
+    "expectedRefusal": false,
+    "expectedClarification": false,
+    "historyFrom": null
+  },
+  {
+    "id": "cs-firstaid-amputation",
+    "intent": "PROCEDURE",
+    "question": "What are the first aid procedures for handling an amputated body part?",
+    "expectedPages": [184, 185],
+    "requireAllPages": false,
+    "requiredPhrases": ["plastic bag"],
+    "requiredPhraseAlternatives": [
+      ["ice", "container with ice"],
+      ["direct contact", "not be come in direct contact", "not come in direct contact"]
+    ],
+    "forbiddenPhrases": [],
+    "forbiddenPages": [],
+    "expectedRefusal": false,
+    "expectedClarification": false,
+    "historyFrom": null
+  },
+  {
+    "id": "cs-earplug-technique",
+    "intent": "PROCEDURE",
+    "question": "Explain the Roll-Pull-Hold-Check technique for wearing earplugs.",
+    "expectedPages": [172, 173],
+    "requireAllPages": false,
+    "requiredPhrases": ["Roll", "Pull", "Hold", "Check"],
+    "requiredPhraseAlternatives": [],
+    "forbiddenPhrases": [],
+    "forbiddenPages": [],
+    "expectedRefusal": false,
+    "expectedClarification": false,
+    "historyFrom": null
+  },
+  {
+    "id": "cs-hardhat-classes",
+    "intent": "FACT",
+    "question": "What are the voltage protection levels and differences between Class A, Class B, and Class C hard hats?",
+    "expectedPages": [165, 166],
+    "requireAllPages": false,
+    "requiredPhrases": [],
+    "requiredPhraseAlternatives": [
+      ["2,200", "2200"],
+      ["20,000", "20000"],
+      ["Class C", "no protection", "comfort"]
+    ],
+    "forbiddenPhrases": [],
+    "forbiddenPages": [],
+    "expectedRefusal": false,
+    "expectedClarification": false,
+    "historyFrom": null
+  },
+  {
+    "id": "cs-accident-inquiry",
+    "intent": "FACT",
+    "question": "Under Rule 210 of the DBOCW Rules, what must the authority do if an accident causes the death of five or more persons?",
+    "expectedPages": [202, 203],
+    "requireAllPages": false,
+    "requiredPhrases": [],
+    "requiredPhraseAlternatives": [
+      ["one month", "1 month", "within one month", "inquiry"]
+    ],
+    "forbiddenPhrases": [],
+    "forbiddenPages": [],
+    "expectedRefusal": false,
+    "expectedClarification": false,
+    "historyFrom": null
+  },
+  {
+    "id": "cs-hierarchy-controls",
+    "intent": "LIST",
+    "question": "What is the priority order of the hierarchy of risk control measures?",
+    "expectedPages": [13, 29, 30, 31],
+    "requireAllPages": false,
+    "requiredPhrases": ["Elimination"],
+    "requiredPhraseAlternatives": [
+      ["Substitution", "substitute"],
+      ["Engineering", "engineering control"],
+      ["Administrative", "administrative control"],
+      ["PPE", "Personal Protective Equipment"]
+    ],
+    "forbiddenPhrases": [],
+    "forbiddenPages": [],
+    "expectedRefusal": false,
+    "expectedClarification": false,
+    "historyFrom": null
+  },
+  {
+    "id": "cs-training-duration",
+    "intent": "FACT",
+    "question": "What is the recommended minimum duration for construction workers' safety and health training?",
+    "expectedPages": [44, 45],
+    "requireAllPages": false,
+    "requiredPhrases": [],
+    "requiredPhraseAlternatives": [
+      ["48 hours", "48 hrs", "not less 48 hours", "not less than 48 hours"]
+    ],
+    "forbiddenPhrases": [],
+    "forbiddenPages": [],
+    "expectedRefusal": false,
+    "expectedClarification": false,
+    "historyFrom": null
+  }
+]

@@ -36,7 +36,7 @@ class GroundingStreamFilter(
         structuralValues + excerpts.flatMap { listOf(it.specificationNumber, it.sectionNumber) }
         ).map(::normalizeValue).filter(String::isNotBlank).toSet()
     private val allowedValueUnits = valueUnitTokens(evidenceText)
-    private val allowedIdentifiers = identifierTokens(evidenceText)
+    private val allowedIdentifiers = identifierTokens(evidenceText) + identifierTokens(question)
     private val excerptById = excerpts.associateBy { it.excerptId }
     private val usedIds = LinkedHashSet<String>()
     private val emittedTail = StringBuilder()
