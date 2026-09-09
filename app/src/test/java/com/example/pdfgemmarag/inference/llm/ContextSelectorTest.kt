@@ -3,6 +3,7 @@ package com.example.pdfgemmarag.inference.llm
 import com.example.pdfgemmarag.core.model.Citation
 import com.example.pdfgemmarag.inference.chat.QuestionIntent
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -92,6 +93,34 @@ class ContextSelectorTest {
         assertEquals(candidates.map { it.chunkId }, selected.excerpts.map { it.chunkId })
         assertTrue(selected.prompt.contains("document overview"))
         assertTrue(selected.prompt.contains("key points, not a complete summary"))
+    }
+
+    @Test
+    fun `list question gets complete procedural prompt instead of short fact limit`() {
+        val selected = ContextSelector().select(
+            "List all five required steps",
+            listOf(citation("steps", 25, "I. Start II. Inspect III. Assess IV. Control V. Review")),
+            QuestionIntent.FACT,
+        )
+
+        assertTrue(selected.prompt.contains("Preserve their source order"))
+        assertTrue(selected.prompt.contains("do not silently omit an item"))
+        assertFalse(selected.prompt.contains("at most 3 short sentences"))
+    }
+
+    @Test
+    fun `proximity scored ordinary neighbor survives relative score filtering`() {
+        val primary = citation("primary", 45, "Employees receive safety and health training").copy(score = 1.0)
+        val neighbor = citation("neighbor", 45, "The recommended duration is not less than 48 hours")
+            .copy(score = 0.85)
+
+        val selected = ContextSelector().select(
+            "What is the recommended training duration?",
+            listOf(primary, neighbor),
+            QuestionIntent.FACT,
+        )
+
+        assertEquals(setOf("primary", "neighbor"), selected.excerpts.map { it.chunkId }.toSet())
     }
 
     private fun citation(id: String, page: Int, text: String) = Citation(

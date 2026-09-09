@@ -133,6 +133,10 @@ class SinglePdfBaselineDeviceTest {
     @Test
     fun captureGeneratedLiveQa() = runGeneratedBaseline(GENERATED_CASES_ASSET)
 
+    /** Runs the strict construction-safety bank only against its exact indexed document. */
+    @Test
+    fun captureConstructionSafetyQa() = runNamedBaseline(CONSTRUCTION_SAFETY_CASES_ASSET, "safety.pdf")
+
     /** The legacy "more" asset is retained for focused runs; verify it cannot silently diverge. */
     @Test
     fun generatedAssetDuplicatesRemainIdentical() {
@@ -144,8 +148,20 @@ class SinglePdfBaselineDeviceTest {
 
     private fun runGeneratedBaseline(assetName: String) {
         val svc = requireNotNull(service)
-        val doc = runBlocking { svc.listDocumentsAsync() }.firstOrNull { it.pageCount >= 70 }
+        val requestedDocument = InstrumentationRegistry.getArguments().getString("documentName")
+        val doc = runBlocking { svc.listDocumentsAsync() }.firstOrNull {
+            requestedDocument?.let { name -> it.displayName == name } ?: (it.pageCount >= 70)
+        }
             ?: error("The test PDF is not indexed on this device")
+        runBaseline(svc, doc, assetName, requestedCase = null)
+    }
+
+    private fun runNamedBaseline(assetName: String, defaultDocumentName: String) {
+        val svc = requireNotNull(service)
+        val expectedName = InstrumentationRegistry.getArguments().getString("documentName")
+            ?.ifBlank { null } ?: defaultDocumentName
+        val doc = runBlocking { svc.listDocumentsAsync() }.firstOrNull { it.displayName == expectedName }
+            ?: error("Required test PDF '$expectedName' is not indexed on this device")
         runBaseline(svc, doc, assetName, requestedCase = null)
     }
 
@@ -190,11 +206,8 @@ class SinglePdfBaselineDeviceTest {
         output.writeText(report.toString(2))
         Log.i(TAG, "BASELINE retrieval=$retrievalPassed/${completed.size} answer=$answerPassed/${completed.size}; report=${output.absolutePath}")
         assertTrue("baseline did not execute any cases", completed.isNotEmpty())
-        val softAssert = InstrumentationRegistry.getArguments().getString("softAssert")?.toBoolean() ?: false
-        if (!softAssert) {
-            assertEquals("retrieval regressions; report=$output", completed.size, retrievalPassed)
-            assertEquals("answer regressions; report=$output", completed.size, answerPassed)
-        }
+        assertEquals("retrieval regressions; report=$output", completed.size, retrievalPassed)
+        assertEquals("answer regressions; report=$output", completed.size, answerPassed)
     }
 
     @Test
@@ -480,6 +493,7 @@ class SinglePdfBaselineDeviceTest {
         private const val DEFAULT_CASES_ASSET = "single_pdf_baseline.json"
         private const val GENERATED_CASES_ASSET = "generated_live_qa.json"
         private const val GENERATED_MORE_CASES_ASSET = "generated_live_qa_more.json"
+        private const val CONSTRUCTION_SAFETY_CASES_ASSET = "construction_safety_qa.json"
         private val PAGE_CITATION = Regex("(?i)\\[page\\s+\\d+]")
         private val INTERNAL_OR_MALFORMED_CITATION = Regex("(?i)\\[e(?:\\d+|\\[|$)")
         private val RAW_LATEX = Regex("\\$[^$]*\\\\(?:pm|frac|text|mathrm)[^$]*\\$")

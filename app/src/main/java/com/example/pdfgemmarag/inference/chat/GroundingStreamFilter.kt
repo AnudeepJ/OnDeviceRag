@@ -14,9 +14,9 @@ class GroundingStreamFilter(
     structuralValues: List<String> = emptyList(),
 ) {
     private val pending = StringBuilder()
-    // The question is intentionally not authoritative evidence: repeating a number suggested by
-    // the user must not make it grounded. It remains a constructor input for API clarity and
-    // future structural-pointer handling.
+    // The question is intentionally not authoritative evidence: repeating a value or identifier
+    // suggested by the user must not make it grounded. QueryPlanner passes only manifest-validated
+    // structural pointers through [structuralValues].
     @Suppress("UNUSED_VARIABLE")
     private val originalQuestion = question
     private val evidenceText =
@@ -36,7 +36,7 @@ class GroundingStreamFilter(
         structuralValues + excerpts.flatMap { listOf(it.specificationNumber, it.sectionNumber) }
         ).map(::normalizeValue).filter(String::isNotBlank).toSet()
     private val allowedValueUnits = valueUnitTokens(evidenceText)
-    private val allowedIdentifiers = identifierTokens(evidenceText) + identifierTokens(question)
+    private val allowedIdentifiers = identifierTokens(evidenceText)
     private val excerptById = excerpts.associateBy { it.excerptId }
     private val usedIds = LinkedHashSet<String>()
     private val emittedTail = StringBuilder()

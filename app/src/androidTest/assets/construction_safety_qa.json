@@ -7,8 +7,8 @@
     "requireAllPages": false,
     "requiredPhrases": [],
     "requiredPhraseAlternatives": [
-      ["25 km/h", "25km/h", "25 km", "25"],
-      ["40 km/h", "40km/h", "40 km", "40"]
+      ["25 km/h", "25km/h"],
+      ["40 km/h", "40km/h"]
     ],
     "forbiddenPhrases": [],
     "forbiddenPages": [],
@@ -40,8 +40,8 @@
     "requireAllPages": false,
     "requiredPhrases": [],
     "requiredPhraseAlternatives": [
-      ["36 square inches", "36 sq", "36"],
-      ["6 inches", "6 in", "6"]
+      ["36 square inches", "36 sq in", "36 sq. in"],
+      ["6 inches", "6 inch", "6 in"]
     ],
     "forbiddenPhrases": [],
     "forbiddenPages": [],
@@ -71,10 +71,11 @@
     "question": "According to IS 4379, what are the ground colour and band colour for Carbon dioxide and Nitrogen gas cylinders?",
     "expectedPages": [152, 153],
     "requireAllPages": false,
-    "requiredPhrases": [],
+    "requiredPhrases": ["Carbon dioxide", "Nitrogen"],
     "requiredPhraseAlternatives": [
       ["Black", "black"],
-      ["French grey", "grey", "gray"]
+      ["White", "Aluminium", "Aluminum"],
+      ["French grey", "French gray"]
     ],
     "forbiddenPhrases": [],
     "forbiddenPages": [],
@@ -88,9 +89,10 @@
     "question": "In the risk assessment matrix, what is the description and control level for a relative risk rating between 21 and 25?",
     "expectedPages": [28, 29],
     "requireAllPages": false,
-    "requiredPhrases": [],
+    "requiredPhrases": ["immediate attention"],
     "requiredPhraseAlternatives": [
-      ["Very high", "very high", "High", "immediate attention"]
+      ["21-25", "21 to 25", "21 and 25"],
+      ["Very high", "very high"]
     ],
     "forbiddenPhrases": [],
     "forbiddenPages": [],
@@ -135,11 +137,11 @@
     "question": "What are the voltage protection levels and differences between Class A, Class B, and Class C hard hats?",
     "expectedPages": [165, 166],
     "requireAllPages": false,
-    "requiredPhrases": [],
+    "requiredPhrases": ["Class C"],
     "requiredPhraseAlternatives": [
       ["2,200", "2200"],
       ["20,000", "20000"],
-      ["Class C", "no protection", "comfort"]
+      ["no protection", "no electrical protection", "no protection from electrical hazards"]
     ],
     "forbiddenPhrases": [],
     "forbiddenPages": [],
@@ -153,9 +155,9 @@
     "question": "Under Rule 210 of the DBOCW Rules, what must the authority do if an accident causes the death of five or more persons?",
     "expectedPages": [202, 203],
     "requireAllPages": false,
-    "requiredPhrases": [],
+    "requiredPhrases": ["inquiry"],
     "requiredPhraseAlternatives": [
-      ["one month", "1 month", "within one month", "inquiry"]
+      ["one month", "1 month", "within one month"]
     ],
     "forbiddenPhrases": [],
     "forbiddenPages": [],
@@ -169,8 +171,9 @@
     "question": "What is the priority order of the hierarchy of risk control measures?",
     "expectedPages": [13, 29, 30, 31],
     "requireAllPages": false,
-    "requiredPhrases": ["Elimination"],
+    "requiredPhrases": [],
     "requiredPhraseAlternatives": [
+      ["Elimination", "Eliminate"],
       ["Substitution", "substitute"],
       ["Engineering", "engineering control"],
       ["Administrative", "administrative control"],

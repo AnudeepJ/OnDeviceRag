@@ -8,6 +8,42 @@ import org.junit.Test
 
 class AnswerQuestionUseCaseRankingTest {
     @Test
+    fun `adjacent expansion follows rank and query-relative score rather than absolute score`() {
+        assertTrue(AnswerQuestionUseCase.shouldExpandAdjacentSeed(rank = 0, score = 0.82, bestScore = 0.82))
+        assertTrue(AnswerQuestionUseCase.shouldExpandAdjacentSeed(rank = 5, score = 0.66, bestScore = 0.82))
+        assertFalse(AnswerQuestionUseCase.shouldExpandAdjacentSeed(rank = 6, score = 0.65, bestScore = 0.82))
+        assertFalse(AnswerQuestionUseCase.shouldExpandAdjacentSeed(rank = 4, score = 0.30, bestScore = 0.82))
+    }
+
+    @Test
+    fun `same-page adjacent evidence crosses a heading boundary only with query support`() {
+        val seed = citation(316, "7.2.1 EMPLOYEES").copy(
+            sectionId = "employees",
+            contentKind = "HEADING",
+            pageNumber = 45,
+        )
+        val relevant = citation(315, "Safety and health training should preferably be not less than 48 hours").copy(
+            sectionId = "training",
+            pageNumber = 45,
+        )
+        val unrelated = citation(317, "Protective clothing must be kept clean").copy(
+            sectionId = "ppe",
+            pageNumber = 45,
+        )
+        val terms = setOf("training", "duration", "safety", "health")
+
+        assertTrue(AnswerQuestionUseCase.isEligibleAdjacentNeighbor(seed, relevant, terms))
+        assertFalse(AnswerQuestionUseCase.isEligibleAdjacentNeighbor(seed, unrelated, terms))
+        assertFalse(
+            AnswerQuestionUseCase.isEligibleAdjacentNeighbor(
+                seed,
+                relevant.copy(pageNumber = 44),
+                terms,
+            ),
+        )
+    }
+
+    @Test
     fun `corrupt manifest fallback is restricted to facts with a matching trusted namespace`() {
         assertTrue(
             AnswerQuestionUseCase.canFallbackWithoutManifest(

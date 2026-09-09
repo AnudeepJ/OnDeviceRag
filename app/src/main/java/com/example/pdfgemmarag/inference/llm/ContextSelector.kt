@@ -1,6 +1,7 @@
 package com.example.pdfgemmarag.inference.llm
 
 import com.example.pdfgemmarag.core.model.Citation
+import com.example.pdfgemmarag.inference.chat.AnswerPolicy
 import com.example.pdfgemmarag.inference.chat.QuestionIntent
 
 /** Intent-aware context budgeting with stable excerpt IDs and exact boundary deduplication. */
@@ -68,11 +69,8 @@ class ContextSelector(
                 append("For the document overview, add at most 3 compact bullets and 75 words describing key scope or requirement categories across the supplied outline sample. ")
                 append("Describe it as key points, not a complete summary. Prefer scope and major requirement categories over isolated details. ")
             } else {
-                val lower = question.lowercase()
-                val isProcedural = lower.contains("steps") || lower.contains("procedure") || lower.contains("first aid") ||
-                    lower.contains("how to") || lower.contains("explain") || lower.contains("technique") || lower.contains("precautions")
-                if (isProcedural) {
-                    append("Answer directly with the required steps or instructions in complete sentences. Do not restate the question. ")
+                if (AnswerPolicy.isProcedural(question)) {
+                    append("Answer directly with the required steps or instructions in complete bullets. Preserve their source order and do not silently omit an item. Do not restate the question. ")
                 } else {
                     append("Answer directly in at most 3 short sentences or bullets and 55 words. Do not restate the question. ")
                 }

@@ -1,0 +1,19 @@
+package com.example.pdfgemmarag.inference.chat
+
+/** Shared, dependency-free answer-shape policy used by prompting and generation limits. */
+internal object AnswerPolicy {
+    fun isProcedural(question: String): Boolean = PROCEDURAL_HINT.containsMatchIn(question)
+
+    fun maxOutputTokens(intent: QuestionIntent, question: String): Int = when (intent) {
+        QuestionIntent.SECTION_SUMMARY -> 288
+        QuestionIntent.DOCUMENT_OVERVIEW -> 224
+        else -> if (isProcedural(question)) 288 else 160
+    }
+
+    private val PROCEDURAL_HINT = Regex(
+        "(?i)\\b(?:steps?|procedures?|instructions?|precautions?|techniques?|rules?|guidelines?|" +
+            "measures?|responsibilities|list|enumerate|priority\\s+order)\\b|" +
+            "\\bhow\\s+(?:to|do|does|should|must|can)\\b|" +
+            "\\bwhat\\s+(?:must|should)\\s+be\\s+done\\b",
+    )
+}

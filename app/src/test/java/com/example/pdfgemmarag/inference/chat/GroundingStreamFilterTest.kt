@@ -101,6 +101,28 @@ class GroundingStreamFilterTest {
     }
 
     @Test
+    fun `identifier asserted by question is not authoritative evidence`() {
+        val source = citation.copy(text = "The retrieved requirement does not identify an ISO standard.")
+        val filter = GroundingStreamFilter("Does ISO9999 apply?", listOf(source))
+
+        val output = filter.accept("ISO9999 applies.") + filter.finish()
+
+        assertEquals("ISO[unverified value] applies.", output)
+        assertTrue(filter.hadGroundingFailure)
+    }
+
+    @Test
+    fun `spaced identifier asserted by question is not authoritative evidence`() {
+        val source = citation.copy(text = "The authority must initiate an inquiry.")
+        val filter = GroundingStreamFilter("What does Rule 999 require?", listOf(source))
+
+        val output = filter.accept("Rule 999 requires an inquiry.") + filter.finish()
+
+        assertEquals("Rule [unverified value] requires an inquiry.", output)
+        assertTrue(filter.hadGroundingFailure)
+    }
+
+    @Test
     fun `lexicon covers formats used by specifications`() {
         val values = GroundingStreamFilter.valueTokens(citation.text)
         assertTrue(values.containsAll(listOf("03300", "2.05", "5000", "0.55", "10-15", "1/2")))

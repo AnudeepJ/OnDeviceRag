@@ -136,7 +136,7 @@ class AnswerQuestionUseCase(
                             .getOrDefault(emptyList())
                     }
                 }
-                expandStructuralNeighbors(primary, manifest)
+                expandStructuralNeighbors(primary, manifest, retrievalQuestion)
             }
         }
         if (plan.intent == QuestionIntent.FACT) {
@@ -228,17 +228,7 @@ class AnswerQuestionUseCase(
             // A 75-word summary can exceed 160 model tokens once citations and Markdown are
             // included. Keep enough headroom to finish the last sentence instead of displaying a
             // syntactically valid but visibly truncated answer.
-            maxOutputTokens = when (plan.intent) {
-                QuestionIntent.SECTION_SUMMARY -> 288
-                QuestionIntent.DOCUMENT_OVERVIEW -> 224
-                else -> {
-                    val lower = question.lowercase()
-                    if (lower.contains("steps") || lower.contains("procedure") || lower.contains("first aid") ||
-                        lower.contains("list") || lower.contains("how to") || lower.contains("explain") ||
-                        lower.contains("technique") || lower.contains("precautions")
-                    ) 288 else 160
-                }
-            },
+            maxOutputTokens = AnswerPolicy.maxOutputTokens(plan.intent, question),
             sink = object : GemmaEngine.TokenSink {
                 override fun onToken(text: String) {
                     if (firstToken < 0) firstToken = SystemClock.elapsedRealtime()
@@ -303,6 +293,10 @@ class AnswerQuestionUseCase(
         private const val REPAIR_MESSAGE =
             "The document index needs repair before I can safely answer. Please re-index the document."
         private const val MAX_STRUCTURAL_NEIGHBOR_DISTANCE = 3
+        private const val MAX_ADJACENT_PRIMARY_SEEDS = 6
+        private const val ADJACENT_SEED_RELATIVE_FLOOR = 0.60
+        private const val ADJACENT_SCORE_FACTOR = 0.85
+        private const val MIN_CROSS_SECTION_NEIGHBOR_TERMS = 2
         private const val MAX_NUMBERED_LIST_ITEMS = 8
 
         internal fun canFallbackWithoutManifest(
@@ -311,6 +305,25 @@ class AnswerQuestionUseCase(
             activeIndexNamespace: String,
         ): Boolean = intent == QuestionIntent.FACT && activeIndexNamespace.isNotBlank() &&
             (activeIndexNamespace == docHash || activeIndexNamespace.startsWith("$docHash:"))
+
+        internal fun isEligibleAdjacentNeighbor(
+            seed: Citation,
+            neighbor: Citation,
+            queryTerms: Set<String>,
+        ): Boolean {
+            if (neighbor.pageNumber != seed.pageNumber) return false
+            if (neighbor.sectionId == seed.sectionId) return true
+            val searchable = neighbor.sectionPath + " " + neighbor.text
+            val matches = queryTerms.count { term ->
+                Regex("(?<![\\p{L}\\p{N}])${Regex.escape(term)}(?![\\p{L}\\p{N}])", RegexOption.IGNORE_CASE)
+                    .containsMatchIn(searchable)
+            }
+            return matches >= MIN_CROSS_SECTION_NEIGHBOR_TERMS
+        }
+
+        internal fun shouldExpandAdjacentSeed(rank: Int, score: Double, bestScore: Double): Boolean =
+            rank < MAX_ADJACENT_PRIMARY_SEEDS &&
+                (bestScore <= 0.0 || score >= bestScore * ADJACENT_SEED_RELATIVE_FLOOR)
 
         /** Selects a small, document-wide structural sample without vector search. */
         internal fun overviewChunkIds(
@@ -786,14 +799,24 @@ class AnswerQuestionUseCase(
     private suspend fun expandStructuralNeighbors(
         primary: List<Citation>,
         manifest: DocumentStructureManifest?,
+        retrievalQuestion: String,
     ): List<Citation> {
         if (manifest == null || primary.isEmpty()) return primary
-        val neighbors = LinkedHashMap<String, LinkedHashSet<String>>()
+        val neighbors = LinkedHashMap<String, LinkedHashMap<String, NeighborKind>>()
         val availableChunkIds = manifest.chunksInOrder.toHashSet()
-        primary.forEach { citation ->
-            val wanted = neighbors.getOrPut(citation.chunkId) { LinkedHashSet() }
-            if (citation.continuesFromChunkIndex >= 0) wanted += DocumentStructureManifest.chunkId(citation.continuesFromChunkIndex)
-            if (citation.continuesToChunkIndex >= 0) wanted += DocumentStructureManifest.chunkId(citation.continuesToChunkIndex)
+        val bestPrimaryScore = primary.first().score
+        primary.forEachIndexed { rank, citation ->
+            val wanted = neighbors.getOrPut(citation.chunkId) { LinkedHashMap() }
+            fun request(id: String, kind: NeighborKind) {
+                val current = wanted[id]
+                if (current == null || kind.priority > current.priority) wanted[id] = kind
+            }
+            if (citation.continuesFromChunkIndex >= 0) {
+                request(DocumentStructureManifest.chunkId(citation.continuesFromChunkIndex), NeighborKind.CONTINUATION)
+            }
+            if (citation.continuesToChunkIndex >= 0) {
+                request(DocumentStructureManifest.chunkId(citation.continuesToChunkIndex), NeighborKind.CONTINUATION)
+            }
             if (looksLikeStructuredFragment(citation)) {
                 // Table captions are often emitted as several uppercase headings, each with a
                 // distinct section id. Use validated physical chunk ids here; after fetching we
@@ -801,26 +824,27 @@ class AnswerQuestionUseCase(
                 for (distance in 1..MAX_STRUCTURAL_NEIGHBOR_DISTANCE) {
                     DocumentStructureManifest.chunkId(citation.chunkIndex - distance)
                         .takeIf { citation.chunkIndex >= distance && it in availableChunkIds }
-                        ?.let(wanted::add)
+                        ?.let { request(it, NeighborKind.STRUCTURAL) }
                     DocumentStructureManifest.chunkId(citation.chunkIndex + distance)
                         .takeIf { it in availableChunkIds }
-                        ?.let(wanted::add)
+                        ?.let { request(it, NeighborKind.STRUCTURAL) }
                 }
-            } else if (citation == primary.firstOrNull() || citation.score <= 1.0) {
-                // For high-ranking paragraphs and lists, include 1-hop adjacent same-page chunks
-                // to prevent heading/paragraph splits from dropping rule names or numerical criteria.
+            } else if (shouldExpandAdjacentSeed(rank, citation.score, bestPrimaryScore)) {
+                // Expand a bounded number of actual top-ranked hits. AppSearch scores are
+                // query-relative and higher is better, so an absolute score threshold is invalid.
                 if (citation.chunkIndex > 0) {
                     DocumentStructureManifest.chunkId(citation.chunkIndex - 1)
                         .takeIf { it in availableChunkIds }
-                        ?.let(wanted::add)
+                        ?.let { request(it, NeighborKind.ADJACENT) }
                 }
                 DocumentStructureManifest.chunkId(citation.chunkIndex + 1)
                     .takeIf { it in availableChunkIds }
-                    ?.let(wanted::add)
+                    ?.let { request(it, NeighborKind.ADJACENT) }
             }
         }
-        val extras = neighbors.values.flatten().distinct().filter { id -> primary.none { it.chunkId == id } }
+        val extras = neighbors.values.flatMap { it.keys }.distinct().filter { id -> primary.none { it.chunkId == id } }
         if (extras.isEmpty()) return primary
+        val queryTerms = HybridQuery.keywordTerms(retrievalQuestion).toSet()
         return runCatching {
             val fetched = store.getChunks(manifest, extras).associateBy { it.chunkId }
             // Keep a structural neighbour beside the ranked hit that requested it. Appending all
@@ -829,10 +853,15 @@ class AnswerQuestionUseCase(
                 val emitted = HashSet<String>()
                 primary.forEach { citation ->
                     if (emitted.add(citation.chunkId)) add(citation)
-                    neighbors[citation.chunkId].orEmpty().forEach { id ->
+                    neighbors[citation.chunkId].orEmpty().forEach { (id, kind) ->
                         fetched[id]
-                            ?.takeIf { it.pageNumber == citation.pageNumber && emitted.add(id) }
-                            ?.let(::add)
+                            ?.takeIf { neighbor -> isEligibleNeighbor(citation, neighbor, kind, queryTerms) }
+                            ?.takeIf { emitted.add(id) }
+                            ?.let { neighbor ->
+                                // Direct fetches have score 0. Preserve bounded provenance from the
+                                // seed so ContextSelector does not immediately discard valid context.
+                                add(neighbor.copy(score = citation.score * ADJACENT_SCORE_FACTOR))
+                            }
                     }
                 }
             }
@@ -840,6 +869,23 @@ class AnswerQuestionUseCase(
             Log.w(TAG, "structural expansion skipped: ${it.message}")
             primary
         }
+    }
+
+    private fun isEligibleNeighbor(
+        seed: Citation,
+        neighbor: Citation,
+        kind: NeighborKind,
+        queryTerms: Set<String>,
+    ): Boolean = when (kind) {
+        NeighborKind.CONTINUATION -> true
+        NeighborKind.STRUCTURAL -> neighbor.pageNumber == seed.pageNumber
+        NeighborKind.ADJACENT -> isEligibleAdjacentNeighbor(seed, neighbor, queryTerms)
+    }
+
+    private enum class NeighborKind(val priority: Int) {
+        ADJACENT(1),
+        STRUCTURAL(2),
+        CONTINUATION(3),
     }
 
     private fun deterministic(

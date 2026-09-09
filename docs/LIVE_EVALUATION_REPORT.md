@@ -1,5 +1,13 @@
 # Live On-Device RAG Evaluation & General Hardening Report
 
+> Review note (2026-09-09): this is the historical run attached to commit `61e8366`.
+> Subsequent verification found that the training-duration evidence is chunk `c0000308` and the
+> related retrieved paragraph is `c0000309`, not `c0000315`/`c0000316`. The implementation now uses
+> bounded, query-relative adjacent expansion and keeps the grounding whitelist evidence-only.
+> Reverified on Nothing A001: training duration, Rule 210, and amputated-part procedure pass their
+> strict focused cases. The hierarchy-of-controls case still returns only the two text-extracted
+> controls and remains a known extraction/list-completeness case for the generic hardening plan.
+
 **Device**: Google Pixel 10 (Android 17 / V) via Wireless Debugging  
 **Model**: Gemma 4 E2B (`gemma-4-E2B-it.litertlm` · 2.58 GB) running on **GPU** via LiteRT-LM  
 **Embedder**: EmbeddingGemma 300M (`embeddinggemma-300m-seq512.tflite` · 512-dim)  
@@ -52,9 +60,8 @@ By inspecting chunk metadata and token streams directly from the running service
                       RETRIEVAL & GENERATION DYNAMICS
                       
   [Document Ingestion]         [Vector Search]              [Model Generation]
-  Chunk c315: "48 hours..."   Top-K hits:                  Gemma 4 outputs:
-  Chunk c316: "Employees..."  Only c316 returned!          "Training duration..."
-                              c315 dropped!                Truncated mid-sentence
+  Chunk c308: "48 hours..."   Top-K hits:                  Gemma 4 outputs:
+  Chunk c309: "Employees..."  c309 returned; c308 split!   "Training duration..."
                                      │                     at 112 tokens limit!
                                      ▼
                       [Neighbor Window Expansion]
@@ -63,7 +70,7 @@ By inspecting chunk metadata and token streams directly from the running service
 ```
 
 ### 1. Sibling Chunk Omission (The Adjacent Window Problem)
-- **Symptom**: In `cs-training-duration`, chunk `c0000315` contained the key answer (*"preferably not less 48 hours"*). Chunk `c0000316` followed immediately on page 45 with heading *"7.2.1 Employees"*. AppSearch retrieved `c316` due to higher keyword frequency ("safety", "health", "training") but ranked `c315` outside the top-K cutoff. Gemma correctly refused to hallucinate.
+- **Symptom**: In `cs-training-duration`, chunk `c0000308` contained the key answer (*"preferably not less 48 hours"*). The related employee-training paragraph was chunk `c0000309`. AppSearch retrieved the related material while the preceding exact-value chunk needed bounded neighbor expansion. Gemma correctly refused when that evidence was absent from its selected context.
 - **Root Cause**: Chunks were treated as independent semantic islands. When paragraph boundaries split a statement from its qualification, retrieval failed.
 
 ### 2. Output Token Truncation on Procedural Intent
@@ -135,11 +142,12 @@ if (isProcedural) {
 }
 ```
 
-### D. User Query Identifier Whitelisting
+### D. Evidence-Only Identifier Grounding
 **File**: [`GroundingStreamFilter.kt`](../app/src/main/java/com/example/pdfgemmarag/inference/chat/GroundingStreamFilter.kt)  
-Whitelisted identifier tokens parsed from the user's input question so the model is not penalized for echoing the query's premise:
+Identifiers from a question are not evidence. Only identifiers found in selected excerpts and
+structural pointers validated against the manifest are authoritative:
 ```kotlin
-private val allowedIdentifiers = identifierTokens(evidenceText) + identifierTokens(question)
+private val allowedIdentifiers = identifierTokens(evidenceText)
 ```
 
 ---
