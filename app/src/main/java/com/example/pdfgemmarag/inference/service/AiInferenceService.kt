@@ -523,8 +523,7 @@ class AiInferenceService : Service() {
     // ------------------------------------------------------------------ foreground plumbing
 
     private fun startForegroundCompat(n: Notification) {
-        val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC else 0
-        ServiceCompat.startForeground(this, NOTIFICATION_ID, n, type)
+        ServiceCompat.startForeground(this, NOTIFICATION_ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
     }
 
     private fun updateNotification(n: Notification) {
