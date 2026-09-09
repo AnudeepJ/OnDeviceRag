@@ -29,7 +29,7 @@ class PlainChatUseCase(private val engine: GemmaEngine) {
                     listener.onToken(text)
                 }
 
-                override fun onDone(cancelled: Boolean) {
+                override fun onDone(cancelled: Boolean, benchmark: GemmaEngine.TurnBenchmark?) {
                     val end = SystemClock.elapsedRealtime()
                     val genMs = if (firstToken > 0) (end - firstToken).coerceAtLeast(1) else 1
                     listener.onDone(

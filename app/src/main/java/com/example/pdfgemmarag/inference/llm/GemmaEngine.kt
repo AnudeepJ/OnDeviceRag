@@ -12,6 +12,8 @@ import com.google.ai.edge.litertlm.Conversation
 import com.google.ai.edge.litertlm.ConversationConfig
 import com.google.ai.edge.litertlm.Engine
 import com.google.ai.edge.litertlm.EngineConfig
+import com.google.ai.edge.litertlm.ExperimentalApi
+import com.google.ai.edge.litertlm.ExperimentalFlags
 import com.google.ai.edge.litertlm.Message
 import com.google.ai.edge.litertlm.MessageCallback
 import com.google.ai.edge.litertlm.SamplerConfig
@@ -35,19 +37,32 @@ import java.util.concurrent.atomic.AtomicReference
  * system instruction and a short, chunk-free history, so the KV cache never accumulates stale
  * retrieved context across turns.
  */
+@OptIn(ExperimentalApi::class)
 class GemmaEngine(
     private val context: Context,
     val modelPath: String,
     private val allowGpu: Boolean,
     private val maxNumTokens: Int = 8192,
+    /** Multi-token (speculative) decoding. Off by default; enabled per device only after a measured gain. */
+    private val speculativeDecoding: Boolean = false,
     private val onUnrecoverableNativeTimeout: (String) -> Unit,
 ) : Closeable {
 
     val backendName: String
+    val speculativeDecodingEnabled: Boolean get() = speculativeDecoding
     private val engine: Engine
     private val active = AtomicReference<Conversation?>(null)
     private val closed = AtomicBoolean(false)
     private val closer = Executors.newSingleThreadExecutor { r -> Thread(r, "gemma-close").apply { isDaemon = true } }
+
+    /** Runtime-measured phase throughput for one turn, read while the conversation is still alive. */
+    data class TurnBenchmark(
+        val prefillTokens: Int,
+        val prefillTokensPerSecond: Double,
+        val decodeTokens: Int,
+        val decodeTokensPerSecond: Double,
+        val timeToFirstTokenSeconds: Double,
+    )
 
     init {
         val gpuDisabled = gpuMarker(context).exists()
@@ -55,6 +70,9 @@ class GemmaEngine(
         backendName = if (useGpu) "GPU" else "CPU"
         val cacheDir = File(context.cacheDir, "litertlm").apply { mkdirs() }
         val backend: Backend = if (useGpu) Backend.GPU() else Backend.CPU()
+        // Read at Engine.initialize(). Benchmark timers attribute latency to prefill vs decode.
+        ExperimentalFlags.enableBenchmark = true
+        ExperimentalFlags.enableSpeculativeDecoding = speculativeDecoding
         engine = Engine(
             EngineConfig(
                 modelPath = modelPath,
@@ -63,7 +81,7 @@ class GemmaEngine(
                 cacheDir = cacheDir.absolutePath,
             ),
         )
-        Log.i(TAG, "GemmaEngine created: backend=$backendName gpuMarker=$gpuDisabled model=$modelPath")
+        Log.i(TAG, "GemmaEngine created: backend=$backendName gpuMarker=$gpuDisabled mtp=$speculativeDecoding model=$modelPath")
     }
 
     /** Blocking; 10-120 s on first GPU init (shader compile) then a few seconds with a warm cache. */
@@ -77,7 +95,7 @@ class GemmaEngine(
 
     interface TokenSink {
         fun onToken(text: String)
-        fun onDone(cancelled: Boolean)
+        fun onDone(cancelled: Boolean, benchmark: TurnBenchmark? = null)
         fun onError(t: Throwable)
     }
 
@@ -140,6 +158,30 @@ class GemmaEngine(
         val idleFuture = AtomicReference<ScheduledFuture<*>?>(null)
         val assembled = StringBuilder()
         val recoveryRequested = AtomicBoolean(false)
+        val benchmark = AtomicReference<TurnBenchmark?>(null)
+
+        /** Called from the SDK completion callback while the conversation is alive; a cheap JNI getter. */
+        fun captureBenchmark() {
+            if (benchmark.get() != null) return
+            runCatching {
+                val info = conversation.getBenchmarkInfo()
+                benchmark.set(
+                    TurnBenchmark(
+                        prefillTokens = info.lastPrefillTokenCount,
+                        prefillTokensPerSecond = info.lastPrefillTokensPerSecond,
+                        decodeTokens = info.lastDecodeTokenCount,
+                        decodeTokensPerSecond = info.lastDecodeTokensPerSecond,
+                        timeToFirstTokenSeconds = info.timeToFirstTokenInSecond,
+                    ),
+                )
+                Log.i(
+                    TAG,
+                    "benchmark prefill=${info.lastPrefillTokenCount}tok @${"%.1f".format(info.lastPrefillTokensPerSecond)}tok/s " +
+                        "decode=${info.lastDecodeTokenCount}tok @${"%.1f".format(info.lastDecodeTokensPerSecond)}tok/s " +
+                        "ttft=${"%.2f".format(info.timeToFirstTokenInSecond)}s",
+                )
+            }.onFailure { Log.w(TAG, "benchmark info unavailable: ${it.message}") }
+        }
 
         fun requestProcessRecovery(reason: String) {
             if (!recoveryRequested.compareAndSet(false, true)) return
@@ -174,7 +216,7 @@ class GemmaEngine(
         fun notifySink(cancelled: Boolean, error: Throwable?) {
             active.compareAndSet(conversation, null)
             try {
-                if (error != null) sink.onError(error) else sink.onDone(cancelled)
+                if (error != null) sink.onError(error) else sink.onDone(cancelled, benchmark.get())
             } catch (t: Throwable) {
                 Log.w(TAG, "sink failed", t)
             }
@@ -271,6 +313,7 @@ class GemmaEngine(
 
                 override fun onDone() {
                     Log.i(TAG, "sdk onDone cancelled=${generation.cancelled}")
+                    if (!generation.cancelled && !finished.get()) captureBenchmark()
                     terminal(generation.cancelled)
                 }
 

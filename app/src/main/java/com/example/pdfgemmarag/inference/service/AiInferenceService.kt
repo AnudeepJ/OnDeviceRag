@@ -148,6 +148,9 @@ class AiInferenceService : Service() {
         context = this,
         modelPath = modelPath,
         allowGpu = allowGpu,
+        // Experimental multi-token prediction is opted into per device via a marker file so a
+        // regression can be compared on the same build: `touch files/mtp_enabled.marker`.
+        speculativeDecoding = allowGpu && java.io.File(filesDir, MTP_MARKER).exists(),
         onUnrecoverableNativeTimeout = ::recycleInferenceProcess,
     )
 
@@ -557,6 +560,7 @@ class AiInferenceService : Service() {
     companion object {
         private const val TAG = "AiInferenceService"
         const val NOTIFICATION_ID = 1001
+        const val MTP_MARKER = "mtp_enabled.marker"
         private const val GENERATION_GATE_TIMEOUT_MS = 180_000L
         private const val GENERATION_CANCEL_DRAIN_MS =
             (GemmaEngine.CANCEL_PROCESS_TIMEOUT_SEC + GemmaEngine.CONVERSATION_CLOSE_TIMEOUT_SEC + 7L) * 1_000L

@@ -97,22 +97,36 @@ class AppSearchVectorStore private constructor(
             ?.takeIf { it == docHash || it.startsWith("$docHash:") }
             ?: activeNamespace(docHash)
         val terms = HybridQuery.keywordTerms(queryText)
-        val requested = if (sectionId == null && specificationNumber == null) topK else topK * 6
+        // Over-fetch so the local term-coverage re-rank can promote chunks whose wording differs
+        // from the question; the vector function is given the same limit so more candidates
+        // carry a semantic score instead of only a small keyword score.
+        val requested = if (sectionId == null && specificationNumber == null) topK * CANDIDATE_FACTOR else topK * 6
         val requiredPropertyTerm = specificationNumber?.let { "specificationNumber" to it }
         fun List<Citation>.withinRequestedScope(): List<Citation> = asSequence()
             .filter { sectionId == null || it.sectionId == sectionId }
             .filter { specificationNumber == null || it.specificationNumber.equals(specificationNumber, true) }
-            .take(topK)
             .toList()
-        var hits = executeSearch(
-            docHash,
-            namespace,
-            HybridQuery.build(terms, similarityFloor, requested, requiredPropertyTerm),
-            terms,
-            queryVec,
-            requested,
-            keywordWeight,
-        ).withinRequestedScope()
+        val raw = try {
+            executeSearch(
+                docHash, namespace,
+                HybridQuery.build(terms, similarityFloor, requested, requiredPropertyTerm),
+                terms, queryVec, requested, keywordWeight,
+            )
+        } catch (t: Exception) {
+            // Prefix operators are a query-language feature; fall back to exact terms if the
+            // installed AppSearch rejects them so retrieval never fails outright.
+            Log.w(TAG, "prefix query rejected (${t.message}); retrying with exact terms")
+            executeSearch(
+                docHash, namespace,
+                HybridQuery.build(terms, similarityFloor, requested, requiredPropertyTerm, withPrefixes = false),
+                terms, queryVec, requested, keywordWeight,
+            )
+        }
+        var hits = HybridQuery.rerank(
+            raw.withinRequestedScope(), terms, TERM_COVERAGE_WEIGHT,
+            score = { it.score }, text = { it.sectionPath + " " + it.text },
+            anchors = HybridQuery.anchorTerms(queryText),
+        ).map { (citation, score) -> citation.copy(score = score) }.take(topK)
         Log.i(TAG, "search ns=${namespace.takeLast(18)} q='${queryText.take(80)}' terms=$terms floor=$similarityFloor -> ${hits.size} hits " +
             hits.take(5).joinToString { "p${it.pageNumber}@${"%.3f".format(it.score)}" })
         hits.forEachIndexed { i, c ->
@@ -226,6 +240,18 @@ class AppSearchVectorStore private constructor(
         session.requestFlushAsync().await()
     }
 
+    /**
+     * Removes every namespace of [docHash] except [keep]. Used after publishing a new index so an
+     * unreadable legacy manifest (older index version) cannot leave orphaned chunks behind.
+     */
+    suspend fun removeStaleNamespaces(docHash: String, keep: String): List<String> {
+        val stale = session.namespacesAsync.await()
+            .filter { (it == docHash || it.startsWith("$docHash:")) && it != keep }
+        for (namespace in stale) removeNamespace(namespace, flush = false)
+        if (stale.isNotEmpty()) session.requestFlushAsync().await()
+        return stale
+    }
+
     suspend fun removeNamespace(namespace: String, flush: Boolean = true) {
         val spec = SearchSpec.Builder().addFilterNamespaces(namespace).addFilterSchemas(PdfChunkDocument.SCHEMA_TYPE).build()
         session.removeAsync("", spec).await()
@@ -304,6 +330,9 @@ class AppSearchVectorStore private constructor(
 
     companion object {
         private const val TAG = "AppSearchVectorStore"
+        private const val CANDIDATE_FACTOR = 4
+        /** Bonus for full query-term coverage; semantic cosine sums stay dominant (typically 0.6-1.5). */
+        private const val TERM_COVERAGE_WEIGHT = 0.35
         const val DB_NAME = "rag_chunks"
         private const val GET_BATCH = 100
         private val PROJECTION = listOf(

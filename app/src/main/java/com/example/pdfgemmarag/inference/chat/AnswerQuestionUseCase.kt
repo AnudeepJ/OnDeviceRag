@@ -95,8 +95,14 @@ class AnswerQuestionUseCase(
             plan.intent == QuestionIntent.SECTION_SUMMARY && plan.resolvedSectionId != null && manifest != null -> {
                 val section = manifest.sections.firstOrNull { it.sectionId == plan.resolvedSectionId }
                     ?: return deterministic(generationId, t0, REPAIR_MESSAGE, listener)
+                // A chapter or part is summarised from its whole subtree in reading order; a
+                // clause is summarised from its own chunks. The context budget bounds the prompt.
+                val ids = if (plan.resolvedSubtree) {
+                    manifest.descendantsOf(section).flatMap { it.orderedChunkIds }.distinct().take(MAX_SUBTREE_CHUNKS)
+                } else section.orderedChunkIds
+                Log.i(TAG, "section summary ${section.kind} '${section.title.take(40)}' subtree=${plan.resolvedSubtree} chunks=${ids.size}")
                 try {
-                    store.getChunks(manifest, section.orderedChunkIds)
+                    store.getChunks(manifest, ids)
                 } catch (t: ManifestIntegrityError) {
                     Log.e(TAG, "section direct fetch failed", t)
                     return deterministic(generationId, t0, REPAIR_MESSAGE, listener)
@@ -136,40 +142,72 @@ class AnswerQuestionUseCase(
                             .getOrDefault(emptyList())
                     }
                 }
+                if (plan.shape == AnswerShape.DEFINITION) {
+                    // The sentence that defines the subject outranks later usages of the term, so
+                    // its neighbours (the criteria list that usually follows) are expanded too.
+                    primary = promoteDefiningSentences(question, primary)
+                }
                 expandStructuralNeighbors(primary, manifest, retrievalQuestion)
             }
         }
+        if (plan.intent == QuestionIntent.FACT && plan.shape == AnswerShape.DEFINITION && manifest != null) {
+            val definition = buildDefinitionLead(question, ranked)
+            Log.i(TAG, "definition lead subject='${definitionSubject(question)}' decisive=${definition.decisive} candidates=${ranked.size}")
+            if (definition.decisive) {
+                // A definition that introduces its criteria with a colon needs the following list
+                // chunk even when retrieval did not surface it.
+                val complete = completeDefinition(definition, ranked, manifest, question)
+                return deterministic(
+                    generationId, t0, complete.text, listener, complete.citations,
+                    plan.resolvedSectionId.orEmpty(), manifestFallback, "DEFINITION_LEAD", plan.intent,
+                )
+            }
+        }
         if (plan.intent == QuestionIntent.FACT) {
+            val standard = buildStandardReferenceLead(question, ranked)
+            if (standard.decisive) {
+                return deterministic(
+                    generationId, t0, standard.text, listener, standard.citations,
+                    plan.resolvedSectionId.orEmpty(), manifestFallback, "STANDARD_REFERENCE_LEAD", plan.intent,
+                )
+            }
             val numberedList = buildNumberedListLead(question, ranked)
             if (numberedList.decisive) {
                 return deterministic(
                     generationId, t0, numberedList.text, listener, numberedList.citations,
-                    plan.resolvedSectionId.orEmpty(), manifestFallback,
+                    plan.resolvedSectionId.orEmpty(), manifestFallback, "LIST_LEAD", plan.intent,
                 )
             }
             val enumerated = buildEnumeratedValueAnswer(question, ranked)
             if (enumerated.text.isNotEmpty()) {
                 return deterministic(
                     generationId, t0, enumerated.text, listener, enumerated.citations,
-                    plan.resolvedSectionId.orEmpty(), manifestFallback,
+                    plan.resolvedSectionId.orEmpty(), manifestFallback, "ENUMERATED_VALUES_LEAD", plan.intent,
                 )
             }
-            val pointer = buildSectionPointerAnswer(question, ranked)
-            if (pointer.text.isNotEmpty()) {
-                return deterministic(
-                    generationId, t0, pointer.text, listener, pointer.citations,
-                    plan.resolvedSectionId.orEmpty(), manifestFallback,
-                )
+            // Navigation is answered structurally only when the user asked where something is;
+            // a definition or requirement question must never be turned into a section pointer.
+            if (plan.shape == AnswerShape.NAVIGATION) {
+                val pointer = buildSectionPointerAnswer(question, ranked)
+                if (pointer.text.isNotEmpty()) {
+                    return deterministic(
+                        generationId, t0, pointer.text, listener, pointer.citations,
+                        plan.resolvedSectionId.orEmpty(), manifestFallback, "SECTION_POINTER_LEAD", plan.intent,
+                    )
+                }
             }
             val exactTableRow = buildTableLead(question, ranked)
             if (exactTableRow.decisive) {
                 return deterministic(
                     generationId, t0, exactTableRow.text, listener, exactTableRow.citations,
-                    plan.resolvedSectionId.orEmpty(), manifestFallback,
+                    plan.resolvedSectionId.orEmpty(), manifestFallback, "TABLE_ROW_LEAD", plan.intent,
                 )
             }
         }
-        val selected = selector.select(question, ranked, plan.intent)
+        // A follow-up ("What about Type C?") is only meaningful with the previous question; the
+        // model receives the same combined text that retrieval used.
+        val promptQuestion = if (retrievalQuestion != question) retrievalQuestion else question
+        val selected = selector.select(promptQuestion, ranked, plan.intent, plan.shape)
         Log.i(TAG, "planned ${plan.intent} retrieved ${ranked.size} -> ${selected.excerpts.size} chunks (~${selected.approxTokens} tokens) in ${SystemClock.elapsedRealtime() - t0} ms")
         selected.excerpts.forEachIndexed { i, c ->
             Log.i(TAG, "  cite[$i] p${c.pageNumber} c${c.chunkIndex} score=${"%.3f".format(c.score)} '${c.text.take(80).replace('\n', ' ')}'")
@@ -240,7 +278,7 @@ class AnswerQuestionUseCase(
                     }
                 }
 
-                override fun onDone(cancelled: Boolean) {
+                override fun onDone(cancelled: Boolean, benchmark: GemmaEngine.TurnBenchmark?) {
                     val end = SystemClock.elapsedRealtime()
                     val tail = filter.finish()
                     if (tail.isNotEmpty()) {
@@ -254,7 +292,9 @@ class AnswerQuestionUseCase(
                             .distinctBy { it.indexNamespace to it.chunkId }
                             .map { it.copy(text = "") },
                     )
-                    if (filter.hadGroundingFailure) Log.w(TAG, "answer contained unsupported values or citation ids")
+                    if (filter.hadGroundingFailure) {
+                        Log.w(TAG, "grounding rejected: ${filter.groundingReasons.joinToString("; ")}")
+                    }
                     val genMs = if (firstToken > 0) (end - firstToken).coerceAtLeast(1) else 1
                     listener.onDone(
                         GenerationStats(
@@ -262,7 +302,8 @@ class AnswerQuestionUseCase(
                             timeToFirstTokenMs = if (firstToken > 0) firstToken - t0 else -1,
                             totalMs = end - t0,
                             outputChars = chars,
-                            approxTokensPerSecond = ContextAssembler.estimateTokens("x".repeat(chars)) * 1000.0 / genMs,
+                            approxTokensPerSecond = benchmark?.decodeTokensPerSecond?.takeIf { it > 0 }
+                                ?: (ContextAssembler.estimateTokens("x".repeat(chars)) * 1000.0 / genMs),
                             retrievedChunks = selected.excerpts.size,
                             contextTokensApprox = selected.approxTokens,
                             backend = engine.backendName,
@@ -271,6 +312,12 @@ class AnswerQuestionUseCase(
                             groundingFailure = filter.hadGroundingFailure,
                             sourceSectionId = plan.resolvedSectionId.orEmpty(),
                             manifestFallback = manifestFallback,
+                            groundingReasons = filter.groundingReasons.joinToString(";"),
+                            prefillTokensPerSecond = benchmark?.prefillTokensPerSecond ?: 0.0,
+                            decodeTokensPerSecond = benchmark?.decodeTokensPerSecond ?: 0.0,
+                            prefillTokens = benchmark?.prefillTokens ?: 0,
+                            intent = plan.intent.name,
+                            answeredBy = "",
                         ),
                     )
                 }
@@ -297,7 +344,7 @@ class AnswerQuestionUseCase(
         private const val ADJACENT_SEED_RELATIVE_FLOOR = 0.60
         private const val ADJACENT_SCORE_FACTOR = 0.85
         private const val MIN_CROSS_SECTION_NEIGHBOR_TERMS = 2
-        private const val MAX_NUMBERED_LIST_ITEMS = 8
+        private const val MAX_SUBTREE_CHUNKS = 80
 
         internal fun canFallbackWithoutManifest(
             intent: QuestionIntent,
@@ -352,16 +399,40 @@ class AnswerQuestionUseCase(
                     .flatMap { offset -> perSpecification.mapNotNull { it.getOrNull(offset) } }
                     .distinct()
             }
-            val positiveLevels = sections.map { it.level }.filter { it > 0 }
-            val topLevel = positiveLevels.minOrNull()
-            var representatives = if (topLevel == null) sections else sections.filter { it.level == topLevel }
+            val health = manifest.health()
+            var representatives = manifest.topLevelSections().filter { it.orderedChunkIds.isNotEmpty() }
             // A document with one root heading still needs breadth: include its immediate children.
-            if (representatives.size < 3 && topLevel != null) {
-                val childLevel = sections.map { it.level }.filter { it > topLevel }.minOrNull()
+            if (representatives.size < 3) {
+                val topLevel = representatives.map { it.level }.filter { it > 0 }.minOrNull()
+                    ?: sections.map { it.level }.filter { it > 0 }.minOrNull()
+                val childLevel = sections.map { it.level }.filter { it > (topLevel ?: 0) }.minOrNull()
                 if (childLevel != null) representatives = (representatives + sections.filter { it.level == childLevel }).distinct()
             }
-            val sampled = evenlySpaced(representatives, maxSections)
+            // Coverage, not rank: reserve slots per document quartile so a long final appendix
+            // cannot monopolise the sample. A degraded outline falls back to page-stratified
+            // sampling over every titled section.
+            val pool = if (health.degraded && representatives.size < maxSections) sections else representatives
+            val sampled = quartileSample(pool.sortedBy { it.startPage }, manifest.lastPage, maxSections)
             return sampled.flatMap { it.orderedChunkIds.take(chunksPerSection) }.distinct()
+        }
+
+        /** Even slots per quartile of the page range, then evenly spaced within each quartile. */
+        internal fun quartileSample(sorted: List<SectionRecord>, lastPage: Int, limit: Int): List<SectionRecord> {
+            if (sorted.size <= limit) return sorted
+            val perQuartile = (limit + 3) / 4
+            val last = lastPage.coerceAtLeast(1)
+            val out = LinkedHashSet<SectionRecord>()
+            for (quartile in 0 until 4) {
+                val from = 1 + quartile * last / 4
+                val to = if (quartile == 3) last else (quartile + 1) * last / 4
+                val inRange = sorted.filter { it.startPage in from..to }
+                out += evenlySpaced(inRange, perQuartile)
+            }
+            // Fill any unused slots from the remaining sections in reading order.
+            if (out.size < limit) {
+                out += evenlySpaced(sorted.filter { it !in out }, limit - out.size)
+            }
+            return out.sortedBy { it.startPage }.take(limit)
         }
 
         private fun <T> evenlySpaced(values: List<T>, limit: Int): List<T> {
@@ -390,13 +461,18 @@ class AnswerQuestionUseCase(
             val text = buildString {
                 append("Document scope:\n")
                 roots.forEach { citation ->
+                    // Printed identity comes from the heading itself: "Specification 03300",
+                    // "CHAPTER 13", "APPENDIX A". Absent identifiers are simply omitted.
                     val identity = citation.specificationNumber
                         .takeIf(String::isNotBlank)
                         ?.let { "Specification $it — " }
-                        .orEmpty()
+                        ?: citation.sectionNumber
+                            .takeIf { it.isNotBlank() && !it.equals("null", true) && it.any(Char::isLetter) }
+                            ?.let { "$it — " }
+                            .orEmpty()
                     val title = citation.sectionTitle.ifBlank {
                         citation.text.lineSequence().firstOrNull().orEmpty().trim()
-                    }
+                    }.takeUnless { it.equals("null", true) }.orEmpty()
                     append("- ").append(identity).append(title.ifBlank { "Untitled section" })
                         .append(" [Page ").append(citation.pageNumber).append("]\n")
                 }
@@ -504,6 +580,104 @@ class AnswerQuestionUseCase(
             return SummaryLead.EMPTY
         }
 
+        /** The noun phrase a definition question asks about: "what is a trench" -> "trench". */
+        internal fun definitionSubject(question: String): String? {
+            if (AnswerShape.of(question) != AnswerShape.DEFINITION) return null
+            val text = question.trim().trimEnd('?', '.', ' ').lowercase()
+            for (pattern in DEFINITION_SUBJECT_PATTERNS) {
+                val match = pattern.find(text) ?: continue
+                val subject = match.groupValues[1].trim().replace(Regex("\\s+"), " ")
+                if (subject.length in 2..60) return subject
+            }
+            return null
+        }
+
+        /**
+         * Returns the source's own defining sentence for the asked subject when exactly one such
+         * sentence exists in the evidence: `<subject> is|are|means|refers to|is defined as ...`.
+         * A definition that introduces a list (ends with a colon) carries the items that follow it.
+         */
+        internal fun buildDefinitionLead(question: String, candidates: List<Citation>): SummaryLead {
+            val subject = definitionSubject(question) ?: return SummaryLead.EMPTY
+            val subjectPattern = definingSentencePattern(subject)
+            val byIndex = candidates.associateBy { it.chunkIndex }
+            val matches = candidates.flatMap { citation ->
+                subjectPattern.findAll(citation.text).map { match -> citation to match.value.trim() }.toList()
+            }.distinctBy { (_, sentence) -> normalizeForEvidenceMatch(sentence).replace(Regex("\\W+"), " ").trim() }
+            if (matches.size != 1) return SummaryLead.EMPTY
+            val (citation, sentence) = matches.single()
+            val text = StringBuilder(sentence)
+            val citations = arrayListOf(citation)
+            if (sentence.endsWith(":")) {
+                // The defining criteria follow the colon: the rest of this chunk and a list chunk after it.
+                val rest = citation.text.substringAfter(sentence, "").trim().take(600)
+                if (rest.isNotBlank()) text.append('\n').append(rest)
+                val next = byIndex[citation.chunkIndex + 1]
+                if (next != null && next.pageNumber == citation.pageNumber && next.contentKind == "LIST") {
+                    text.append('\n').append(splitListItems(next).joinToString("\n"))
+                    citations += next
+                }
+            }
+            return SummaryLead("${text.toString().trim()} [Page ${citation.pageNumber}]", citations, decisive = true)
+        }
+
+        /**
+         * "Which standard/code covers X": copies the one evidence line that names a standard
+         * identifier (`IS 3764:1992`, `ASTM C150`, `EN 1991-1-4`) and shares at least two content
+         * words with the question. Copying the line keeps the identifier and its year exact instead
+         * of asking the model to re-type them.
+         */
+        internal fun buildStandardReferenceLead(question: String, candidates: List<Citation>): SummaryLead {
+            val query = normalizeForEvidenceMatch(question)
+            if (!STANDARD_QUERY_HINT.containsMatchIn(query)) return SummaryLead.EMPTY
+            val queryWords = evidenceWords(query) - STANDARD_QUERY_STOP
+            if (queryWords.size < 2) return SummaryLead.EMPTY
+            val matches = candidates.flatMap { citation ->
+                citation.text.lines().mapNotNull { line ->
+                    val trimmed = line.trim()
+                    if (!STANDARD_ID.containsMatchIn(trimmed)) return@mapNotNull null
+                    val hits = evidenceWords(trimmed).count(queryWords::contains)
+                    if (hits < 2) null else Triple(citation, trimmed, hits)
+                }
+            }.groupBy { (_, line, _) -> normalizeForEvidenceMatch(line).replace(Regex("\\s+"), " ") }
+                .values.map { group -> group.maxByOrNull { it.first.score }!! }
+                .sortedByDescending { it.third }
+            val best = matches.firstOrNull() ?: return SummaryLead.EMPTY
+            if (matches.drop(1).any { it.third == best.third }) return SummaryLead.EMPTY
+            return SummaryLead("${best.second} [Page ${best.first.pageNumber}]", listOf(best.first), decisive = true)
+        }
+
+        private val STANDARD_QUERY_HINT = Regex("\\b(?:standards?|codes?|norms?)\\b")
+        private val STANDARD_QUERY_STOP = setOf("standard", "code", "norm", "which", "cover", "covers", "applicable", "apply", "applies")
+        /** Letter-prefixed standard identifiers with optional year or part suffix; grammar only, no issuer list. */
+        private val STANDARD_ID = Regex("\\b[A-Z]{2,6}(?:\\s?[A-Z]{1,3})?[\\s-]?\\d{2,6}(?:[-–/.]\\d{1,4})*(?:\\s?[:(]\\s?\\d{4}\\)?)?\\b")
+
+        /** Re-orders hits so chunks holding a defining sentence for the asked subject lead the list. */
+        internal fun promoteDefiningSentences(question: String, hits: List<Citation>): List<Citation> {
+            val subject = definitionSubject(question) ?: return hits
+            val pattern = definingSentencePattern(subject)
+            val best = hits.maxOfOrNull { it.score } ?: return hits
+            return hits.map { hit ->
+                if (pattern.containsMatchIn(hit.text)) hit.copy(score = best + DEFINITION_PROMOTION) else hit
+            }.sortedByDescending { it.score }
+        }
+
+        internal fun definingSentencePattern(subject: String): Regex = Regex(
+            "(?im)(?:^|(?<=[.;:\\n]\\s{0,3})|(?<=\\b[A-Z]{3,40}\\s))(?:the\\s+term\\s+)?['\"‘’“”]?(?:an?\\s+|the\\s+)?" + Regex.escape(subject) +
+                "s?['\"‘’“”]?\\s+(?:is|are|means|refers\\s+to|is\\s+defined\\s+as|can\\s+be\\s+defined\\s+as|shall\\s+mean)\\b[^\\n]{3,400}?(?:[.;:]|$)",
+        )
+
+        private const val DEFINITION_PROMOTION = 0.25
+
+        private val DEFINITION_SUBJECT_PATTERNS = listOf(
+            Regex("what makes (?:a|an|the) [\\p{L}\\s'’-]{1,40}? (?:a|an) ([\\p{L}\\s'’-]{2,60})$"),
+            Regex("what (?:is|are) (?:the )?(?:definition|meaning) of (?:a |an |the )?([\\p{L}\\s'’-]{2,60})$"),
+            Regex("what does (?:a |an |the )?([\\p{L}\\s'’-]{2,60}) mean$"),
+            Regex("what is meant by (?:a |an |the )?([\\p{L}\\s'’-]{2,60})$"),
+            Regex("define (?:a |an |the )?([\\p{L}\\s'’-]{2,60})$"),
+            Regex("what (?:is|are) (?:a |an |the )?([\\p{L}\\s'’-]{2,60})$"),
+        )
+
         /** Resolves explicit "which section" asks from a uniquely matching printed cross-reference. */
         internal fun buildSectionPointerAnswer(question: String, candidates: List<Citation>): SummaryLead {
             val query = normalizeForEvidenceMatch(question)
@@ -565,16 +739,33 @@ class AnswerQuestionUseCase(
             val queryWords = evidenceWords(query)
             val byIndex = candidates.associateBy { it.chunkIndex }
             val requestedCount = requestedListItemCount(query)
+            val bestScore = candidates.maxOfOrNull { it.score } ?: 0.0
+            val topRanked = candidates.sortedByDescending { it.score }.take(MAX_ADJACENT_PRIMARY_SEEDS).map { it.chunkId }.toSet()
             val matches = candidates.mapNotNull { introduction ->
-                if (!LIST_INTRODUCTION.containsMatchIn(introduction.text.trim())) return@mapNotNull null
+                if (introduction.contentKind == "LIST" || !LIST_INTRODUCTION.containsMatchIn(introduction.text.trim())) return@mapNotNull null
                 if (evidenceWords(introduction.text).count(queryWords::contains) < 2) return@mapNotNull null
-                val listChunks = generateSequence(introduction.chunkIndex + 1) { it + 1 }
-                    .mapNotNull(byIndex::get)
-                    .takeWhile { it.pageNumber == introduction.pageNumber && it.contentKind == "LIST" }
-                    .take(MAX_NUMBERED_LIST_ITEMS)
-                    .toList()
+                // A colon-terminated sentence with two shared words is weak evidence on its own; a
+                // low-ranked introduction from an unrelated page must not hijack the answer.
+                val follower = byIndex[introduction.chunkIndex + 1]
+                val prominent = introduction.chunkId in topRanked || follower?.chunkId in topRanked ||
+                    (bestScore > 0 && introduction.score >= bestScore * ADJACENT_SEED_RELATIVE_FLOOR)
+                if (!prominent) return@mapNotNull null
+                // The list is the run of LIST chunks physically following the introduction. A
+                // list that continues onto the next page is linked by the chunker's continuation
+                // edge; an unrelated list on a later page is not.
+                val listChunks = ArrayList<Citation>()
+                var previous: Citation = introduction
+                var next = byIndex[introduction.chunkIndex + 1]
+                while (next != null && next.contentKind == "LIST" && listChunks.size < MAX_NUMBERED_LIST_CHUNKS) {
+                    val samePage = next.pageNumber == previous.pageNumber
+                    val continues = previous.contentKind == "LIST" && previous.continuesToChunkIndex == next.chunkIndex
+                    if (!samePage && !continues) break
+                    listChunks += next
+                    previous = next
+                    next = byIndex[next.chunkIndex + 1]
+                }
                 val items = listChunks.flatMap { chunk ->
-                    splitNumberedListItems(chunk.text).map { text -> chunk to text }
+                    splitListItems(chunk).map { text -> chunk to text }
                 }
                 if (items.isEmpty() || (requestedCount != null && items.size < requestedCount)) null
                 else introduction to items.take(requestedCount ?: items.size)
@@ -586,6 +777,19 @@ class AnswerQuestionUseCase(
                 items.map { it.first }.distinctBy { it.chunkId },
                 decisive = true,
             )
+        }
+
+        /** LIST chunks store one labelled item per line (wrapped lines were merged at extraction). */
+        internal fun splitListItems(chunk: Citation): List<String> {
+            if (chunk.contentKind == "LIST") {
+                val lines = chunk.text.lines().map(String::trim).filter(String::isNotBlank)
+                // Each stored line is one labelled item; a compact single line may still hold
+                // several inline numbered items.
+                return lines.flatMap { line ->
+                    if (LIST_LABEL_PREFIX.containsMatchIn(line)) splitNumberedListItems(line) else listOf(line)
+                }
+            }
+            return splitNumberedListItems(chunk.text)
         }
 
         private fun splitNumberedListItems(text: String): List<String> {
@@ -619,7 +823,7 @@ class AnswerQuestionUseCase(
             .replace(",", "")
         private val NUMBER_TOKEN = Regex("\\d+(?:\\.\\d+)?")
         private val WORD_TOKEN = Regex("[a-z]{2,}")
-        private val TABLE_QUERY_HINT = Regex("\\b(?:table|row|class|slump|cement content)\\b")
+        private val TABLE_QUERY_HINT = Regex("\\b(?:table|row|column|matrix|rating|schedule|class|slump|cement content)\\b")
         private val TOLERANCE_QUERY_HINT = Regex("\\b(?:tolerance|variation)\\b")
         private val TOLERANCE_PARAGRAPH = Regex(
             "(?i)((?:variation|tolerance)[\\p{L}\\s,]{0,160}?)\\s+(\\d+/\\d+[\\\"”″]?\\s+in\\s+\\d+[’′']?)",
@@ -638,20 +842,23 @@ class AnswerQuestionUseCase(
         private val LEADING_REPEATED_WORD = Regex("(?i)^([\\p{L}]+)\\s+\\1\\b")
         private val SECTION_LOOKUP_HINT = Regex("\\b(?:what|which) section\\b")
         private val LIST_LOOKUP_HINT = Regex("\\b(?:list|what are)\\b")
+        /** A request for an enumeration: a list verb followed by a plural noun within the clause. */
         private val NUMBERED_LIST_QUERY_HINT = Regex(
-            "(?i)\\b(?:what are|list|name|give|which)\\b.{0,80}\\b(?:rules|steps|precautions|guidelines|requirements|responsibilities|principles|measures)\\b",
+            "(?i)\\b(?:what are|list|name|give|which|enumerate|state|mention|identify)\\b.{0,80}\\b[a-z]{3,}(?:s|es)\\b",
         )
-        private val LIST_INTRODUCTION = Regex(
-            "(?i)\\b(?:rules|steps|precautions|guidelines|requirements|responsibilities|principles|measures)\\b[^.!?]{0,180}:$",
+        /** Any clause that ends with a colon introduces the list that physically follows it. */
+        private val LIST_INTRODUCTION = Regex("(?i)[\\p{L}][^.!?]{3,240}:$")
+        private val LIST_LABEL_PREFIX = Regex("^(?:(?:\\d{1,3}|[A-Za-z]|[ivxl]{2,6}|[IVXL]{2,6})[.)]|\\([A-Za-z0-9]{1,4}\\)|[•▪■●○◦‣⁃➢➤►✓✔➔→*\\uE000-\\uF8FF-])\\s")
+        private val NUMBERED_LIST_ITEM = Regex("(?m)(?:^|\\s+)((?:\\d{1,2}|[a-z]|[ivxl]{2,6}|[IVXL]{2,6})[.)]\\s+)")
+        private const val MAX_NUMBERED_LIST_CHUNKS = 4
+        /** "five basic steps", "3 classes": a count that qualifies a following plural noun. */
+        private val REQUESTED_COUNT = Regex(
+            "\\b(one|two|three|four|five|six|seven|eight|nine|ten|[1-9]|10)\\b(?=\\s+(?:[a-z]+\\s+){0,2}[a-z]{3,}(?:s|es)\\b)",
         )
-        private val NUMBERED_LIST_ITEM = Regex("(?m)(?:^|\\s+)((?:\\d{1,2}|[a-z])[.)]\\s+)")
-        private fun requestedListItemCount(question: String): Int? = when {
-            Regex("\\b(?:one|1)\\b").containsMatchIn(question) -> 1
-            Regex("\\b(?:two|2)\\b").containsMatchIn(question) -> 2
-            Regex("\\b(?:three|3)\\b").containsMatchIn(question) -> 3
-            Regex("\\b(?:four|4)\\b").containsMatchIn(question) -> 4
-            Regex("\\b(?:five|5)\\b").containsMatchIn(question) -> 5
-            else -> null
+        private val COUNT_WORDS = listOf("one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten")
+        private fun requestedListItemCount(question: String): Int? {
+            val token = REQUESTED_COUNT.find(question)?.groupValues?.get(1) ?: return null
+            return token.toIntOrNull() ?: (COUNT_WORDS.indexOf(token) + 1).takeIf { it > 0 }
         }
         private val AS_FOLLOWS = Regex("(?i)\\bas follows\\s*:?$")
         private val DECIMAL_VALUE = Regex("(?<![\\p{L}\\p{N}])\\d+\\.\\d+(?![\\p{L}\\p{N}])")
@@ -748,6 +955,10 @@ class AnswerQuestionUseCase(
                 .replace(Regex("[\\\"”″'’′]"), "")
                 .replace(Regex("\\s+"), " ")
 
+        /** A chunk whose last sentence introduces what follows ("… shall be as follows:"). */
+        internal fun isListIntroduction(citation: Citation): Boolean =
+            citation.contentKind != "LIST" && citation.text.trimEnd().endsWith(":")
+
         internal fun looksLikeStructuredFragment(citation: Citation): Boolean {
             if (citation.contentKind == "TABLE" || '|' in citation.text) return true
             val text = citation.text.lowercase()
@@ -796,6 +1007,28 @@ class AnswerQuestionUseCase(
         }
     }
 
+    /**
+     * A decisive definition whose last evidence chunk ends by introducing a list (`:` or `;`)
+     * is completed with the physically following list chunk when retrieval did not include it.
+     */
+    private suspend fun completeDefinition(
+        lead: SummaryLead,
+        ranked: List<Citation>,
+        manifest: DocumentStructureManifest,
+        question: String,
+    ): SummaryLead {
+        val last = lead.citations.lastOrNull() ?: return lead
+        val body = lead.text.substringBeforeLast(" [Page").trimEnd()
+        if (!(body.endsWith(":") || body.endsWith(";"))) return lead
+        val nextId = DocumentStructureManifest.chunkId(last.chunkIndex + 1)
+        if (ranked.any { it.chunkId == nextId } || nextId !in manifest.chunksInOrder.toHashSet()) return lead
+        val extra = runCatching { store.getChunks(manifest, listOf(nextId)) }
+            .onFailure { Log.w(TAG, "definition completion fetch failed: ${it.message}") }
+            .getOrDefault(emptyList())
+        if (extra.isEmpty()) return lead
+        return buildDefinitionLead(question, ranked + extra).takeIf { it.decisive } ?: lead
+    }
+
     private suspend fun expandStructuralNeighbors(
         primary: List<Citation>,
         manifest: DocumentStructureManifest?,
@@ -816,6 +1049,13 @@ class AnswerQuestionUseCase(
             }
             if (citation.continuesToChunkIndex >= 0) {
                 request(DocumentStructureManifest.chunkId(citation.continuesToChunkIndex), NeighborKind.CONTINUATION)
+            }
+            // A list item is only meaningful with the sentence that introduces the list, which
+            // the extractor stores as the preceding chunk and which may sit on the previous page.
+            if (citation.contentKind == "LIST" && citation.chunkIndex > 0) {
+                DocumentStructureManifest.chunkId(citation.chunkIndex - 1)
+                    .takeIf { it in availableChunkIds }
+                    ?.let { request(it, NeighborKind.INTRODUCTION) }
             }
             if (looksLikeStructuredFragment(citation)) {
                 // Table captions are often emitted as several uppercase headings, each with a
@@ -878,6 +1118,7 @@ class AnswerQuestionUseCase(
         queryTerms: Set<String>,
     ): Boolean = when (kind) {
         NeighborKind.CONTINUATION -> true
+        NeighborKind.INTRODUCTION -> neighbor.sectionId == seed.sectionId && isListIntroduction(neighbor)
         NeighborKind.STRUCTURAL -> neighbor.pageNumber == seed.pageNumber
         NeighborKind.ADJACENT -> isEligibleAdjacentNeighbor(seed, neighbor, queryTerms)
     }
@@ -885,7 +1126,8 @@ class AnswerQuestionUseCase(
     private enum class NeighborKind(val priority: Int) {
         ADJACENT(1),
         STRUCTURAL(2),
-        CONTINUATION(3),
+        INTRODUCTION(3),
+        CONTINUATION(4),
     }
 
     private fun deterministic(
@@ -896,16 +1138,21 @@ class AnswerQuestionUseCase(
         citations: List<Citation> = emptyList(),
         sourceSectionId: String = "",
         manifestFallback: Boolean = false,
+        answeredBy: String = "DETERMINISTIC",
+        intent: QuestionIntent? = null,
     ): GemmaEngine.Generation? {
         listener.onToken(text)
         // Publish only evidence used by the completed deterministic answer.
         listener.onRetrieved(citations.map { it.copy(text = "") })
+        Log.i(TAG, "deterministic answer by $answeredBy (${citations.size} citations) in ${SystemClock.elapsedRealtime() - started} ms")
         listener.onDone(
             GenerationStats(
                 generationId, 0, SystemClock.elapsedRealtime() - started, text.length, 0.0,
                 0, 0, engine.backendName, false,
                 sourceSectionId = sourceSectionId,
                 manifestFallback = manifestFallback,
+                intent = intent?.name.orEmpty(),
+                answeredBy = answeredBy,
             ),
         )
         return null

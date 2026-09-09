@@ -26,9 +26,18 @@ class HybridQueryTest {
 
     @Test
     fun `build ORs each term parameter plus semanticSearch`() {
-        val q = HybridQuery.build(listOf("city", "division"), similarityFloor = 0.3, vectorLimit = 12)
+        val q = HybridQuery.build(listOf("city", "division"), similarityFloor = 0.3, vectorLimit = 12, withPrefixes = false)
         assertEquals(
             "(getSearchStringParameter(0) OR getSearchStringParameter(1)) OR semanticSearch(getEmbeddingParameter(0), 0.3, 12)",
+            q,
+        )
+    }
+
+    @Test
+    fun `prefix forms of longer words widen keyword recall`() {
+        val q = HybridQuery.build(listOf("city", "division"), similarityFloor = 0.3, vectorLimit = 12)
+        assertEquals(
+            "(getSearchStringParameter(0) OR getSearchStringParameter(1) OR division*) OR semanticSearch(getEmbeddingParameter(0), 0.3, 12)",
             q,
         )
     }
@@ -48,6 +57,7 @@ class HybridQueryTest {
             HybridQuery.build(
                 listOf("ratios"), 0.3, 72,
                 requiredPropertyTerm = "specificationNumber" to "03310",
+                withPrefixes = false,
             ),
         )
     }

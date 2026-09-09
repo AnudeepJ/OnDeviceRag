@@ -98,16 +98,21 @@ class StructureAnalyzer(
             previous = next
             consumed++
         }
-        // Some text PDFs preserve a visibly separated, centered specification title as ordinary
-        // text (no bold/font metadata). Associate that one title line with a bare SECTION number.
-        if (parsed.specificationNumber != null && parts.isEmpty() && index + consumed < page.lines.size) {
+        // Some text PDFs preserve a visibly separated, centered title as ordinary text (no
+        // bold/font metadata). Associate that one title line with a bare structural label such as
+        // "SECTION 03300", "CHAPTER 13" or "APPENDIX A". The rule depends on position, gap and
+        // title shape only, never on title words.
+        if (parsed.isStructuralLabel && parts.isEmpty() && index + consumed < page.lines.size) {
             val candidate = page.lines[index + consumed]
             val gap = candidate.box.top - previous.box.bottom
             val title = candidate.text.trim()
-            if (gap in -medianHeight * 0.4f..medianHeight * SPEC_TITLE_MAX_GAP_RATIO &&
+            // Chapter/appendix labels are often separated from their title by a blank line.
+            val maxGap = if (parsed.kind == Segment.Heading.KIND_SECTION) SPEC_TITLE_MAX_GAP_RATIO else LABEL_TITLE_MAX_GAP_RATIO
+            if (gap in -medianHeight * 0.4f..medianHeight * maxGap &&
                 title.length in 3..MAX_TITLE_CHARS &&
                 !BODY_END.containsMatchIn(title) &&
                 !isExplicitHeading(title) &&
+                listItem(title) == null &&
                 looksLikeTitle(title)
             ) {
                 parts += title
@@ -115,6 +120,15 @@ class StructureAnalyzer(
             }
         }
         val combinedTitle = parts.joinToString(" ").replace(SPACES, " ").trim()
+        if (parsed.kind == Segment.Heading.KIND_CHAPTER || parsed.kind == Segment.Heading.KIND_APPENDIX) {
+            // A running "Chapter 13" cross-reference or a bare label with no title is not a
+            // boundary. Real chapter starts carry a title (same line or adjacent) or a styled line.
+            val headingLines = page.lines.subList(index, index + consumed)
+            val styled = headingLines.any { it.isBold } ||
+                headingLines.any { it.lineHeight >= medianHeight * SPEC_HEADING_HEIGHT_RATIO }
+            if (combinedTitle.isBlank() && !styled) return null
+            if (combinedTitle.isNotBlank() && !looksLikeTitle(combinedTitle)) return null
+        }
         if (parsed.specificationNumber != null) {
             val headingLines = page.lines.subList(index, index + consumed)
             val hasBoundaryStyle = headingLines.any { it.isBold } ||
@@ -134,13 +148,21 @@ class StructureAnalyzer(
                 !(isNearPageStart && hasSeparateLeadingTitle)
             ) return null
         }
+        // Absent printed identifiers stay absent: the fallback title names the label itself.
+        val fallbackTitle = when {
+            parsed.specificationNumber != null -> "SECTION ${parsed.specificationNumber}"
+            parsed.number != null -> parsed.number
+            else -> ""
+        }
         return HeadingMatch(
             Segment.Heading(
                 pageNumber = page.pageNumber,
                 number = parsed.number,
-                title = combinedTitle.ifBlank { "SECTION ${parsed.specificationNumber}" },
+                title = combinedTitle.ifBlank { fallbackTitle },
                 level = parsed.level,
                 specificationNumber = parsed.specificationNumber,
+                kind = parsed.kind,
+                printedNumber = parsed.printedNumber,
             ),
             consumed,
         )
@@ -151,23 +173,50 @@ class StructureAnalyzer(
         val title: String,
         val level: Int,
         val specificationNumber: String? = null,
-    )
+        val kind: String = Segment.Heading.KIND_HEADING,
+        val printedNumber: String = number.orEmpty(),
+    ) {
+        /** Labels that commonly stand alone on a line with their title beneath them. */
+        val isStructuralLabel: Boolean
+            get() = kind == Segment.Heading.KIND_SECTION || kind == Segment.Heading.KIND_CHAPTER ||
+                kind == Segment.Heading.KIND_PART || kind == Segment.Heading.KIND_APPENDIX
+    }
 
     private fun parseHeading(raw: String): ParsedHeading? {
         val text = raw.trim().replace(SPACES, " ")
         SPEC_HEADING.matchEntire(text)?.let { m ->
             val id = m.groupValues[1]
             val title = m.groupValues[2].trim()
-            return ParsedHeading(id, title, 1, id)
+            return ParsedHeading(id, title, 1, id, Segment.Heading.KIND_SECTION, id)
+        }
+        // A sentence that merely begins with "Chapter 13 describes ..." is prose, not a boundary:
+        // labels are short lines whose remainder has title shape.
+        if (text.length <= MAX_LABEL_LINE_CHARS) {
+            CHAPTER_HEADING.matchEntire(text)?.let { m ->
+                val printed = arabic(m.groupValues[1])
+                val title = m.groupValues[2].trim()
+                if (title.isNotBlank() && !looksLikeTitle(title)) return null
+                return ParsedHeading("CHAPTER ${m.groupValues[1]}", title, 1, null, Segment.Heading.KIND_CHAPTER, printed)
+            }
+            APPENDIX_HEADING.matchEntire(text)?.let { m ->
+                val label = m.groupValues[1].uppercase(Locale.ROOT)
+                val printed = arabic(m.groupValues[2])
+                val title = m.groupValues[3].trim()
+                if (title.isNotBlank() && !looksLikeTitle(title)) return null
+                return ParsedHeading("$label ${m.groupValues[2]}", title, 1, null, Segment.Heading.KIND_APPENDIX, printed)
+            }
         }
         PART_HEADING.matchEntire(text)?.let { m ->
-            return ParsedHeading("PART ${m.groupValues[1]}", m.groupValues[2].trim(), 2)
+            return ParsedHeading(
+                "PART ${m.groupValues[1]}", m.groupValues[2].trim(), 2, null,
+                Segment.Heading.KIND_PART, arabic(m.groupValues[1]),
+            )
         }
         NUMBERED_HEADING.matchEntire(text)?.let { m ->
             val number = m.groupValues[1]
             val title = m.groupValues[2].trim()
             if (title.length in 2..MAX_TITLE_CHARS && looksLikeTitle(title)) {
-                return ParsedHeading(number, title, 3 + number.count { it == '.' }.coerceAtMost(3))
+                return ParsedHeading(number, title, 3 + number.count { it == '.' }.coerceAtMost(3), null, Segment.Heading.KIND_CLAUSE, number)
             }
         }
         if (text.length in 3..MAX_TITLE_CHARS &&
@@ -192,7 +241,8 @@ class StructureAnalyzer(
     }
 
     private fun isExplicitHeading(text: String): Boolean =
-        SPEC_HEADING.matches(text) || PART_HEADING.matches(text) || NUMBERED_HEADING.matches(text)
+        SPEC_HEADING.matches(text) || PART_HEADING.matches(text) || NUMBERED_HEADING.matches(text) ||
+            CHAPTER_HEADING.matches(text) || APPENDIX_HEADING.matches(text)
 
     private fun isContentsPage(page: PageLayout): Boolean {
         val lines = page.lines.map { it.text.trim().replace(SPACES, " ") }
@@ -238,6 +288,7 @@ class StructureAnalyzer(
         private const val SPEC_HEADING_HEIGHT_RATIO = 1.15f
         private const val SPEC_HEADING_TOP_FRACTION = 0.18f
         private const val SPEC_TITLE_MAX_GAP_RATIO = 2.0f
+        private const val LABEL_TITLE_MAX_GAP_RATIO = 3.5f
         private const val CONTENTS_TITLE_LOOKAHEAD = 12
         private const val MIN_CONTENTS_ENTRIES_WITH_TITLE = 3
         private const val MIN_CONTENTS_ENTRIES = 6
@@ -245,12 +296,36 @@ class StructureAnalyzer(
         private val BODY_END = Regex("[.;:]\\s*$")
         private val SPEC_HEADING = Regex("(?i)^SECTION\\s+([0-9]{3,8}(?:[-.]?[0-9A-Z]+)?)\\s*[-–—:]?\\s*(.*)$")
         private val PART_HEADING = Regex("(?i)^PART\\s+([0-9IVX]+)\\s*[-–—:]?\\s*(.*)$")
+        /** `CHAPTER 13`, `Chapter XIII – Excavation`, `CHAPTER 13: EXCAVATION`. */
+        private val CHAPTER_HEADING = Regex("(?i)^CHAPTER\\s+([0-9]{1,3}|[IVXLC]{1,7})\\s*[-–—:.]?\\s*(.*)$")
+        /** `APPENDIX A`, `Annexure II - Standards`, `ANNEX 3`. */
+        private val APPENDIX_HEADING = Regex("(?i)^(APPENDIX|ANNEXURE|ANNEX)\\s+([0-9]{1,3}|[IVXLC]{1,7}|[A-Z])\\s*[-–—:.]?\\s*(.*)$")
+        private val ROMAN = Regex("^[IVXLCDM]{1,9}$")
+        private val ROMAN_VALUES = mapOf('I' to 1, 'V' to 5, 'X' to 10, 'L' to 50, 'C' to 100, 'D' to 500, 'M' to 1000)
         private val PART_ONE_ROOT = Regex("(?i)^PART\\s+(?:1|I)(?:\\s*[-–—:]\\s*|\\s+).+$")
         private val NUMBERED_PART_ONE_ROOT = Regex("(?i)^1\\.0+\\s+.+$")
         private val NUMBERED_HEADING = Regex("^((?:[0-9]+\\.)+[0-9A-Z]+)\\s+(.+)$")
         private val CONTENTS_TITLE = Regex("(?i)^(?:table\\s+of\\s+contents|contents|index)$")
         private val CONTENTS_ENTRY = Regex("^\\d+(?:\\.\\d+){0,5}\\s+.+?\\s+\\d{1,4}$")
-        private val LIST_ITEM = Regex("^((?:[A-Za-z]|[0-9]+)[.)]|\\([A-Za-z0-9]+\\))\\s+(.+)$")
+        /** Arabic, alphabetic, Roman (`ii.`, `IV)`), parenthesised and bullet/check labels. */
+        private val LIST_ITEM = Regex(
+            "^((?:[A-Za-z]|[0-9]{1,3}|[ivxl]{2,6}|[IVXL]{2,6})[.)]|\\([A-Za-z0-9]{1,4}\\)|[•▪■●○◦‣⁃➢➤►✓✔➔→*\\uE000-\\uF8FF]|[-–—](?=\\s))\\s+(.+)$",
+        )
+        private const val MAX_LABEL_LINE_CHARS = 90
+
+    /** `13` for `13`, `XIII`, `xiii`; letters pass through upper-cased so `Appendix a` and `APPENDIX A` agree. */
+        fun arabic(printed: String): String {
+            val upper = printed.trim().uppercase(Locale.ROOT)
+            if (upper.all(Char::isDigit)) return upper.trimStart('0').ifEmpty { "0" }
+            if (!ROMAN.matches(upper)) return upper
+            var total = 0
+            var previous = 0
+            for (ch in upper.reversed()) {
+                val value = ROMAN_VALUES.getValue(ch)
+                if (value < previous) total -= value else { total += value; previous = value }
+            }
+            return total.toString()
+        }
 
         fun normalizeHeading(text: String): String = Normalizer.normalize(text, Normalizer.Form.NFKC)
             .lowercase(Locale.ROOT)

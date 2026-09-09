@@ -57,8 +57,21 @@ sealed class Segment {
         val title: String,
         val level: Int,
         val specificationNumber: String? = null,
+        /** Structural kind: SECTION (specification), PART, CHAPTER, APPENDIX, CLAUSE (dotted), HEADING (styled). */
+        val kind: String = if (specificationNumber != null) KIND_SECTION else if (number == null) KIND_HEADING else KIND_CLAUSE,
+        /** Printed identifier normalised for lookup: `13` for `CHAPTER XIII`, `A` for `APPENDIX A`, `1.01` for a clause. */
+        val printedNumber: String = number.orEmpty(),
     ) : Segment() {
         val text: String get() = listOfNotNull(number, title).joinToString(" ").trim()
+
+        companion object {
+            const val KIND_SECTION = "SECTION"
+            const val KIND_PART = "PART"
+            const val KIND_CHAPTER = "CHAPTER"
+            const val KIND_APPENDIX = "APPENDIX"
+            const val KIND_CLAUSE = "CLAUSE"
+            const val KIND_HEADING = "HEADING"
+        }
     }
 
     data class Paragraph(override val pageNumber: Int, val text: String) : Segment()

@@ -144,6 +144,8 @@ class TableClusterer(
     }
 
     companion object {
-        private val ENUMERATOR = Regex("^(?:[A-Za-z]|[0-9]+)[.)]$|^\\([A-Za-z0-9]+\\)$")
+        private val ENUMERATOR = Regex(
+            "^(?:[A-Za-z]|[0-9]+|[ivxl]{2,6}|[IVXL]{2,6})[.)]$|^\\([A-Za-z0-9]{1,4}\\)$|^[•▪■●○◦‣⁃➢➤►✓✔➔→*\\uE000-\\uF8FF]$",
+        )
     }
 }

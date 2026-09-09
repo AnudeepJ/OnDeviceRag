@@ -51,7 +51,7 @@ class IndexPdfUseCase(
     ): DocumentInfo {
         val previousNamespace = runCatching { store.loadManifest(docHash)?.indexNamespace }.getOrNull()
         val buildId = System.currentTimeMillis().toString(36)
-        val stagingNamespace = "$docHash:v21:$buildId"
+        val stagingNamespace = "$docHash:v${DocumentStructureManifest.INDEX_VERSION}:$buildId"
         try {
             onProgress(IndexingProgress(docHash, Stage.PREPARING, 0, 1))
 
@@ -204,12 +204,13 @@ class IndexPdfUseCase(
             // Publication is the commit point. Until this succeeds, every query keeps using the
             // previous complete namespace.
             store.publishManifest(manifest)
+            // Every earlier namespace of this document is now stale: the previous complete index,
+            // a legacy V1 namespace, or an index whose manifest version can no longer be read.
+            runCatching { store.removeStaleNamespaces(docHash, keep = stagingNamespace) }
+                .onSuccess { if (it.isNotEmpty()) Log.i(TAG, "removed stale namespaces $it") }
+                .onFailure { Log.w(TAG, "old namespace cleanup failed", it) }
             if (previousNamespace != null && previousNamespace != stagingNamespace) {
                 runCatching { store.removeNamespace(previousNamespace) }
-                    .onFailure { Log.w(TAG, "old namespace cleanup failed", it) }
-            } else if (previousNamespace == null) {
-                // Remove a legacy V1 namespace only after V2.1 is active.
-                runCatching { store.removeNamespace(docHash) }
             }
             Log.i(TAG, "indexed $displayName: $pageCount pages, ${chunks.size} chunks in ${SystemClock.elapsedRealtime() - embedStarted} ms embed+put")
             return DocumentInfo(

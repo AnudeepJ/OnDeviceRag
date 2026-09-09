@@ -22,6 +22,10 @@ data class Chunk(
     val sectionTitle: String = "",
     val sectionPath: String = "",
     val sectionLevel: Int = 0,
+    /** Structural kind of the owning heading (SECTION, PART, CHAPTER, APPENDIX, CLAUSE, HEADING); blank at root. */
+    val sectionKind: String = "",
+    /** Lookup form of the owning heading's printed identifier (`13`, `A`, `2.05`). */
+    val sectionPrintedNumber: String = "",
     val positionInSection: Int = 0,
     val contentKind: String = if (isTable) "TABLE" else "PARAGRAPH",
     val identifierAtoms: List<String> = emptyList(),
@@ -79,6 +83,8 @@ class ScriptAwareChunker(
                 sectionTitle = section.title,
                 sectionPath = section.path,
                 sectionLevel = section.level,
+                sectionKind = section.kind,
+                sectionPrintedNumber = section.printedNumber,
                 positionInSection = position++,
                 contentKind = kind,
                 identifierAtoms = IdentifierAtoms.extract(retrieval),
@@ -305,6 +311,8 @@ class ScriptAwareChunker(
         val title: String,
         val path: String,
         val level: Int,
+        val kind: String = "",
+        val printedNumber: String = "",
     ) {
         companion object {
             fun root(docHash: String) = SectionState(stableId("$docHash|root"), "", "", "", "", 0)
@@ -314,7 +322,10 @@ class ScriptAwareChunker(
                 val specification = stack.asReversed().firstNotNullOfOrNull { it.specificationNumber } ?: ""
                 val path = stack.joinToString(" > ") { it.text }
                 val key = "$docHash|$specification|${leaf.number.orEmpty()}|${leaf.title}|$ordinal"
-                return SectionState(stableId(key), specification, leaf.number.orEmpty(), leaf.title, path, leaf.level)
+                return SectionState(
+                    stableId(key), specification, leaf.number.orEmpty(), leaf.title, path, leaf.level,
+                    leaf.kind, leaf.printedNumber,
+                )
             }
 
             private fun stableId(value: String): String = MessageDigest.getInstance("SHA-256")

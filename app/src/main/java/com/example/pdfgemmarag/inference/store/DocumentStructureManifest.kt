@@ -20,6 +20,23 @@ data class SectionRecord(
     val tokenCount: Int,
     val centroid: FloatArray? = null,
     val level: Int = 0,
+    /** Structural kind of the heading: SECTION, PART, CHAPTER, APPENDIX, CLAUSE, HEADING; blank for the root. */
+    val kind: String = "",
+    /** Lookup form of the printed identifier (`13` for `CHAPTER XIII`, `A`, `2.05`). */
+    val printedNumber: String = "",
+) {
+    /** Top-level structural nodes are the units of document breadth. */
+    val isTopLevelKind: Boolean
+        get() = kind == "SECTION" || kind == "CHAPTER" || kind == "APPENDIX" || kind == "PART"
+}
+
+/** Deterministic invariants over a manifest; a degraded outline switches planners to safe fallbacks. */
+data class ManifestHealth(
+    val degraded: Boolean,
+    val reasons: List<String>,
+    /** One flag per document quartile: does a top-level node start in or span it. */
+    val quartileCoverage: List<Boolean>,
+    val topLevelCount: Int,
 )
 
 data class DocumentStructureManifest(
@@ -31,6 +48,8 @@ data class DocumentStructureManifest(
 ) {
     val chunksInOrder: List<String> get() = sections.flatMap { it.orderedChunkIds }.distinct()
 
+    val lastPage: Int get() = sections.maxOfOrNull { it.endPage } ?: 1
+
     fun validate() {
         require(documentHash.isNotBlank()) { "manifest document hash is blank" }
         require(indexNamespace.isNotBlank()) { "manifest namespace is blank" }
@@ -41,8 +60,60 @@ data class DocumentStructureManifest(
         sections.forEach { require(it.startPage in 1..it.endPage) { "invalid page span for ${it.sectionId}" } }
     }
 
+    /**
+     * Nodes whose kind or level makes them the document's breadth units. Kind wins when the parser
+     * produced any; otherwise the shallowest positive level is used (legacy or unnumbered documents).
+     */
+    fun topLevelSections(): List<SectionRecord> {
+        val titled = sections.filter { it.title.isNotBlank() && it.orderedChunkIds.isNotEmpty() }
+        val byKind = titled.filter { it.isTopLevelKind }
+        if (byKind.isNotEmpty()) {
+            // Specifications nest PART under SECTION; a chapter-based manual has no SECTION rows.
+            val kinds = byKind.map { it.kind }.toSet()
+            // "Part 1" lines inside a chapter-based manual are usually standard references or
+            // list labels, not divisions above the chapters; keep PART only when nothing larger exists.
+            val preferred = when {
+                "SECTION" in kinds -> byKind.filter { it.kind == "SECTION" || it.kind == "APPENDIX" }
+                "CHAPTER" in kinds -> byKind.filter { it.kind == "CHAPTER" || it.kind == "APPENDIX" }
+                else -> byKind
+            }
+            return preferred.sortedBy { it.startPage }
+        }
+        val topLevel = titled.map { it.level }.filter { it > 0 }.minOrNull() ?: return titled.sortedBy { it.startPage }
+        return titled.filter { it.level == topLevel }.sortedBy { it.startPage }
+    }
+
+    /** The node plus every section whose path continues under it, in manifest order. */
+    fun descendantsOf(section: SectionRecord): List<SectionRecord> {
+        val prefix = section.path + " > "
+        return sections.filter { it.sectionId == section.sectionId || it.path.startsWith(prefix) }
+            .sortedWith(compareBy<SectionRecord> { it.startPage }.thenBy { it.orderedChunkIds.firstOrNull() })
+    }
+
+    fun health(): ManifestHealth {
+        val reasons = ArrayList<String>()
+        val ids = chunksInOrder
+        if (ids.size != sections.sumOf { it.orderedChunkIds.size }) reasons += "duplicate chunk ids"
+        val badTitle = sections.filter { it.title.isBlank() && it.orderedChunkIds.isNotEmpty() && it.level > 0 }
+        if (badTitle.isNotEmpty()) reasons += "${badTitle.size} untitled structural nodes"
+        if (sections.any { "null" in it.title.lowercase() || "null" in it.path.lowercase() }) reasons += "synthesized null in a title"
+        val top = topLevelSections()
+        val last = lastPage.coerceAtLeast(1)
+        // A node's reach includes its descendants: a chapter heading ends on its first page but
+        // its clauses carry the span forward until the next chapter begins.
+        val spans = top.map { node -> node.startPage to descendantsOf(node).maxOf { it.endPage } }
+        val coverage = (0 until 4).map { quartile ->
+            val from = 1 + quartile * last / 4
+            val to = if (quartile == 3) last else (quartile + 1) * last / 4
+            spans.any { (start, end) -> start in from..to || (start < from && end >= from) }
+        }
+        if (top.size < 2) reasons += "fewer than two top-level nodes"
+        if (coverage.count { it } < 3) reasons += "top-level coverage missing in ${coverage.count { !it }} quartiles"
+        return ManifestHealth(reasons.isNotEmpty(), reasons, coverage, top.size)
+    }
+
     companion object {
-        const val INDEX_VERSION = 21
+        const val INDEX_VERSION = 22
 
         fun fromChunks(
             documentHash: String,
@@ -66,6 +137,8 @@ data class DocumentStructureManifest(
                     tokenCount = group.sumOf { tokenCount(it.retrievalText) },
                     centroid = centroids[first.sectionId],
                     level = first.sectionLevel,
+                    kind = first.sectionKind,
+                    printedNumber = first.sectionPrintedNumber,
                 )
             }.sortedWith(compareBy<SectionRecord> { it.startPage }.thenBy { it.orderedChunkIds.firstOrNull() })
             return DocumentStructureManifest(documentHash, namespace, INDEX_VERSION, signature, sections).also { it.validate() }
@@ -148,6 +221,8 @@ class DocumentStructureManifestStore(context: Context) {
                     put("orderedChunkIds", JSONArray(section.orderedChunkIds))
                     put("tokenCount", section.tokenCount)
                     put("level", section.level)
+                    put("kind", section.kind)
+                    put("printedNumber", section.printedNumber)
                     section.centroid?.let { values -> put("centroid", JSONArray(values.toList())) }
                 })
             }
@@ -173,6 +248,8 @@ class DocumentStructureManifestStore(context: Context) {
                 centroid = centroidJson?.let { a -> FloatArray(a.length()) { a.getDouble(it).toFloat() } },
                 // Older V2.1 manifests predate the explicit level; path depth is equivalent.
                 level = section.optInt("level", section.optString("path").split(" > ").count { it.isNotBlank() }),
+                kind = section.optString("kind"),
+                printedNumber = section.optString("printedNumber"),
             )
         }
         return DocumentStructureManifest(

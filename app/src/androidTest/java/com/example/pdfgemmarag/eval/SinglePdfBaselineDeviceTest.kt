@@ -55,6 +55,8 @@ class SinglePdfBaselineDeviceTest {
         val historyFrom: String?,
         /** Every group requires at least one alternative; useful for source-valid notation variants. */
         val requiredPhraseAlternatives: List<List<String>> = emptyList(),
+        /** Cited pages must fall into at least this many distinct document quartiles (overview breadth). */
+        val requiredPageQuartiles: Int = 0,
     )
 
     private data class Turn(
@@ -75,7 +77,22 @@ class SinglePdfBaselineDeviceTest {
         val answerPassed: Boolean,
         val retrievalReasons: List<String>,
         val answerReasons: List<String>,
-    )
+        val intent: String = "",
+        val answeredBy: String = "",
+        val groundingReasons: String = "",
+        val prefillTokensPerSecond: Double = 0.0,
+        val decodeTokensPerSecond: Double = 0.0,
+        val prefillTokens: Int = 0,
+    ) {
+        /** First failing pipeline stage, so a report names where to look rather than one pass flag. */
+        val stage: String
+            get() = when {
+                !retrievalPassed -> "RETRIEVAL"
+                groundingFailure || answerReasons.any { "unverified" in it || "citation" in it } -> "GROUNDING"
+                !answerPassed -> "ANSWER"
+                else -> "PASS"
+            }
+    }
 
     private val ctx: Context get() = InstrumentationRegistry.getInstrumentation().targetContext
     private val connected = CountDownLatch(1)
@@ -102,15 +119,30 @@ class SinglePdfBaselineDeviceTest {
         runCatching { ctx.unbindService(connection) }
     }
 
+    /**
+     * Selects the document by exact content hash (`-e documentHash`), then by display name
+     * (`-e documentName`), then by the suite default. Page-count guessing is only a last resort for
+     * the legacy focused baseline.
+     */
+    private fun selectDocument(defaultHash: String? = null, defaultName: String? = null, allowPageCountFallback: Boolean = false): DocumentInfo {
+        val svc = requireNotNull(service)
+        val arguments = InstrumentationRegistry.getArguments()
+        val requestedHash = arguments.getString("documentHash")?.ifBlank { null } ?: defaultHash
+        val requestedName = arguments.getString("documentName")?.ifBlank { null } ?: defaultName
+        val docs = runBlocking { svc.listDocumentsAsync() }
+        val doc = requestedHash?.let { hash -> docs.firstOrNull { it.docHash.equals(hash, true) } }
+            ?: requestedName?.let { name -> docs.firstOrNull { it.displayName == name } }
+            ?: docs.takeIf { allowPageCountFallback && requestedHash == null && requestedName == null }?.firstOrNull { it.pageCount >= 70 }
+            ?: error("Required test PDF (hash=$requestedHash name=$requestedName) is not indexed on this device; indexed=${docs.map { it.displayName + ':' + it.docHash.take(8) }}")
+        Log.i(TAG, "selected document '${doc.displayName}' hash=${doc.docHash} pages=${doc.pageCount} index=v${doc.indexVersion} ns=${doc.activeIndexNamespace}")
+        return doc
+    }
+
     @Test
     fun captureFocusedBaseline() {
         val svc = requireNotNull(service)
         val arguments = InstrumentationRegistry.getArguments()
-        val requestedDocument = arguments.getString("documentName")
-        val doc = runBlocking { svc.listDocumentsAsync() }.firstOrNull {
-            requestedDocument?.let { name -> it.displayName == name } ?: (it.pageCount >= 70)
-        }
-            ?: error("The test PDF is not indexed on this device")
+        val doc = selectDocument(defaultHash = DIVISION03_HASH, allowPageCountFallback = true)
         arguments.getString("dumpChunkRange")?.let { requested ->
             val bounds = requested.split('-').map(String::toInt)
             val manifest = requireNotNull(DocumentStructureManifestStore(ctx).load(doc.docHash))
@@ -135,7 +167,11 @@ class SinglePdfBaselineDeviceTest {
 
     /** Runs the strict construction-safety bank only against its exact indexed document. */
     @Test
-    fun captureConstructionSafetyQa() = runNamedBaseline(CONSTRUCTION_SAFETY_CASES_ASSET, "safety.pdf")
+    fun captureConstructionSafetyQa() = runNamedBaseline(CONSTRUCTION_SAFETY_CASES_ASSET, SAFETY_PDF_HASH, "safety.pdf")
+
+    /** Red regression bank locked from the 209-page safety manual live failures (roadmap M0). */
+    @Test
+    fun captureSafetyPdfQa() = runNamedBaseline(SAFETY_PDF_CASES_ASSET, SAFETY_PDF_HASH, "safety.pdf")
 
     /** The legacy "more" asset is retained for focused runs; verify it cannot silently diverge. */
     @Test
@@ -148,21 +184,14 @@ class SinglePdfBaselineDeviceTest {
 
     private fun runGeneratedBaseline(assetName: String) {
         val svc = requireNotNull(service)
-        val requestedDocument = InstrumentationRegistry.getArguments().getString("documentName")
-        val doc = runBlocking { svc.listDocumentsAsync() }.firstOrNull {
-            requestedDocument?.let { name -> it.displayName == name } ?: (it.pageCount >= 70)
-        }
-            ?: error("The test PDF is not indexed on this device")
-        runBaseline(svc, doc, assetName, requestedCase = null)
+        val doc = selectDocument(defaultHash = DIVISION03_HASH, allowPageCountFallback = true)
+        runBaseline(svc, doc, assetName, requestedCase = InstrumentationRegistry.getArguments().getString("caseId")?.ifBlank { null })
     }
 
-    private fun runNamedBaseline(assetName: String, defaultDocumentName: String) {
+    private fun runNamedBaseline(assetName: String, defaultHash: String, defaultDocumentName: String) {
         val svc = requireNotNull(service)
-        val expectedName = InstrumentationRegistry.getArguments().getString("documentName")
-            ?.ifBlank { null } ?: defaultDocumentName
-        val doc = runBlocking { svc.listDocumentsAsync() }.firstOrNull { it.displayName == expectedName }
-            ?: error("Required test PDF '$expectedName' is not indexed on this device")
-        runBaseline(svc, doc, assetName, requestedCase = null)
+        val doc = selectDocument(defaultHash = defaultHash, defaultName = defaultDocumentName)
+        runBaseline(svc, doc, assetName, requestedCase = InstrumentationRegistry.getArguments().getString("caseId")?.ifBlank { null })
     }
 
     private fun runBaseline(
@@ -181,30 +210,42 @@ class SinglePdfBaselineDeviceTest {
             val prior = case.historyFrom?.let(completed::get)
             val history = if (prior == null) emptyList()
             else listOf(QaPair(prior.case.question, prior.answer, prior.sourceSectionId))
-            val turn = ask(svc, doc.docHash, doc.activeIndexNamespace, case, history)
+            val turn = ask(svc, doc.docHash, doc.activeIndexNamespace, case, history, doc.pageCount)
             completed[case.id] = turn
             reportCases.put(turn.toJson())
-            Log.i(TAG, "${case.id}: retrieval=${turn.retrievalPassed} answer=${turn.answerPassed} pages=${turn.pages} backend=${turn.backend} " +
+            Log.i(TAG, "${case.id}: stage=${turn.stage} retrieval=${turn.retrievalPassed} answer=${turn.answerPassed} pages=${turn.pages} backend=${turn.backend} " +
+                "intent=${turn.intent} by=${turn.answeredBy.ifBlank { "MODEL" }} " +
                 "modelTtft=${turn.modelTtftMs} visibleTtft=${turn.visibleTtftMs} total=${turn.totalMs} " +
-                "tok_s=${"%.2f".format(Locale.ROOT, turn.tokensPerSecond)} ctx=${turn.contextTokens} groundingFailure=${turn.groundingFailure} " +
+                "tok_s=${"%.2f".format(Locale.ROOT, turn.tokensPerSecond)} prefill=${turn.prefillTokens}tok@${"%.0f".format(Locale.ROOT, turn.prefillTokensPerSecond)} " +
+                "ctx=${turn.contextTokens} groundingFailure=${turn.groundingFailure} grounding='${turn.groundingReasons}' " +
                 "retrievalReasons=${turn.retrievalReasons} answerReasons=${turn.answerReasons}")
             Log.i(TAG, "${case.id} answer='${turn.answer.take(1200).replace('\n', ' ')}'")
         }
 
         val retrievalPassed = completed.values.count { it.retrievalPassed }
         val answerPassed = completed.values.count { it.answerPassed }
+        val byStage = completed.values.groupingBy { it.stage }.eachCount()
+        val generated = completed.values.filter { it.answeredBy.isBlank() && it.modelTtftMs > 0 }
         val report = JSONObject()
             .put("document", doc.displayName)
             .put("docHash", doc.docHash)
+            .put("indexVersion", doc.indexVersion)
+            .put("indexNamespace", doc.activeIndexNamespace)
             .put("device", android.os.Build.MODEL)
+            .put("androidRelease", android.os.Build.VERSION.RELEASE)
             .put("total", completed.size)
             .put("retrievalPassed", retrievalPassed)
             .put("answerPassed", answerPassed)
+            .put("byStage", JSONObject(byStage.mapValues { it.value as Any }))
+            .put("generatedTurns", generated.size)
+            .put("medianModelTtftMs", generated.map { it.modelTtftMs }.sorted().let { if (it.isEmpty()) -1 else it[it.size / 2] })
+            .put("medianDecodeTokensPerSecond", generated.map { it.decodeTokensPerSecond }.filter { it > 0 }.sorted().let { if (it.isEmpty()) 0.0 else it[it.size / 2] })
+            .put("medianPrefillTokensPerSecond", generated.map { it.prefillTokensPerSecond }.filter { it > 0 }.sorted().let { if (it.isEmpty()) 0.0 else it[it.size / 2] })
             .put("cases", reportCases)
         val suiteName = assetName.substringBeforeLast('.').replace(Regex("[^a-zA-Z0-9_-]"), "_")
         val output = File(requireNotNull(ctx.getExternalFilesDir(null)), "single_pdf_baseline-$suiteName.json")
         output.writeText(report.toString(2))
-        Log.i(TAG, "BASELINE retrieval=$retrievalPassed/${completed.size} answer=$answerPassed/${completed.size}; report=${output.absolutePath}")
+        Log.i(TAG, "BASELINE retrieval=$retrievalPassed/${completed.size} answer=$answerPassed/${completed.size} stages=$byStage; report=${output.absolutePath}")
         assertTrue("baseline did not execute any cases", completed.isNotEmpty())
         assertEquals("retrieval regressions; report=$output", completed.size, retrievalPassed)
         assertEquals("answer regressions; report=$output", completed.size, answerPassed)
@@ -213,8 +254,7 @@ class SinglePdfBaselineDeviceTest {
     @Test
     fun documentOverviewUsesBroadStructuralContext() {
         val svc = requireNotNull(service)
-        val doc = runBlocking { svc.listDocumentsAsync() }.firstOrNull { it.pageCount >= 70 }
-            ?: error("The test PDF is not indexed on this device")
+        val doc = selectDocument(defaultHash = DIVISION03_HASH, allowPageCountFallback = true)
         ensureEngine(svc)
         val overview = Case(
             id = "document-overview",
@@ -240,8 +280,7 @@ class SinglePdfBaselineDeviceTest {
     @Test
     fun resolvedSectionMetadataSurvivesMultiCitationAnswerForFollowUp() {
         val svc = requireNotNull(service)
-        val doc = runBlocking { svc.listDocumentsAsync() }.firstOrNull { it.pageCount >= 70 }
-            ?: error("The test PDF is not indexed on this device")
+        val doc = selectDocument(defaultHash = DIVISION03_HASH, allowPageCountFallback = true)
         ensureEngine(svc)
         val summary = Case(
             "metadata-summary", "SECTION_SUMMARY",
@@ -297,6 +336,7 @@ class SinglePdfBaselineDeviceTest {
         activeIndexNamespace: String,
         case: Case,
         history: List<QaPair>,
+        pageCount: Int = 0,
     ): Turn {
         val done = CountDownLatch(1)
         val answer = StringBuilder()
@@ -344,7 +384,7 @@ class SinglePdfBaselineDeviceTest {
                 },
             )
         }
-        val retrievalReasons = scoreRetrieval(case, pages)
+        val retrievalReasons = scoreRetrieval(case, pages, pageCount)
         val groundingFailure = stats?.groundingFailure ?: false
         val answerReasons = scoreAnswer(case, text, error, groundingFailure)
         return Turn(
@@ -365,12 +405,24 @@ class SinglePdfBaselineDeviceTest {
             answerPassed = answerReasons.isEmpty(),
             retrievalReasons = retrievalReasons,
             answerReasons = answerReasons,
+            intent = stats?.intent.orEmpty(),
+            answeredBy = stats?.answeredBy.orEmpty(),
+            groundingReasons = stats?.groundingReasons.orEmpty(),
+            prefillTokensPerSecond = stats?.prefillTokensPerSecond ?: 0.0,
+            decodeTokensPerSecond = stats?.decodeTokensPerSecond ?: 0.0,
+            prefillTokens = stats?.prefillTokens ?: 0,
         )
     }
 
-    private fun scoreRetrieval(case: Case, pages: List<Int>): List<String> {
+    private fun scoreRetrieval(case: Case, pages: List<Int>, pageCount: Int): List<String> {
         val reasons = ArrayList<String>()
         val actualPages = pages.toSet()
+        if (case.requiredPageQuartiles > 0 && pageCount > 0) {
+            val quartiles = actualPages.map { page -> ((page - 1) * 4 / pageCount).coerceIn(0, 3) }.toSet()
+            if (quartiles.size < case.requiredPageQuartiles) {
+                reasons += "cited pages $actualPages span ${quartiles.size} quartile(s); need ${case.requiredPageQuartiles}"
+            }
+        }
         if (case.expectedPages.isNotEmpty()) {
             val pageOk = if (case.requireAllPages) actualPages.containsAll(case.expectedPages)
             else actualPages.any { it in case.expectedPages }
@@ -433,15 +485,16 @@ class SinglePdfBaselineDeviceTest {
                 id = item.getString("id"),
                 intent = item.getString("intent"),
                 question = item.getString("question"),
-                expectedPages = item.getJSONArray("expectedPages").ints(),
+                expectedPages = item.optJSONArray("expectedPages")?.ints().orEmpty(),
                 requireAllPages = item.optBoolean("requireAllPages"),
-                requiredPhrases = item.getJSONArray("requiredPhrases").strings(),
+                requiredPhrases = item.optJSONArray("requiredPhrases")?.strings().orEmpty(),
                 forbiddenPhrases = item.optJSONArray("forbiddenPhrases")?.strings().orEmpty(),
-                forbiddenPages = item.getJSONArray("forbiddenPages").ints(),
+                forbiddenPages = item.optJSONArray("forbiddenPages")?.ints().orEmpty(),
                 expectedRefusal = item.optBoolean("expectedRefusal"),
                 expectedClarification = item.optBoolean("expectedClarification"),
                 historyFrom = item.optString("historyFrom").takeIf { it.isNotEmpty() },
                 requiredPhraseAlternatives = item.optJSONArray("requiredPhraseAlternatives")?.stringLists().orEmpty(),
+                requiredPageQuartiles = item.optInt("requiredPageQuartiles"),
             )
         }
     }
@@ -452,6 +505,13 @@ class SinglePdfBaselineDeviceTest {
         .put("question", case.question)
         .put("retrievalPassed", retrievalPassed)
         .put("answerPassed", answerPassed)
+        .put("stage", stage)
+        .put("plannerIntent", intent)
+        .put("answeredBy", answeredBy.ifBlank { "MODEL" })
+        .put("groundingReasons", groundingReasons)
+        .put("prefillTokens", prefillTokens)
+        .put("prefillTokensPerSecond", prefillTokensPerSecond)
+        .put("decodeTokensPerSecond", decodeTokensPerSecond)
         .put("retrievalReasons", JSONArray(retrievalReasons))
         .put("answerReasons", JSONArray(answerReasons))
         .put("retrievedPages", JSONArray(pages))
@@ -481,8 +541,8 @@ class SinglePdfBaselineDeviceTest {
         .replace(Regex("\\s+"), " ")
 
     private fun looksLikeRefusal(value: String): Boolean =
-        "does not contain" in value || "does not cover" in value || "not specified" in value ||
-            "no information" in value || "cannot find" in value
+        "does not contain" in value || "do not contain" in value || "does not cover" in value || "do not cover" in value ||
+            "not specified" in value || "no information" in value || "cannot find" in value || "not mention" in value
 
     private fun looksLikeClarification(value: String): Boolean =
         ("03300" in value && "03310" in value) || "which section" in value ||
@@ -494,6 +554,10 @@ class SinglePdfBaselineDeviceTest {
         private const val GENERATED_CASES_ASSET = "generated_live_qa.json"
         private const val GENERATED_MORE_CASES_ASSET = "generated_live_qa_more.json"
         private const val CONSTRUCTION_SAFETY_CASES_ASSET = "construction_safety_qa.json"
+        private const val SAFETY_PDF_CASES_ASSET = "safety_pdf_qa.json"
+        /** Content hashes (first 32 hex chars of SHA-256, as computed on import); fixtures are bound to these documents. */
+        private const val SAFETY_PDF_HASH = "6630f344c15e8c7588c40da4369d34b5"
+        private const val DIVISION03_HASH = "086248dad810dc9368e844d3bcb1cab5"
         private val PAGE_CITATION = Regex("(?i)\\[page\\s+\\d+]")
         private val INTERNAL_OR_MALFORMED_CITATION = Regex("(?i)\\[e(?:\\d+|\\[|$)")
         private val RAW_LATEX = Regex("\\$[^$]*\\\\(?:pm|frac|text|mathrm)[^$]*\\$")

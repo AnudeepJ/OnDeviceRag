@@ -29,22 +29,27 @@ class GroundingStreamFilter(
                 it.pageNumber.toString(),
             ).joinToString("\n")
         } + "\n" + structuralValues.joinToString("\n")
-    private val allowedValues = valueTokens(evidenceText)
+    private val lexicon = EvidenceValueLexer.lex(evidenceText)
+    private val allowedValues = lexicon.values
     private val allowedSpecifications = excerpts.map { normalizeValue(it.specificationNumber) }.filter(String::isNotBlank).toSet()
     private val allowedSections = excerpts.map { normalizeValue(it.sectionNumber) }.filter(String::isNotBlank).toSet()
     private val allowedStructuralValues = (
         structuralValues + excerpts.flatMap { listOf(it.specificationNumber, it.sectionNumber) }
         ).map(::normalizeValue).filter(String::isNotBlank).toSet()
-    private val allowedValueUnits = valueUnitTokens(evidenceText)
-    private val allowedIdentifiers = identifierTokens(evidenceText)
+    private val allowedValueUnits = lexicon.valueUnits
+    private val allowedIdentifiers = lexicon.identifiers
     private val excerptById = excerpts.associateBy { it.excerptId }
     private val usedIds = LinkedHashSet<String>()
     private val emittedTail = StringBuilder()
+    private val rejections = ArrayList<String>()
     private var atLineStart = true
     var hadGroundingFailure: Boolean = false
         private set
 
     val usedCitations: List<Citation> get() = usedIds.mapNotNull(excerptById::get)
+
+    /** Stage-attribution reasons (`VALUE_ABSENT`, `UNIT_MISMATCH`, `IDENTIFIER_MISMATCH`, `CITATION`) for every rejection. */
+    val groundingReasons: List<String> get() = rejections.toList()
 
     fun accept(fragment: String): String {
         if (fragment.isEmpty()) return ""
@@ -66,20 +71,31 @@ class GroundingStreamFilter(
                     if (!final && pending.length - cursor <= MAX_CITATION_LENGTH) break
                     // Never expose a half-written internal excerpt marker such as "[E". It is
                     // neither a valid user citation nor safe text to feed into the numeric scanner.
-                    hadGroundingFailure = true
+                    reject("CITATION:" + pending.substring(cursor).take(16))
                     cursor = pending.length
                     continue
                 }
                 val marker = pending.substring(cursor + 1, close).trim()
-                val markerIds = marker.split(',').map(String::trim)
-                val citations = markerIds.mapNotNull(excerptById::get)
-                if (markerIds.isNotEmpty() && citations.size == markerIds.size) {
-                    usedIds += markerIds
+                // Small models sometimes suffix a list-item letter to an excerpt id ("E5a"); the
+                // excerpt is still the evidence, the suffix is dropped.
+                val markerIds = marker.split(',').map { id ->
+                    val trimmed = id.trim()
+                    if (trimmed !in excerptById && trimmed.length > 2 && trimmed.dropLast(1) in excerptById) trimmed.dropLast(1) else trimmed
+                }.filter(String::isNotEmpty)
+                val valid = markerIds.filter { it in excerptById }
+                val citations = valid.mapNotNull(excerptById::get)
+                if (valid.isNotEmpty()) {
+                    // A long combined marker may include one invented id; the valid excerpts are
+                    // still real evidence and are shown, the invented one produces no page.
+                    usedIds += valid
                     citations.map { it.pageNumber }.distinct().forEach { page ->
                         output.append("[Page ").append(page).append(']')
                     }
+                    if (valid.size != markerIds.size && rejections.size < MAX_REASONS) {
+                        rejections += "CITATION_PARTIAL:" + (markerIds - valid.toSet()).joinToString(",")
+                    }
                 } else {
-                    hadGroundingFailure = true
+                    reject("CITATION:$marker")
                 }
                 cursor = close + 1
                 continue
@@ -130,7 +146,12 @@ class GroundingStreamFilter(
                         else -> uniquePrefix(normalized)?.let { source -> preserveWrapping(raw, source) }
                     }
                     if (replacement == null) {
-                        hadGroundingFailure = true
+                        val reason = when {
+                            unit != null && allowedValueUnits.any { it.second == unit } -> "UNIT_MISMATCH:$raw $unit"
+                            identifierPrefix.isNotEmpty() -> "IDENTIFIER_MISMATCH:$identifierPrefix$raw"
+                            else -> "VALUE_ABSENT:$raw"
+                        }
+                        reject(reason)
                         output.append("[unverified value]")
                     } else output.append(replacement)
                 }
@@ -155,7 +176,16 @@ class GroundingStreamFilter(
         return output.toString()
     }
 
-    /** Waits briefly for a unit so a valid source value cannot be attached to the wrong unit. */
+    private fun reject(reason: String) {
+        hadGroundingFailure = true
+        if (rejections.size < MAX_REASONS) rejections += reason
+    }
+
+    /**
+     * Waits briefly for a unit so a valid source value cannot be attached to the wrong unit. The
+     * unit may be attached (`8m`) or separated by spaces (`8 m`); an attached run that does not
+     * look like a unit (the `B` of `03210B`) is an identifier suffix and yields no unit.
+     */
     private fun followingUnit(valueEnd: Int, final: Boolean): String? {
         val rawValue = pending.substring(0, valueEnd).takeLastWhile(::isValueChar)
         if (rawValue.endsWith('.') || rawValue.endsWith(',') || rawValue.endsWith('%')) return null
@@ -164,12 +194,20 @@ class GroundingStreamFilter(
             val match = FOLLOWING_UNIT.find(suffix)
             if (match == null || match.range.last == suffix.lastIndex) return WAIT_FOR_UNIT
         }
-        return FOLLOWING_UNIT.find(suffix)?.groupValues?.get(1)?.lowercase(Locale.ROOT)
+        val match = FOLLOWING_UNIT.find(suffix) ?: return null
+        val unit = match.groupValues[1]
+        val attached = match.range.first == 0 && !suffix.first().isWhitespace()
+        if (!EvidenceValueLexer.isUnitShape(unit, attached)) return null
+        return unit.lowercase(Locale.ROOT)
     }
 
+    /** Letters immediately before the value, tolerating one space or hyphen (`IS 3764`, `Rule- 210`). */
     private fun precedingLetters(output: StringBuilder): String {
         val available = if (output.isNotEmpty()) output.toString() else emittedTail.toString()
-        return available.takeLastWhile { it.isLetter() }.takeLast(MAX_IDENTIFIER_PREFIX)
+        val trimmed = if (available.isNotEmpty() && (available.last() == ' ' || available.last() == '-')) {
+            available.dropLast(1)
+        } else available
+        return trimmed.takeLastWhile { it.isLetter() }.takeLast(MAX_IDENTIFIER_PREFIX)
     }
 
     private fun structuralCorrection(value: String, output: StringBuilder): String? {
@@ -213,36 +251,20 @@ class GroundingStreamFilter(
         private const val UNIT_LOOKAHEAD = 16
         private const val EMITTED_TAIL_LENGTH = 24
         private const val MAX_IDENTIFIER_PREFIX = 8
+        private const val MAX_REASONS = 16
         private const val WAIT_FOR_UNIT = "\u0000"
-        private val VALUE = Regex("(?<![\\p{L}\\p{N}])[-+]?\\d[\\d,]*(?:\\.\\d+)*(?:[/-][\\d,.]+)*(?:%?)(?![\\p{L}\\p{N}])")
-        private val VALUE_UNIT = Regex("(?i)(?<![\\p{L}\\p{N}])([-+]?\\d[\\d,]*(?:\\.\\d+)*(?:[/-][\\d,.]+)*%?)\\s+([a-z°]+)")
-        private val IDENTIFIER = Regex("(?i)\\b[\\p{L}]{1,8}[- ]?\\d[\\p{L}\\p{N}./-]*\\b")
-        private val FOLLOWING_UNIT = Regex("^\\s+([\\p{L}°]+)")
+        private val FOLLOWING_UNIT = Regex("^[ \\t]*([\\p{L}°µ][\\p{L}°µ/]{0,11})")
 
-        internal fun valueTokens(text: String): Set<String> = VALUE.findAll(Normalizer.normalize(text, Normalizer.Form.NFKC))
-            .map { normalizeValue(it.value) }
-            .filter(String::isNotBlank)
-            .toSet()
+        internal fun valueTokens(text: String): Set<String> = EvidenceValueLexer.lex(text).values
 
-        internal fun normalizeValue(value: String): String = value
-            .trim()
-            .lowercase(Locale.ROOT)
-            .removeSuffix("%")
-            .replace(",", "")
-            .trimEnd('.', ',', '-', '–', '—', '+')
+        internal fun valueUnitTokens(text: String): Set<Pair<String, String>> = EvidenceValueLexer.lex(text).valueUnits
 
-        internal fun valueUnitTokens(text: String): Set<Pair<String, String>> =
-            VALUE_UNIT.findAll(Normalizer.normalize(text, Normalizer.Form.NFKC))
-                .map { normalizeValue(it.groupValues[1]) to it.groupValues[2].lowercase(Locale.ROOT) }
-                .toSet()
+        internal fun identifierTokens(text: String): Set<String> = EvidenceValueLexer.lex(text).identifiers
 
-        internal fun identifierTokens(text: String): Set<String> =
-            IDENTIFIER.findAll(Normalizer.normalize(text, Normalizer.Form.NFKC))
-                .map { normalizeIdentifier(it.value) }
-                .toSet()
+        /** Stream-side comparison form; a leading `+`/`±` is presentation, so `+1/2` matches source `1/2`. */
+        internal fun normalizeValue(value: String): String =
+            EvidenceValueLexer.normalizeNumber(value).trimStart('+', '±')
 
-        private fun normalizeIdentifier(value: String): String = value.lowercase(Locale.ROOT)
-            .replace(Regex("[\\s-]+"), "")
-            .trimEnd('.', ',')
+        private fun normalizeIdentifier(value: String): String = EvidenceValueLexer.normalizeIdentifier(value)
     }
 }

@@ -1,0 +1,205 @@
+[
+  {
+    "id": "sp-trench-exit-8m",
+    "intent": "FACT",
+    "question": "How far may a worker be from a means of exit inside a trench?",
+    "expectedPages": [103],
+    "requiredPhrases": [],
+    "requiredPhraseAlternatives": [["8m", "8 m", "25 ft", "25 feet"]],
+    "forbiddenPhrases": [],
+    "forbiddenPages": []
+  },
+  {
+    "id": "sp-toe-board-150mm",
+    "intent": "FACT",
+    "question": "What are the tube-and-coupler scaffold mid rail, top rail and toe board dimensions?",
+    "expectedPages": [78],
+    "requiredPhrases": [],
+    "requiredPhraseAlternatives": [["600 mm", "600mm"], ["1200 mm", "1200mm"], ["150 mm", "150mm"]],
+    "forbiddenPhrases": [],
+    "forbiddenPages": []
+  },
+  {
+    "id": "sp-is-3764-1992",
+    "intent": "FACT",
+    "question": "Which Indian Standard covers the code of safety for excavation work?",
+    "expectedPages": [206, 207, 208],
+    "requiredPhrases": ["3764"],
+    "requiredPhraseAlternatives": [["1992"]],
+    "forbiddenPhrases": [],
+    "forbiddenPages": []
+  },
+  {
+    "id": "sp-type-b-slope",
+    "intent": "FACT",
+    "question": "What is the maximum allowable slope for excavations in Type B soil?",
+    "expectedPages": [105],
+    "requiredPhrases": ["1:1"],
+    "requiredPhraseAlternatives": [["6Mt", "6 m", "6m", "20 feet", "20 ft"]],
+    "forbiddenPhrases": [],
+    "forbiddenPages": []
+  },
+  {
+    "id": "sp-type-c-followup",
+    "intent": "FOLLOW_UP",
+    "question": "What about Type C soil?",
+    "expectedPages": [105],
+    "requiredPhrases": [],
+    "requiredPhraseAlternatives": [["1 1/2:1", "1½:1", "1 1/2 : 1"]],
+    "forbiddenPhrases": [],
+    "forbiddenPages": [],
+    "historyFrom": "sp-type-b-slope"
+  },
+  {
+    "id": "sp-hira-five-steps",
+    "intent": "LIST",
+    "question": "What are the five basic steps of HIRA?",
+    "expectedPages": [25],
+    "requiredPhrases": [],
+    "requiredPhraseAlternatives": [["Initiat"], ["Identify the hazard", "identify hazard"], ["parties"], ["Evaluate", "assess the risk"], ["Monitor"]],
+    "forbiddenPhrases": [],
+    "forbiddenPages": []
+  },
+  {
+    "id": "sp-confined-space-definition",
+    "intent": "DEFINITION",
+    "question": "What makes a space a confined space?",
+    "expectedPages": [97],
+    "requiredPhrases": [],
+    "requiredPhraseAlternatives": [["bodily enter", "bodily"], ["engulf"], ["hazardous atmosphere"], ["limited entry", "egress"]],
+    "forbiddenPhrases": ["which section", "refer to chapter"],
+    "forbiddenPages": []
+  },
+  {
+    "id": "sp-trench-definition",
+    "intent": "DEFINITION",
+    "question": "What is a trench?",
+    "expectedPages": [102],
+    "requiredPhrases": [],
+    "requiredPhraseAlternatives": [["depth", "deeper"], ["width"]],
+    "forbiddenPhrases": [],
+    "forbiddenPages": []
+  },
+  {
+    "id": "sp-chapter-13-summary",
+    "intent": "SECTION_SUMMARY",
+    "question": "Summarize Chapter 13 Excavation.",
+    "expectedPages": [102, 103, 104, 105, 106, 107],
+    "requiredPhrases": [],
+    "requiredPhraseAlternatives": [["trench", "excavation"]],
+    "forbiddenPhrases": [],
+    "forbiddenPages": []
+  },
+  {
+    "id": "sp-chapter-on-excavation",
+    "intent": "SECTION_SUMMARY",
+    "question": "Summarize the chapter on excavation.",
+    "expectedPages": [102, 103, 104, 105, 106, 107],
+    "requiredPhrases": [],
+    "requiredPhraseAlternatives": [["trench", "excavation"]],
+    "forbiddenPhrases": [],
+    "forbiddenPages": []
+  },
+  {
+    "id": "sp-document-overview",
+    "intent": "DOCUMENT_OVERVIEW",
+    "question": "Summarize this document.",
+    "expectedPages": [],
+    "requiredPageQuartiles": 3,
+    "requiredPhrases": [],
+    "requiredPhraseAlternatives": [],
+    "forbiddenPhrases": ["null"],
+    "forbiddenPages": []
+  },
+  {
+    "id": "sp-risk-21-25",
+    "intent": "TABLE",
+    "question": "In the risk assessment matrix, what is the description and control level for a relative risk rating between 21 and 25?",
+    "expectedPages": [28, 29],
+    "requiredPhrases": ["immediate attention"],
+    "requiredPhraseAlternatives": [["21-25", "21 to 25", "21 and 25"], ["Very high"]],
+    "forbiddenPhrases": [],
+    "forbiddenPages": []
+  },
+  {
+    "id": "sp-ppe-when",
+    "intent": "FACT",
+    "question": "When must employers provide PPE to workers?",
+    "expectedPages": [163],
+    "requiredPhrases": [],
+    "requiredPhraseAlternatives": [["not feasible", "do not provide sufficient", "infeasible", "not sufficient"]],
+    "forbiddenPhrases": [],
+    "forbiddenPages": []
+  },
+  {
+    "id": "sp-cylinder-pressure",
+    "intent": "FACT",
+    "question": "What pressure can high-pressure gas cylinders withstand?",
+    "expectedPages": [152],
+    "requiredPhrases": [],
+    "requiredPhraseAlternatives": [["10,000 psi", "10000 psi"]],
+    "forbiddenPhrases": [],
+    "forbiddenPages": []
+  },
+  {
+    "id": "sp-scaffold-load",
+    "intent": "FACT",
+    "question": "What minimum load must a scaffold be able to support?",
+    "expectedPages": [78],
+    "requiredPhrases": [],
+    "requiredPhraseAlternatives": [["four times", "4 times"]],
+    "forbiddenPhrases": [],
+    "forbiddenPages": []
+  },
+  {
+    "id": "sp-protective-system-depth",
+    "intent": "FACT",
+    "question": "At what trench depth is a protective system generally required?",
+    "expectedPages": [103, 104],
+    "requiredPhrases": [],
+    "requiredPhraseAlternatives": [["1.2 m", "1.2m", "4 ft", "4 feet"]],
+    "forbiddenPhrases": [],
+    "forbiddenPages": []
+  },
+  {
+    "id": "sp-four-elements-fire",
+    "intent": "LIST",
+    "question": "What are the four elements of fire?",
+    "expectedPages": [175],
+    "requiredPhrases": [],
+    "requiredPhraseAlternatives": [["oxygen"], ["fuel"], ["heat", "energy"], ["chain reaction"]],
+    "forbiddenPhrases": [],
+    "forbiddenPages": []
+  },
+  {
+    "id": "sp-emergencies-list",
+    "intent": "LIST",
+    "question": "What emergencies must a construction-site emergency plan consider?",
+    "expectedPages": [196, 197],
+    "requiredPhrases": [],
+    "requiredPhraseAlternatives": [["fire"], ["chemical"], ["collapse"], ["flood", "earthquake"]],
+    "forbiddenPhrases": [],
+    "forbiddenPages": []
+  },
+  {
+    "id": "sp-mobile-scaffold",
+    "intent": "PROCEDURE",
+    "question": "What must be done before moving a mobile scaffold?",
+    "expectedPages": [79],
+    "requiredPhrases": [],
+    "requiredPhraseAlternatives": [["material", "equipment"]],
+    "forbiddenPhrases": [],
+    "forbiddenPages": []
+  },
+  {
+    "id": "sp-ceo-refusal",
+    "intent": "UNANSWERABLE",
+    "question": "Who is the CEO of the company?",
+    "expectedPages": [],
+    "requiredPhrases": [],
+    "requiredPhraseAlternatives": [],
+    "forbiddenPhrases": [],
+    "forbiddenPages": [],
+    "expectedRefusal": true
+  }
+]

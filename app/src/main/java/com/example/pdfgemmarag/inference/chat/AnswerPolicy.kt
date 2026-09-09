@@ -7,7 +7,11 @@ internal object AnswerPolicy {
     fun maxOutputTokens(intent: QuestionIntent, question: String): Int = when (intent) {
         QuestionIntent.SECTION_SUMMARY -> 288
         QuestionIntent.DOCUMENT_OVERVIEW -> 224
-        else -> if (isProcedural(question)) 288 else 160
+        else -> when (AnswerShape.of(question)) {
+            AnswerShape.PROCEDURE -> 288
+            AnswerShape.DEFINITION -> 200
+            else -> 160
+        }
     }
 
     private val PROCEDURAL_HINT = Regex(

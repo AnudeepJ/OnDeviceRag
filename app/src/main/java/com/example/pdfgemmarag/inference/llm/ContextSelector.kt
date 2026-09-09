@@ -1,7 +1,7 @@
 package com.example.pdfgemmarag.inference.llm
 
 import com.example.pdfgemmarag.core.model.Citation
-import com.example.pdfgemmarag.inference.chat.AnswerPolicy
+import com.example.pdfgemmarag.inference.chat.AnswerShape
 import com.example.pdfgemmarag.inference.chat.QuestionIntent
 
 /** Intent-aware context budgeting with stable excerpt IDs and exact boundary deduplication. */
@@ -15,7 +15,12 @@ class ContextSelector(
 ) {
     data class Selection(val prompt: String, val excerpts: List<Citation>, val approxTokens: Int, val completeCoverage: Boolean)
 
-    fun select(question: String, candidates: List<Citation>, intent: QuestionIntent): Selection {
+    fun select(
+        question: String,
+        candidates: List<Citation>,
+        intent: QuestionIntent,
+        shape: AnswerShape = AnswerShape.of(question),
+    ): Selection {
         val summary = intent == QuestionIntent.SECTION_SUMMARY
         val overview = intent == QuestionIntent.DOCUMENT_OVERVIEW
         val budget = when {
@@ -69,12 +74,18 @@ class ContextSelector(
                 append("For the document overview, add at most 3 compact bullets and 75 words describing key scope or requirement categories across the supplied outline sample. ")
                 append("Describe it as key points, not a complete summary. Prefer scope and major requirement categories over isolated details. ")
             } else {
-                if (AnswerPolicy.isProcedural(question)) {
-                    append("Answer directly with the required steps or instructions in complete bullets. Preserve their source order and do not silently omit an item. Do not restate the question. ")
-                } else {
-                    append("Answer directly in at most 3 short sentences or bullets and 55 words. Do not restate the question. ")
+                when (shape) {
+                    AnswerShape.PROCEDURE ->
+                        append("Answer directly with the required steps or instructions in complete bullets. Preserve their source order and do not silently omit an item. Do not restate the question. ")
+                    AnswerShape.DEFINITION ->
+                        append("Answer with the definition or defining criteria exactly as the excerpts state them, in at most 4 short sentences or bullets. Give the meaning itself; do not answer with a section title or a page reference alone. ")
+                    AnswerShape.NAVIGATION ->
+                        append("Answer with the section or chapter identifier and title that covers the topic, then one sentence on what it contains. ")
+                    else ->
+                        append("Answer directly in at most 3 short sentences or bullets and 55 words. Do not restate the question. ")
                 }
                 append("If an excerpt states an explicit minimum, maximum, or 'not less than' value, answer with it and never claim that value is unspecified. ")
+                append("When a value applies under a condition (a depth, type, class, size or range), state the condition together with the value. ")
                 append("Keep table row labels with their values. If similar rows have different scopes or structure types, name each scope and do not merge their values. ")
                 append("For a table lookup, match the complete hierarchy in the question—table, structure type, condition, and row label—and ignore values belonging to sibling paths. ")
             }
@@ -171,6 +182,11 @@ class ContextSelector(
     private fun isStructuralContext(candidate: Citation, all: List<Citation>): Boolean {
         if (candidate.contentKind == "TABLE" ||
             candidate.continuesFromChunkIndex >= 0 || candidate.continuesToChunkIndex >= 0
+        ) return true
+        // The sentence introducing a retrieved list ("ratios shall be as follows:") names what
+        // the list values mean; it must travel with the list even across a page boundary.
+        if (candidate.contentKind != "LIST" && candidate.text.trimEnd().endsWith(":") &&
+            all.any { it.contentKind == "LIST" && it.chunkIndex == candidate.chunkIndex + 1 && it.sectionId == candidate.sectionId }
         ) return true
         return all.any { seed ->
             seed.sectionId == candidate.sectionId && seed.pageNumber == candidate.pageNumber &&
