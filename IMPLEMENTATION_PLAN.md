@@ -15,7 +15,7 @@
 * **Vector Store:** `androidx.appsearch:appsearch:1.1.0` + `appsearch-local-storage:1.1.0` + `appsearch-compiler:1.1.0` (`kapt`). `LocalStorage`, owned exclusively by the `:inference` process, one session object. `@Document.EmbeddingProperty(indexingType = SIMILARITY, quantizationType = QUANTIZATION_TYPE_8_BIT)` with `@OptIn(ExperimentalAppSearchApi::class)`. Namespace = content hash of the PDF.
 * **PDF:** `com.pdftron:pdftron:12.1.0` (licensed), `TextExtractor` with bounding boxes; own column-clustering heuristic for tables. OCR fallback via ML Kit `text-recognition` + `-chinese` + `-japanese` + `-korean` (all 16.0.1), triggered when page text < 50 chars and page has image XObjects; recogniser chosen once per document.
 * **Process Model:** `:ui` (Compose, chat transcript persistence in Room, model manager) and `:inference` (foreground service; Engine, Embedder, Apryse, AppSearch). AIDL with `@Parcelize` parcelables; token stream tagged with `generationId`.
-* **Build:** `arm64-v8a` only (with `x86_64` enabled for debug builds); `minSdk 29`, `targetSdk 35`; `packaging { jniLibs { pickFirsts += "**/libLiteRt.so" } }`; 16 KB ELF alignment check in CI; `kotlin-kapt`; `androidx.concurrent:concurrent-futures-ktx`.
+* **Build:** `arm64-v8a` only (with `x86_64` enabled for debug builds); `minSdk 33`, `targetSdk 35`; `packaging { jniLibs { pickFirsts += "**/libLiteRt.so" } }`; 16 KB ELF alignment check in CI; `kotlin-kapt`; `androidx.concurrent:concurrent-futures-ktx`.
 
 ---
 

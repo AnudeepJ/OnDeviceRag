@@ -16,7 +16,7 @@
         android:supportsRtl="true"
         android:largeHeap="true"
         android:theme="@style/Theme.PdfGemmaRag"
-        tools:targetApi="34">
+        tools:targetApi="36">
 
         <!-- Required for the LiteRT-LM GPU backend (OpenCL); optional so CPU-only devices still install. -->
         <uses-native-library android:name="libOpenCL.so" android:required="false" />

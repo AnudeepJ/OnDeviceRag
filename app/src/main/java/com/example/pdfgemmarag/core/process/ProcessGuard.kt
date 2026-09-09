@@ -1,10 +1,7 @@
 package com.example.pdfgemmarag.core.process
 
-import android.app.ActivityManager
 import android.app.Application
 import android.content.Context
-import android.os.Build
-import android.os.Process
 
 /**
  * `Application.onCreate` runs once per process. The app has two: the default `:ui` process and
@@ -14,14 +11,7 @@ import android.os.Process
 object ProcessGuard {
     const val INFERENCE_SUFFIX = ":inference"
 
-    fun currentProcessName(context: Context): String {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            return Application.getProcessName()
-        }
-        val pid = Process.myPid()
-        val am = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-        return am.runningAppProcesses?.firstOrNull { it.pid == pid }?.processName ?: context.packageName
-    }
+    fun currentProcessName(context: Context): String = Application.getProcessName()
 
     fun isInferenceProcess(context: Context): Boolean =
         currentProcessName(context).endsWith(INFERENCE_SUFFIX)
