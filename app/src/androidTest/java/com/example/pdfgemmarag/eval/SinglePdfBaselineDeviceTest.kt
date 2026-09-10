@@ -173,6 +173,10 @@ class SinglePdfBaselineDeviceTest {
     @Test
     fun captureSafetyPdfQa() = runNamedBaseline(SAFETY_PDF_CASES_ASSET, SAFETY_PDF_HASH, "safety.pdf")
 
+    /** 50-case laboratory safety manual bank (17 table cases) against its exact document. */
+    @Test
+    fun captureSafetyManualQa() = runNamedBaseline(SAFETY_MANUAL_CASES_ASSET, SAFETY_MANUAL_HASH, "SafetyManual.pdf")
+
     /** The legacy "more" asset is retained for focused runs; verify it cannot silently diverge. */
     @Test
     fun generatedAssetDuplicatesRemainIdentical() {
@@ -555,6 +559,8 @@ class SinglePdfBaselineDeviceTest {
         private const val GENERATED_MORE_CASES_ASSET = "generated_live_qa_more.json"
         private const val CONSTRUCTION_SAFETY_CASES_ASSET = "construction_safety_qa.json"
         private const val SAFETY_PDF_CASES_ASSET = "safety_pdf_qa.json"
+        private const val SAFETY_MANUAL_CASES_ASSET = "safety_manual_qa.json"
+        private const val SAFETY_MANUAL_HASH = "f7a26e28fdfc60153819ded2a2405695"
         /** Content hashes (first 32 hex chars of SHA-256, as computed on import); fixtures are bound to these documents. */
         private const val SAFETY_PDF_HASH = "6630f344c15e8c7588c40da4369d34b5"
         private const val DIVISION03_HASH = "086248dad810dc9368e844d3bcb1cab5"

@@ -135,7 +135,10 @@ class IndexPdfUseCase(
             for (chunk in chunks) {
                 currentCoroutineContext().ensureActive(); awaitCool()
                 val t0 = SystemClock.elapsedRealtime()
-                val vec = embedder.embedDocument(chunk.sectionPath, chunk.bodyText)
+                // Tables are embedded as header-qualified row facts (plus caption) so column
+                // vocabulary from a question matches the row; prose embeds its body under its path.
+                val embedText = if (chunk.isTable) chunk.retrievalText.removePrefix(chunk.sectionPath).trim() else chunk.bodyText
+                val vec = embedder.embedDocument(chunk.sectionPath, embedText)
                 val sum = centroidSums.getOrPut(chunk.sectionId) { FloatArray(vec.size) }
                 for (dimension in vec.indices) sum[dimension] += vec[dimension]
                 centroidCounts[chunk.sectionId] = (centroidCounts[chunk.sectionId] ?: 0) + 1
@@ -158,6 +161,9 @@ class IndexPdfUseCase(
                     sectionNumber = chunk.sectionNumber
                     identifierAtoms = chunk.identifierAtoms.joinToString(" ")
                     contentKind = chunk.contentKind
+                    tableId = chunk.tableId
+                    tableNumber = chunk.tableNumber
+                    tableCaption = chunk.tableCaption
                     positionInSection = chunk.positionInSection
                     continuesFromChunkIndex = chunk.continuesFromChunkIndex ?: -1
                     continuesToChunkIndex = chunk.continuesToChunkIndex ?: -1

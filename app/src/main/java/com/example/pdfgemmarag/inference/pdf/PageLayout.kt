@@ -86,6 +86,8 @@ sealed class Segment {
         val header: String,
         val rows: List<String>,
         val caption: String = "",
+        /** Printed table number (`5.1`, `03210B`); blank when the grid has no caption number. */
+        val tableNumber: String = "",
     ) : Segment()
 }
 

@@ -142,6 +142,9 @@ class AnswerQuestionUseCase(
                             .getOrDefault(emptyList())
                     }
                 }
+                if (plan.resolvedTableId != null && manifest != null) {
+                    primary = mergeResolvedTable(plan.resolvedTableId, manifest, primary)
+                }
                 if (plan.shape == AnswerShape.DEFINITION) {
                     // The sentence that defines the subject outranks later usages of the term, so
                     // its neighbours (the criteria list that usually follows) are expanded too.
@@ -345,6 +348,7 @@ class AnswerQuestionUseCase(
         private const val ADJACENT_SCORE_FACTOR = 0.85
         private const val MIN_CROSS_SECTION_NEIGHBOR_TERMS = 2
         private const val MAX_SUBTREE_CHUNKS = 80
+        private const val TABLE_FETCH_BOOST = 2.0
 
         internal fun canFallbackWithoutManifest(
             intent: QuestionIntent,
@@ -553,6 +557,10 @@ class AnswerQuestionUseCase(
                 // because it contains many numbers. Let grounded generation use normal context.
                 return SummaryLead.EMPTY
             }
+            val matrixCell = buildMatrixCellLead(query, tables)
+            if (matrixCell.decisive) return matrixCell
+            val rowKey = buildRowKeyLead(query, tables)
+            if (rowKey.decisive) return rowKey
             if (queryNumbers.size >= 2) {
                 val exactRows = tables.flatMap { citation ->
                     citation.text.lines().mapNotNull { line ->
@@ -677,6 +685,135 @@ class AnswerQuestionUseCase(
             Regex("define (?:a |an |the )?([\\p{L}\\s'’-]{2,60})$"),
             Regex("what (?:is|are) (?:a |an |the )?([\\p{L}\\s'’-]{2,60})$"),
         )
+
+        /**
+         * Row-label × column-header lookup in a grid ("Almost Certain likelihood and Catastrophic
+         * consequence" -> the cell where that row and column meet). Labels are matched as whole
+         * phrases inside the question; exactly one cell may qualify.
+         */
+        internal fun buildMatrixCellLead(query: String, tables: List<Citation>): SummaryLead {
+            data class Cell(val citation: Citation, val row: String, val column: String, val value: String)
+            fun phraseIn(label: String): Boolean {
+                // "Almost Certain (5)" is asked about as "Almost Certain"; the scale in brackets is presentation.
+                val normalized = normalizeForEvidenceMatch(label.replace(Regex("\\([^)]*\\)"), " "))
+                    .replace(Regex("[^a-z0-9 ]"), " ").replace(Regex("\\s+"), " ").trim()
+                if (normalized.length < 4) return false
+                return Regex("(?<![a-z0-9])" + Regex.escape(normalized) + "(?![a-z0-9])").containsMatchIn(query)
+            }
+            val cells = tables.flatMap { citation ->
+                val rows = markdownGrid(citation)
+                if (rows.size < 2) return@flatMap emptyList()
+                val header = rows.first()
+                rows.drop(1).flatMap { row ->
+                    val rowLabel = row.firstOrNull().orEmpty()
+                    if (!phraseIn(rowLabel)) return@flatMap emptyList()
+                    (1 until minOf(header.size, row.size)).mapNotNull { k ->
+                        val column = header[k]
+                        val value = row[k]
+                        if (value.isBlank() || !phraseIn(column)) null else Cell(citation, rowLabel, column, value)
+                    }
+                }
+            }.distinctBy { normalizeForEvidenceMatch("${it.row}|${it.column}|${it.value}") }
+            val cell = cells.singleOrNull() ?: return SummaryLead.EMPTY
+            return SummaryLead(
+                "${cell.row} × ${cell.column}: ${cell.value} [Page ${cell.citation.pageNumber}]",
+                listOf(cell.citation),
+                decisive = true,
+            )
+        }
+
+        /**
+         * Unique first-column key (or typed short label such as `class D`) plus an optional
+         * named column. Range labels match `21-25`, `21 to 25` and `21 and 25`. Two tables that
+         * share a key stay unresolved unless the question names one caption.
+         */
+        internal fun buildRowKeyLead(query: String, tables: List<Citation>): SummaryLead {
+            data class Hit(
+                val citation: Citation,
+                val rowLabel: String,
+                val column: String,
+                val value: String,
+                val cells: List<String>,
+                val captionScore: Int,
+            )
+            val queryWords = evidenceWords(query)
+            val hits = tables.flatMap { citation ->
+                val rows = markdownGrid(citation)
+                if (rows.size < 2) return@flatMap emptyList()
+                val header = rows.first()
+                val captionScore = evidenceWords(
+                    normalizeForEvidenceMatch(citation.tableCaption + " " + header.joinToString(" ")),
+                ).count(queryWords::contains)
+                rows.drop(1).flatMap { row ->
+                    val rowLabel = row.firstOrNull().orEmpty()
+                    if (!queryHasRowKey(query, rowLabel)) return@flatMap emptyList()
+                    val named = (1 until minOf(header.size, row.size)).mapNotNull { k ->
+                        val column = header[k]
+                        val value = row[k]
+                        if (value.isBlank() || !queryNamesColumn(query, column)) null
+                        else Hit(citation, rowLabel, column, value, row, captionScore)
+                    }
+                    if (named.isNotEmpty()) named
+                    else listOf(
+                        Hit(citation, rowLabel, "", row.drop(1).filter(String::isNotBlank).joinToString(" — "), row, captionScore),
+                    )
+                }
+            }
+            if (hits.isEmpty()) return SummaryLead.EMPTY
+            val bestCaption = hits.maxOf { it.captionScore }
+            val preferred = if (bestCaption > 0) hits.filter { it.captionScore == bestCaption } else hits
+            val uniqueValues = preferred.distinctBy { normalizeForEvidenceMatch("${it.rowLabel}|${it.column}|${it.value}") }
+            val hit = uniqueValues.singleOrNull() ?: return SummaryLead.EMPTY
+            val body = if (hit.column.isNotBlank()) {
+                "${hit.rowLabel} — ${hit.column}: ${hit.value}"
+            } else {
+                "${hit.rowLabel} — ${hit.value}"
+            }
+            return SummaryLead("$body [Page ${hit.citation.pageNumber}]", listOf(hit.citation), decisive = true)
+        }
+
+        private fun queryHasRowKey(query: String, label: String): Boolean {
+            val q = rowKeyNormalize(query)
+            val forms = rowKeyForms(label)
+            val longest = forms.maxByOrNull { it.length }.orEmpty()
+            if (longest.length >= 4) {
+                if (forms.any { form ->
+                    Regex("(?<![a-z0-9])" + Regex.escape(form) + "(?![a-z0-9])").containsMatchIn(q)
+                }) return true
+                val ends = RANGE_ENDS.find(rowKeyNormalize(label)) ?: return false
+                return Regex("(?<![a-z0-9])${ends.groupValues[1]}(?![a-z0-9])").containsMatchIn(q) &&
+                    Regex("(?<![a-z0-9])${ends.groupValues[2]}(?![a-z0-9])").containsMatchIn(q)
+            }
+            val key = rowKeyNormalize(label)
+            if (key.isEmpty() || key.length > 3) return false
+            return Regex("\\b(?:class|type|grade|group)\\s+" + Regex.escape(key) + "\\b").containsMatchIn(q)
+        }
+
+        private fun queryNamesColumn(query: String, header: String): Boolean {
+            val normalized = rowKeyNormalize(header.replace(Regex("\\([^)]*\\)"), " "))
+            if (normalized.length < 3) return false
+            if (Regex("(?<![a-z0-9])" + Regex.escape(normalized) + "(?![a-z0-9])").containsMatchIn(rowKeyNormalize(query))) {
+                return true
+            }
+            return normalized.split(' ').any { word ->
+                word.length >= 4 && Regex("(?<![a-z0-9])" + Regex.escape(word) + "(?![a-z0-9])")
+                    .containsMatchIn(rowKeyNormalize(query))
+            }
+        }
+
+        private fun rowKeyNormalize(value: String): String = normalizeForEvidenceMatch(value)
+            .replace(Regex("\\([^)]*\\)"), " ")
+            .replace(Regex("[^a-z0-9]+"), " ")
+            .replace(Regex("\\s+"), " ")
+            .trim()
+
+        private fun rowKeyForms(label: String): Set<String> {
+            val n = rowKeyNormalize(label)
+            val ends = RANGE_ENDS.find(n) ?: return setOf(n)
+            val a = ends.groupValues[1]
+            val b = ends.groupValues[2]
+            return setOf(n, "$a $b", "$a-$b", "$a to $b", "$a and $b")
+        }
 
         /** Resolves explicit "which section" asks from a uniquely matching printed cross-reference. */
         internal fun buildSectionPointerAnswer(question: String, candidates: List<Citation>): SummaryLead {
@@ -822,6 +959,7 @@ class AnswerQuestionUseCase(
         private fun normalizeForEvidenceMatch(value: String): String = value.lowercase()
             .replace(",", "")
         private val NUMBER_TOKEN = Regex("\\d+(?:\\.\\d+)?")
+        private val RANGE_ENDS = Regex("^(\\d+)\\s*(?:to|and|-|–|—)\\s*(\\d+)$")
         private val WORD_TOKEN = Regex("[a-z]{2,}")
         private val TABLE_QUERY_HINT = Regex("\\b(?:table|row|column|matrix|rating|schedule|class|slump|cement content)\\b")
         private val TOLERANCE_QUERY_HINT = Regex("\\b(?:tolerance|variation)\\b")
@@ -928,6 +1066,13 @@ class AnswerQuestionUseCase(
             )
         }
 
+        /** Rows with column positions preserved (blank cells kept), separator rows removed. */
+        private fun markdownGrid(citation: Citation): List<List<String>> =
+            citation.text.lines().map(String::trim).filter { it.startsWith("|") }.mapNotNull { line ->
+                val cells = line.trim().trim('|').split('|').map(String::trim)
+                cells.takeIf { values -> values.size >= 2 && !values.all { it.isEmpty() || it.all { ch -> ch == '-' || ch == ':' } } }
+            }
+
         private fun markdownRows(citation: Citation): List<List<String>> =
             citation.text.split(Regex("\\|\\s*\\|")).mapNotNull { row ->
                 val cells = row.trim().trim('|').split('|').map(String::trim)
@@ -1027,6 +1172,30 @@ class AnswerQuestionUseCase(
             .getOrDefault(emptyList())
         if (extra.isEmpty()) return lead
         return buildDefinitionLead(question, ranked + extra).takeIf { it.decisive } ?: lead
+    }
+
+    /**
+     * An explicit table identity is fetched from the manifest and merged ahead of hybrid hits so
+     * the row/cell lead can answer from the grid even when paraphrase search ranked something else.
+     */
+    private suspend fun mergeResolvedTable(
+        tableId: String,
+        manifest: DocumentStructureManifest,
+        primary: List<Citation>,
+    ): List<Citation> {
+        val table = manifest.tables.firstOrNull { it.tableId == tableId } ?: return primary
+        if (table.orderedRowChunkIds.isEmpty()) return primary
+        val rows = runCatching { store.getChunks(manifest, table.orderedRowChunkIds) }
+            .onFailure { Log.w(TAG, "table fetch failed: ${it.message}") }
+            .getOrDefault(emptyList())
+        if (rows.isEmpty()) return primary
+        val byId = primary.associateBy { it.chunkId }
+        val boosted = rows.map { row ->
+            val hit = byId[row.chunkId]
+            hit?.copy(score = hit.score + TABLE_FETCH_BOOST) ?: row.copy(score = TABLE_FETCH_BOOST)
+        }
+        val extras = primary.filter { candidate -> rows.none { it.chunkId == candidate.chunkId } }
+        return (boosted + extras).sortedByDescending { it.score }
     }
 
     private suspend fun expandStructuralNeighbors(

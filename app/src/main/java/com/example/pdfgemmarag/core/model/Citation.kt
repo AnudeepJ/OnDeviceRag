@@ -27,4 +27,7 @@ data class Citation(
     val contentKind: String = "PARAGRAPH",
     val continuesFromChunkIndex: Int = -1,
     val continuesToChunkIndex: Int = -1,
+    val tableId: String = "",
+    val tableNumber: String = "",
+    val tableCaption: String = "",
 ) : Parcelable

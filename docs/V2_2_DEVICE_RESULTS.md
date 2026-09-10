@@ -68,6 +68,22 @@ Between builds the Division 03 corpus briefly dropped to 18/19 (`summary-03300-c
 the previous page was dropped by context selection). The second was a real defect and is what
 introduced the `INTRODUCTION` neighbour kind; both suites are green on the final build.
 
+## Milestone 4 — Tables (index v23)
+
+Device: Nothing A001 only. Re-index 1160 s, 209 pages, 1364 chunks, 10 tables, outline unchanged
+(204 nodes, 27 chapters, not degraded). Search-time candidate window stays ×4; ×8 briefly pulled
+the incident-investigation list over HIRA and was reverted.
+
+| Suite | v22 final | v23 M4 | Notes |
+|---|---|---|---|
+| `safety_pdf_qa` | 16/20 | **19/23** | 3 new table cases added; all 4 table questions (`21-25`, `13-20`, Possible, Fatal) answered by `TABLE_ROW_LEAD` in 1.1–1.2 s. Same four non-table misses as v22. |
+| `construction_safety_qa` | 11/12 | **11/12** | `cs-risk-matrix-level` is now `TABLE_ROW_LEAD` at 1.2 s; `cs-hierarchy-controls` still a figure image. |
+
+This v23 index stored tables without captions because uppercase `TABLE 5.1 …` lines were classified
+as headings and stripped before clustering. `StructureAnalyzer` now leaves caption lines in the
+page; the next reindex will populate `TableRecord.tableNumber` / caption. Row-key leads already
+answer from the grid without that identity.
+
 ## Known limitations carried to the next milestone
 
 - Paraphrase recall: a chunk whose wording differs strongly from the question can fall outside the

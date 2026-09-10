@@ -3,6 +3,7 @@ package com.example.pdfgemmarag.inference.store
 import android.content.Context
 import android.util.Log
 import com.example.pdfgemmarag.inference.chunk.Chunk
+import com.example.pdfgemmarag.inference.pdf.TableIdentity
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -30,6 +31,18 @@ data class SectionRecord(
         get() = kind == "SECTION" || kind == "CHAPTER" || kind == "APPENDIX" || kind == "PART"
 }
 
+/** Lightweight identity for one extracted grid. Row chunks stay page-correct source text. */
+data class TableRecord(
+    val tableId: String,
+    val tableNumber: String,
+    val caption: String,
+    val startPage: Int,
+    val endPage: Int,
+    val orderedRowChunkIds: List<String>,
+    val aliases: List<String> = emptyList(),
+    val columnHeaders: List<String> = emptyList(),
+)
+
 /** Deterministic invariants over a manifest; a degraded outline switches planners to safe fallbacks. */
 data class ManifestHealth(
     val degraded: Boolean,
@@ -45,6 +58,7 @@ data class DocumentStructureManifest(
     val indexVersion: Int,
     val embeddingSignature: String,
     val sections: List<SectionRecord>,
+    val tables: List<TableRecord> = emptyList(),
 ) {
     val chunksInOrder: List<String> get() = sections.flatMap { it.orderedChunkIds }.distinct()
 
@@ -58,6 +72,15 @@ data class DocumentStructureManifest(
         require(ids.size == sections.sumOf { it.orderedChunkIds.size }) { "manifest contains duplicate chunk IDs" }
         require(sections.map { it.sectionId }.distinct().size == sections.size) { "manifest contains duplicate section IDs" }
         sections.forEach { require(it.startPage in 1..it.endPage) { "invalid page span for ${it.sectionId}" } }
+        require(tables.map { it.tableId }.distinct().size == tables.size) { "manifest contains duplicate table IDs" }
+        val known = ids.toHashSet()
+        tables.forEach { table ->
+            require(table.tableId.isNotBlank()) { "blank table id" }
+            require(table.startPage in 1..table.endPage) { "invalid page span for table ${table.tableId}" }
+            require(table.orderedRowChunkIds.isNotEmpty()) { "table ${table.tableId} has no row chunks" }
+            val missing = table.orderedRowChunkIds.filterNot(known::contains)
+            require(missing.isEmpty()) { "table ${table.tableId} references missing chunks" }
+        }
     }
 
     /**
@@ -113,7 +136,7 @@ data class DocumentStructureManifest(
     }
 
     companion object {
-        const val INDEX_VERSION = 22
+        const val INDEX_VERSION = 23
 
         fun fromChunks(
             documentHash: String,
@@ -141,7 +164,20 @@ data class DocumentStructureManifest(
                     printedNumber = first.sectionPrintedNumber,
                 )
             }.sortedWith(compareBy<SectionRecord> { it.startPage }.thenBy { it.orderedChunkIds.firstOrNull() })
-            return DocumentStructureManifest(documentHash, namespace, INDEX_VERSION, signature, sections).also { it.validate() }
+            val tables = chunks.filter { it.tableId.isNotBlank() }.groupBy { it.tableId }.values.map { group ->
+                val first = group.first()
+                TableRecord(
+                    tableId = first.tableId,
+                    tableNumber = first.tableNumber,
+                    caption = first.tableCaption,
+                    startPage = group.minOf { it.pageNumber },
+                    endPage = group.maxOf { it.pageNumber },
+                    orderedRowChunkIds = group.sortedBy { it.chunkIndex }.map { chunkId(it.chunkIndex) },
+                    aliases = TableIdentity.aliases(first.tableCaption, first.tableNumber),
+                    columnHeaders = TableIdentity.headersFromMarkdown(first.bodyText),
+                )
+            }.sortedWith(compareBy<TableRecord> { it.startPage }.thenBy { it.tableNumber })
+            return DocumentStructureManifest(documentHash, namespace, INDEX_VERSION, signature, sections, tables).also { it.validate() }
         }
 
         fun chunkId(index: Int): String = "c" + index.toString().padStart(7, '0')
@@ -227,6 +263,20 @@ class DocumentStructureManifestStore(context: Context) {
                 })
             }
         })
+        put("tables", JSONArray().apply {
+            manifest.tables.forEach { table ->
+                put(JSONObject().apply {
+                    put("tableId", table.tableId)
+                    put("tableNumber", table.tableNumber)
+                    put("caption", table.caption)
+                    put("startPage", table.startPage)
+                    put("endPage", table.endPage)
+                    put("orderedRowChunkIds", JSONArray(table.orderedRowChunkIds))
+                    put("aliases", JSONArray(table.aliases))
+                    put("columnHeaders", JSONArray(table.columnHeaders))
+                })
+            }
+        })
     }
 
     private fun decode(json: JSONObject): DocumentStructureManifest {
@@ -252,12 +302,30 @@ class DocumentStructureManifestStore(context: Context) {
                 printedNumber = section.optString("printedNumber"),
             )
         }
+        val tablesJson = json.optJSONArray("tables")
+        val tables = if (tablesJson == null) emptyList() else (0 until tablesJson.length()).map { i ->
+            val table = tablesJson.getJSONObject(i)
+            val ids = table.getJSONArray("orderedRowChunkIds")
+            val aliases = table.optJSONArray("aliases")
+            val headers = table.optJSONArray("columnHeaders")
+            TableRecord(
+                tableId = table.getString("tableId"),
+                tableNumber = table.optString("tableNumber"),
+                caption = table.optString("caption"),
+                startPage = table.getInt("startPage"),
+                endPage = table.getInt("endPage"),
+                orderedRowChunkIds = (0 until ids.length()).map { ids.getString(it) },
+                aliases = aliases?.let { a -> (0 until a.length()).map { a.getString(it) } }.orEmpty(),
+                columnHeaders = headers?.let { a -> (0 until a.length()).map { a.getString(it) } }.orEmpty(),
+            )
+        }
         return DocumentStructureManifest(
             documentHash = json.getString("documentHash"),
             indexNamespace = json.getString("indexNamespace"),
             indexVersion = json.getInt("indexVersion"),
             embeddingSignature = json.getString("embeddingSignature"),
             sections = sections,
+            tables = tables,
         )
     }
 }

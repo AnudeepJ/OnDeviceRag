@@ -4,6 +4,7 @@ import com.example.pdfgemmarag.inference.ocr.Script
 import com.example.pdfgemmarag.inference.ocr.ScriptDetector
 import com.example.pdfgemmarag.inference.pdf.PageContent
 import com.example.pdfgemmarag.inference.pdf.Segment
+import com.example.pdfgemmarag.inference.pdf.TableIdentity
 import java.text.BreakIterator
 import java.security.MessageDigest
 import java.util.Locale
@@ -31,6 +32,12 @@ data class Chunk(
     val identifierAtoms: List<String> = emptyList(),
     val continuesFromChunkIndex: Int? = null,
     val continuesToChunkIndex: Int? = null,
+    /** Caption of the table this chunk belongs to (`Table 03210B - Minimum cover`); blank otherwise. */
+    val tableCaption: String = "",
+    /** Stable table identity shared by every chunk of one grid. */
+    val tableId: String = "",
+    /** Printed table number (`5.1`, `03210B`); blank when the grid has no caption number. */
+    val tableNumber: String = "",
 )
 
 /**
@@ -64,11 +71,20 @@ class ScriptAwareChunker(
         val sectionStack = ArrayList<Segment.Heading>()
         var section = SectionState.root(docHash)
         var position = 0
+        var tableOrdinal = 0
 
-        fun add(page: Int, body: String, table: Boolean, kind: String) {
+        fun add(
+            page: Int,
+            body: String,
+            table: Boolean,
+            kind: String,
+            caption: String = "",
+            tableId: String = "",
+            tableNumber: String = "",
+        ) {
             val clean = body.trim()
             if (clean.isEmpty()) return
-            val retrieval = listOf(section.path, clean).filter { it.isNotBlank() }.joinToString("\n")
+            val retrieval = retrievalText(section.path, clean, table, caption)
             out += Chunk(
                 chunkIndex = index++,
                 pageNumber = page,
@@ -88,6 +104,9 @@ class ScriptAwareChunker(
                 positionInSection = position++,
                 contentKind = kind,
                 identifierAtoms = IdentifierAtoms.extract(retrieval),
+                tableCaption = caption,
+                tableId = tableId,
+                tableNumber = tableNumber,
             )
         }
 
@@ -115,8 +134,14 @@ class ScriptAwareChunker(
                         }
                     }
                     is Segment.Table -> {
+                        tableOrdinal++
+                        val number = segment.tableNumber.ifBlank { TableIdentity.numberFromCaption(segment.caption) }
+                        val tableId = TableIdentity.id(docHash, segment.caption, number, page.pageNumber, tableOrdinal)
                         for (text in chunkTable(segment)) {
-                            add(page.pageNumber, text, table = true, kind = "TABLE")
+                            add(
+                                page.pageNumber, text, table = true, kind = "TABLE",
+                                caption = segment.caption, tableId = tableId, tableNumber = number,
+                            )
                         }
                     }
                 }
@@ -302,7 +327,49 @@ class ScriptAwareChunker(
     }
 
     private fun retrievalFor(chunk: Chunk, body: String): String =
-        listOf(chunk.sectionPath, body.trim()).filter { it.isNotBlank() }.joinToString("\n")
+        retrievalText(chunk.sectionPath, body.trim(), chunk.isTable, chunk.tableCaption)
+
+    /**
+     * Text that is embedded and keyword-indexed. Body text is used as-is under its section path;
+     * a table chunk is additionally rendered as header-qualified row facts (`Risk: 21-25;
+     * Description: …; Control: Very high`) so a question phrased in column terms lands on the row.
+     */
+    internal fun retrievalText(sectionPath: String, body: String, table: Boolean, caption: String): String {
+        val parts = ArrayList<String>()
+        if (sectionPath.isNotBlank()) parts += sectionPath
+        if (caption.isNotBlank()) parts += caption
+        if (table) {
+            val facts = tableRowFacts(body)
+            parts += if (facts.isNotBlank()) facts else body
+        } else parts += body
+        return parts.joinToString("\n")
+    }
+
+    /** Renders markdown table rows as `Header: value; …` lines; the first cell names the row when the header's first cell is blank. */
+    internal fun tableRowFacts(markdown: String): String {
+        val lines = markdown.lines().map(String::trim).filter { it.startsWith("|") }
+        if (lines.size < 2) return ""
+        fun cells(line: String) = line.trim().trim('|').split('|').map(String::trim)
+        val header = cells(lines[0])
+        val rows = lines.drop(1).filterNot { line -> cells(line).all { it.isEmpty() || it.all { ch -> ch == '-' || ch == ':' } } }
+        if (rows.isEmpty()) return ""
+        val matrix = header.firstOrNull().isNullOrBlank()
+        return rows.joinToString("\n") { line ->
+            val values = cells(line)
+            val pairs = values.indices.mapNotNull { k ->
+                val value = values[k]
+                val name = header.getOrNull(k).orEmpty()
+                when {
+                    value.isBlank() -> null
+                    k == 0 && matrix -> null
+                    name.isBlank() -> value
+                    else -> "$name: $value"
+                }
+            }
+            val label = if (matrix) values.firstOrNull().orEmpty() + " — " else ""
+            label + pairs.joinToString("; ")
+        }
+    }
 
     private data class SectionState(
         val id: String,

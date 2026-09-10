@@ -184,6 +184,9 @@ class StructureAnalyzer(
 
     private fun parseHeading(raw: String): ParsedHeading? {
         val text = raw.trim().replace(SPACES, " ")
+        // A caption is part of the following grid, not a structural boundary. Leaving it in the
+        // page lets TableClusterer attach table number and title to the extracted rows.
+        if (TableIdentity.looksLikeCaption(text)) return null
         SPEC_HEADING.matchEntire(text)?.let { m ->
             val id = m.groupValues[1]
             val title = m.groupValues[2].trim()

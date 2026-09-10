@@ -112,6 +112,21 @@ public class PdfChunkDocument {
     @Document.BooleanProperty
     public boolean isTable;
 
+    /** Stable table identity; exact/verbatim so an explicit table fetch does not collide with a section id. */
+    @Document.StringProperty(
+            indexingType = AppSearchSchema.StringPropertyConfig.INDEXING_TYPE_EXACT_TERMS,
+            tokenizerType = AppSearchSchema.StringPropertyConfig.TOKENIZER_TYPE_VERBATIM)
+    @NonNull
+    public String tableId = "";
+
+    @Document.StringProperty(indexingType = AppSearchSchema.StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+    @NonNull
+    public String tableNumber = "";
+
+    @Document.StringProperty(indexingType = AppSearchSchema.StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+    @NonNull
+    public String tableCaption = "";
+
     /** Display name of the document, stored (not indexed) for listing. */
     @Document.StringProperty(indexingType = AppSearchSchema.StringPropertyConfig.INDEXING_TYPE_NONE)
     @NonNull

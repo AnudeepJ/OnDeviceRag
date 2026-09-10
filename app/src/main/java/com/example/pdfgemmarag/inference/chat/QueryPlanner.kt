@@ -3,6 +3,7 @@ package com.example.pdfgemmarag.inference.chat
 import com.example.pdfgemmarag.inference.pdf.StructureAnalyzer
 import com.example.pdfgemmarag.inference.store.DocumentStructureManifest
 import com.example.pdfgemmarag.inference.store.SectionRecord
+import com.example.pdfgemmarag.inference.store.TableRecord
 import java.text.Normalizer
 import java.util.Locale
 
@@ -28,6 +29,9 @@ data class QuestionPlan(
      * single sectionId filter would exclude the children.
      */
     val resolvedSubtree: Boolean = false,
+    /** Unique table from an explicit `table 5.1` or a titled request (`the likelihood table`). */
+    val resolvedTableId: String? = null,
+    val candidateTables: List<TableRecord> = emptyList(),
 ) {
     fun clarification(): String {
         require(intent == QuestionIntent.AMBIGUOUS_SECTION)
@@ -64,7 +68,13 @@ class QueryPlanner {
         val explicitSpec = SPEC_REFERENCE.find(normalized)?.groupValues?.get(1)
         val inferredSpecCandidate = if (explicitSpec == null) LEADING_ZERO_ID.find(normalized)?.value else null
         val explicitSection = SECTION_REFERENCE.find(normalized)?.groupValues?.get(1)
-        val inferredSectionCandidate = if (explicitSection == null) DOTTED_ID.find(normalized)?.value else null
+        val explicitTable = TABLE_REFERENCE.find(normalized)?.groupValues?.get(1)
+        val titledTable = if (explicitTable == null) TABLE_TITLE_REFERENCE.find(normalized)?.groupValues?.get(1) else null
+        val inferredSectionCandidate = if (explicitSection == null) {
+            DOTTED_ID.find(normalized)?.value?.takeIf { candidate ->
+                explicitTable == null || !candidate.equals(explicitTable, true)
+            }
+        } else null
         val pointer = STRUCTURAL_REFERENCE.find(normalized)?.let { match ->
             StructuralPointer(match.groupValues[1].uppercase(Locale.ROOT).let { if (it.startsWith("ANNEX")) "APPENDIX" else it }, StructureAnalyzer.arabic(match.groupValues[2]))
         }
@@ -103,6 +113,7 @@ class QueryPlanner {
         }
 
         val usable = manifest.sections.filter { it.title.isNotBlank() || it.sectionNumber.isNotBlank() }
+        val resolvedTable = resolveTable(manifest, explicitTable, titledTable)
 
         // Explicit structural pointers ("chapter 13", "appendix a") resolve against kind and
         // printed number. Titled structural requests ("the chapter on excavation") resolve against
@@ -135,6 +146,8 @@ class QueryPlanner {
                     shape = shape,
                     structuralPointer = pointer ?: StructuralPointer(node.kind, node.printedNumber),
                     resolvedSubtree = summary,
+                    resolvedTableId = resolvedTable?.tableId,
+                    candidateTables = listOfNotNull(resolvedTable),
                 )
             }
             // A pointer that this outline does not contain falls through to plain title matching
@@ -169,6 +182,8 @@ class QueryPlanner {
                 sectionConfidence = 1.0,
                 inheritedSectionId = inheritedSectionId,
                 shape = shape,
+                resolvedTableId = resolvedTable?.tableId,
+                candidateTables = listOfNotNull(resolvedTable),
             )
         }
         if (exactIdentity.size > 1 && summary) return ambiguous(subject, spec, section, exactIdentity, inheritedSectionId, shape, pointer)
@@ -198,6 +213,8 @@ class QueryPlanner {
                 inheritedSectionId = inheritedSectionId,
                 shape = shape,
                 structuralPointer = pointer,
+                resolvedTableId = resolvedTable?.tableId,
+                candidateTables = listOfNotNull(resolvedTable),
             )
         }
 
@@ -227,6 +244,8 @@ class QueryPlanner {
             shape = shape,
             structuralPointer = pointer,
             resolvedSubtree = selected?.first?.isTopLevelKind == true,
+            resolvedTableId = resolvedTable?.tableId,
+            candidateTables = listOfNotNull(resolvedTable),
         )
     }
 
@@ -250,6 +269,33 @@ class QueryPlanner {
         structuralPointer = pointer,
     )
 
+    private fun resolveTable(
+        manifest: DocumentStructureManifest?,
+        number: String?,
+        titled: String?,
+    ): TableRecord? {
+        if (manifest == null || manifest.tables.isEmpty()) return null
+        if (number != null) {
+            return manifest.tables.filter { it.tableNumber.equals(number, true) }.singleOrNull()
+        }
+        val phrase = titled?.trim().orEmpty()
+        if (phrase.isBlank()) return null
+        val scored = manifest.tables.map { it to tableTitleScore(phrase, it) }
+            .filter { it.second >= MIN_TABLE_SCORE }
+            .sortedByDescending { it.second }
+        val best = scored.firstOrNull() ?: return null
+        if (scored.drop(1).any { best.second - it.second < SAFE_MARGIN }) return null
+        return best.first
+    }
+
+    private fun tableTitleScore(phrase: String, table: TableRecord): Double {
+        val caption = normalize(table.caption).replace(Regex("^table\\s+[0-9][0-9a-z.\\-]*\\s*"), "").trim()
+        val q = phrase.split(' ').filter(String::isNotBlank).toSet()
+        val t = (caption.split(' ').filter(String::isNotBlank) + table.aliases).toSet()
+        val queryCoverage = q.intersect(t).size.toDouble() / q.size.coerceAtLeast(1)
+        return maxOf(lexicalScore(phrase, caption), queryCoverage)
+    }
+
     private fun lexicalScore(query: String, title: String): Double {
         if (query.isBlank() || title.isBlank()) return 0.0
         val q = query.split(' ').filter(String::isNotBlank).toSet()
@@ -271,6 +317,7 @@ class QueryPlanner {
 
     companion object {
         private const val MIN_SCORE = 0.62
+        private const val MIN_TABLE_SCORE = 0.66
         private const val SAFE_MARGIN = 0.12
         private const val MAX_EDIT_INPUT = 96
         private const val MAX_EDIT_DISTANCE = 24
@@ -292,6 +339,12 @@ class QueryPlanner {
         private val STRUCTURAL_TITLE_REFERENCE = Regex("\\b(chapter|part|appendix|annexure|annex)\\b")
         private val STRUCTURAL_WORD = Regex("\\b(?:chapter|part|appendix|annexure|annex)\\b")
         private val FILLER_WORDS = Regex("\\b(?:the|on|about|for|covering|regarding|of|this|a|an)\\b")
+        /** `table 5.1`, `table 03210b`. Distinct from section/specification ids. */
+        private val TABLE_REFERENCE = Regex("\\btable\\s+([0-9][0-9a-z.\\-]*)\\b")
+        /** `in the likelihood table`, `in the risk assessment matrix`. */
+        private val TABLE_TITLE_REFERENCE = Regex(
+            "\\b(?:in|from|using)\\s+(?:the\\s+)?((?:[a-z0-9]+\\s+){0,6}[a-z0-9]+)\\s+(?:table|matrix)\\b",
+        )
 
         fun normalize(text: String): String = Normalizer.normalize(text, Normalizer.Form.NFKC)
             .lowercase(Locale.ROOT)

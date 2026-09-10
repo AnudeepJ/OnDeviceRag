@@ -324,6 +324,9 @@ class AppSearchVectorStore private constructor(
         contentKind = g.getPropertyString("contentKind") ?: if (g.getPropertyBoolean("isTable")) "TABLE" else "PARAGRAPH",
         continuesFromChunkIndex = g.getPropertyLong("continuesFromChunkIndex").toInt(),
         continuesToChunkIndex = g.getPropertyLong("continuesToChunkIndex").toInt(),
+        tableId = g.getPropertyString("tableId") ?: "",
+        tableNumber = g.getPropertyString("tableNumber") ?: "",
+        tableCaption = g.getPropertyString("tableCaption") ?: "",
     )
 
     override fun close() = session.close()
@@ -339,6 +342,7 @@ class AppSearchVectorStore private constructor(
             "text", "bodyText", "pageNumber", "chunkIndex", "docHash", "sectionId",
             "specificationNumber", "sectionNumber", "sectionTitle", "sectionPath", "contentKind",
             "continuesFromChunkIndex", "continuesToChunkIndex", "isTable",
+            "tableId", "tableNumber", "tableCaption",
         )
 
         val REQUIRED = listOf(

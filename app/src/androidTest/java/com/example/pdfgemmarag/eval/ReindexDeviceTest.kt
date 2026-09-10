@@ -147,8 +147,11 @@ class ReindexDeviceTest {
             assertEquals(RagViewModel.CURRENT_INDEX_VERSION, info.indexVersion)
             val manifest = requireNotNull(manifests.load(info.docHash))
             val health = manifest.health()
-            Log.i(TAG, "MANIFEST ${info.displayName}: sections=${manifest.sections.size} topLevel=${health.topLevelCount} " +
+            Log.i(TAG, "MANIFEST ${info.displayName}: sections=${manifest.sections.size} tables=${manifest.tables.size} topLevel=${health.topLevelCount} " +
                 "kinds=${manifest.sections.groupingBy { it.kind.ifBlank { "ROOT" } }.eachCount()} degraded=${health.degraded} reasons=${health.reasons} quartiles=${health.quartileCoverage}")
+            manifest.tables.take(12).forEach { table ->
+                Log.i(TAG, "  table ${table.tableNumber.ifBlank { "-" }} '${table.caption.take(60)}' p${table.startPage}-${table.endPage} rows=${table.orderedRowChunkIds.size}")
+            }
             manifest.topLevelSections().forEach { Log.i(TAG, "  top ${it.kind} ${it.printedNumber} '${it.title}' p${it.startPage}-${it.endPage} chunks=${it.orderedChunkIds.size}") }
 
             runBlocking {
