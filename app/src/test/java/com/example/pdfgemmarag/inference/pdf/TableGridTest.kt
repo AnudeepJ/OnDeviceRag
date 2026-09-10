@@ -98,6 +98,21 @@ class TableGridTest {
     }
 
     @Test
+    fun `parenthesized table number is attached even when a score line sits between caption and grid`() {
+        val lines = listOf(
+            line(40f, 40f to "Table (1.1) Risk Level Assessment Consequences Insignificant Minor (2) Moderate Major (4) Catastrophic (5)"),
+            line(54f, 40f to "(1)", 80f to "(3)", 120f to "hic", 160f to "(5)"),
+            line(70f, 40f to "Almost Certain", 140f to "5", 200f to "10", 260f to "15", 320f to "20", 380f to "25"),
+            line(84f, 40f to "Possible", 140f to "3", 200f to "6", 260f to "9", 320f to "12", 380f to "15"),
+        )
+        val content = StructureAnalyzer().analyse(page(lines))
+        val table = content.segments.filterIsInstance<Segment.Table>().single()
+        assertEquals("1.1", table.tableNumber)
+        assertTrue(table.caption, table.caption.contains("1.1"))
+        assertTrue(table.rows.joinToString(" ").contains("25") || table.header.contains("25"))
+    }
+
+    @Test
     fun `an uppercase table caption is not a heading and stays attached to the grid`() {
         val lines = listOf(
             line(50f, 40f to "TABLE 5.1 RELATIVE RISK AND CONTROL LEVEL"),
@@ -181,6 +196,42 @@ class RowKeyLeadTest {
         assertTrue(lead.text, lead.text.contains("Possible"))
         assertTrue(lead.text.contains("4"))
         assertFalse(lead.text.contains("Almost Certain"))
+    }
+
+    @Test
+    fun `a generic Class header row does not answer a plywood class question`() {
+        val schedule = table(
+            "| Class | Length in Feet | in Inches |\n| --- | --- | --- |\n| Class | 10 | 120 |",
+            "Table 2 Form ties",
+        )
+        val plywood = table(
+            "| Product | Standard | Class |\n| --- | --- | --- |\n| Plywood | PS 1 | Class 1 |",
+            "Table 1 Form materials",
+        ).copy(chunkId = "t2", pageNumber = 12)
+        val lead = AnswerQuestionUseCase.buildTableLead(
+            "What standard and class must plywood form material meet",
+            listOf(schedule, plywood),
+        )
+        if (lead.decisive) {
+            assertTrue(lead.text, lead.text.contains("PS 1"))
+            assertFalse(lead.text.contains("Length in Feet"))
+        }
+    }
+
+    @Test
+    fun `a class question names the letter cell as Class D`() {
+        val table = table(
+            "| Material | Examples | Class | Extinguisher |\n| --- | --- | --- | --- |\n" +
+                "| Metal | Magnesium, Aluminum | D | Special metal extinguishers |",
+            "Table 3 Fire extinguishers",
+        )
+        val lead = AnswerQuestionUseCase.buildTableLead(
+            "In the fire-extinguisher table, what class covers metal fires and how should they be extinguished?",
+            listOf(table),
+        )
+        assertTrue(lead.decisive)
+        assertTrue(lead.text, lead.text.contains("Class D"))
+        assertTrue(lead.text.contains("Special metal extinguishers"))
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.example.pdfgemmarag.inference.chat
 
 import com.example.pdfgemmarag.inference.pdf.StructureAnalyzer
+import com.example.pdfgemmarag.inference.pdf.TableIdentity
 import com.example.pdfgemmarag.inference.store.DocumentStructureManifest
 import com.example.pdfgemmarag.inference.store.SectionRecord
 import com.example.pdfgemmarag.inference.store.TableRecord
@@ -276,7 +277,7 @@ class QueryPlanner {
     ): TableRecord? {
         if (manifest == null || manifest.tables.isEmpty()) return null
         if (number != null) {
-            return manifest.tables.filter { it.tableNumber.equals(number, true) }.singleOrNull()
+            return manifest.tables.filter { tableHasNumber(it, number) }.singleOrNull()
         }
         val phrase = titled?.trim().orEmpty()
         if (phrase.isBlank()) return null
@@ -286,6 +287,12 @@ class QueryPlanner {
         val best = scored.firstOrNull() ?: return null
         if (scored.drop(1).any { best.second - it.second < SAFE_MARGIN }) return null
         return best.first
+    }
+
+    private fun tableHasNumber(table: TableRecord, number: String): Boolean {
+        if (table.tableNumber.equals(number, true)) return true
+        if (TableIdentity.numberFromCaption(table.caption).equals(number, true)) return true
+        return Regex("(?i)\\btable\\s*\\(?\\s*" + Regex.escape(number) + "\\s*\\)?").containsMatchIn(table.caption)
     }
 
     private fun tableTitleScore(phrase: String, table: TableRecord): Double {

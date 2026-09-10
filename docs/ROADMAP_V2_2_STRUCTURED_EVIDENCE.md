@@ -30,7 +30,51 @@ number, or expected value; those live only in fixtures.
 | 7 | Library extraction | `rag-api` / `rag-runtime` / `rag-apryse` per `FUTURE_VALUE_ADDS.md` | Only after 0–6 are green on both devices |
 
 Milestones 0–5 are implemented. Milestone 4 landed on index version 23 (same outline shape as v22,
-plus `TableRecord`). Milestone 6 is next.
+plus `TableRecord`). Milestone 6 is split: **6a is the measurement we can run now** on the three
+PDFs already on device; **6b** adds the missing document types when those files exist.
+
+## Milestone 6 — Golden portfolio
+
+### Why this milestone, and why it is split
+
+M4 proved table leads on one construction manual. The original table failure was a *different*
+document: the 50-case laboratory safety manual (40/50 overall, 8/17 tables). Until that bank and
+the CSI Division 03 no-regression suite run on the same index, we do not know whether v23
+generalises. An ITP/QA-QC package and a scanned drawing schedule are still required for a release
+gate, but they are not on the bench devices yet. Inventing those PDFs would bias the gate.
+
+| Slice | Documents | Exit |
+|---|---|---|
+| **6a** (measured) | CSI Division 03, construction safety manual (`safety.pdf`), laboratory `SafetyManual.pdf` | Lab tables **9/17** (was 8/17); `safety.pdf` tables stay deterministic (19/23, 11/12); per-stage JSON on Nothing. Division 03 on Nothing v23 is **17/19** / **19/21** (Pixel v22 was 19/19). Captions: `Table (1.1)` / `1` / `4` / `5` on the lab manual. |
+| **6b** (later) | an ITP/QA-QC with dense tables; a scanned drawing schedule; Pixel confirmation | Release gate replaces phrase-only pass flags; both devices |
+
+Production rules still contain no test-document title, construction keyword, page number or expected
+value.
+
+### 6a sequence
+
+1. Review remaining device misses (below). Apply only generic, stage-correct fixes.
+2. Reindex all three documents on Nothing A001 so the caption-heading fix populates `TableRecord`.
+3. Run, in order: `safety_manual_qa` (the M4 generalisation check), `single_pdf_baseline` +
+   `generated_live_qa` (Division 03 no-regression), `safety_pdf_qa` + `construction_safety_qa`.
+4. Record stage counts, `answeredBy`, TTFT and table-lead latency in `V2_2_DEVICE_RESULTS.md`.
+5. Do not bump `INDEX_VERSION` unless a schema change appears. Do not start M7.
+
+6a is **measured and stopped** here. Do not invent ITP or drawing-schedule PDFs in this cycle.
+
+### Edge-case review (not all are defects)
+
+| # | Claim | Verdict |
+|---|---|---|
+| 1 | Unscoped FACT writes blank `sourceSectionId`, so "What about Type C?" cannot inherit §13.3 | **Leave.** `sourceSectionId` is planner-owned (`GenerationStats` contract; overview test requires blank). Inferring the top excerpt would section-filter the follow-up and can drop a sibling clause on the same page. Type C already retrieved page 105; the miss is generation (row 3). Follow-up retrieval already rewrites with the previous question. |
+| 2 | `anchorTerms` drops single-letter `Type B` / `Class D` | **Fix.** Add those letters as rerank anchors only. They stay out of `keywordTerms` so AppSearch is not flooded with `b`. |
+| 3 | Model keeps `1:1` and drops `20 feet (6Mt)` | **Fix with a lead.** Copy the unique evidence sentence that names one typed class (`type`/`class`/`grade`/`group` + label) together with a conditioned value. Same pattern as the list and definition leads. No soil/slope/excavation vocabulary. |
+| 4 | Current v23 index has blank table captions | **Reindex.** Code already leaves `TABLE N …` lines in the page. |
+
+### 6a out of scope
+
+Vision / figure text (hierarchy of controls). Speculative decoding. Library extraction. New ITP or
+drawing-schedule fixtures. Changing `sourceSectionId` inheritance. A second embedding query.
 
 ## Stage contracts changed in this cycle
 
@@ -86,7 +130,7 @@ devices show a decode gain without a thermal penalty.
 
 - Tier A (JVM): lexer, heading, list, planner, manifest health, overview sampling, table grid,
   row-key / matrix lead, and table-identity tests.
-- Tier B/C (device): `SinglePdfBaselineDeviceTest` suites selected by content hash. M4 was verified
-  on Nothing A001 after re-indexing to v23: `safety_pdf_qa.json`, `construction_safety_qa.json`.
+- Tier B/C (device): hash-selected suites on Nothing A001. M4: `safety_pdf_qa`, `construction_safety_qa`.
+  M6a: those plus `safety_manual_qa`, `single_pdf_baseline`, `generated_live_qa` after a caption reindex.
 - Results are recorded in `V2_2_DEVICE_RESULTS.md` with device, backend, index version, TTFT, tokens
   per second and per-stage pass counts.

@@ -45,6 +45,22 @@ class TablePlanningTest {
     )
 
     @Test
+    fun `parenthesized caption number resolves the same as a dotted table id`() {
+        val parenthesized = likelihood.copy(
+            tableId = "t-11",
+            tableNumber = "1.1",
+            caption = "Table (1.1) Risk Level Assessment",
+            aliases = listOf("risk", "level", "assessment", "1.1"),
+        )
+        val plan = QueryPlanner().plan(
+            "In Table 1.1, what risk score results from Almost Certain likelihood and Catastrophic consequence?",
+            manifest.copy(tables = listOf(parenthesized, risk)),
+        )
+        assertEquals("t-11", plan.resolvedTableId)
+        assertNull(plan.resolvedSectionId)
+    }
+
+    @Test
     fun `explicit table number resolves without treating it as a section`() {
         val plan = QueryPlanner().plan("In Table 5.1, what control level applies to 13-20?", manifest)
         assertEquals(QuestionIntent.FACT, plan.intent)

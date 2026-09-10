@@ -67,14 +67,28 @@ object HybridQuery {
 
     private const val ANCHOR_WEIGHT = 2.0
 
-    /** Tokens written as acronyms (all capitals) or numbers in the original question. */
-    fun anchorTerms(question: String): Set<String> = tokenRe.findAll(question)
-        .map { it.value }
-        .filter { token -> token.length >= 2 && (token.all(Char::isDigit) || (token.all { it.isUpperCase() || it.isDigit() } && token.any(Char::isLetter))) }
-        .map { it.lowercase() }
-        .toSet()
+    /**
+     * Tokens written as acronyms (all capitals) or numbers in the original question, plus a
+     * single-letter class/type/grade/group label (`Type B`, `Class D`). Those letters are too
+     * common to become keyword terms; they only re-rank already-fetched candidates.
+     */
+    fun anchorTerms(question: String): Set<String> {
+        val anchors = tokenRe.findAll(question)
+            .map { it.value }
+            .filter { token ->
+                token.length >= 2 && (
+                    token.all(Char::isDigit) ||
+                        (token.all { it.isUpperCase() || it.isDigit() } && token.any(Char::isLetter))
+                    )
+            }
+            .map { it.lowercase() }
+            .toMutableSet()
+        TYPED_LETTER.findAll(question).forEach { anchors += it.groupValues[1].lowercase() }
+        return anchors
+    }
 
     private val SUFFIXES = listOf("ations", "ation", "ings", "ing", "ied", "ies", "ed", "es", "ly", "s")
+    private val TYPED_LETTER = Regex("""(?i)\b(?:type|class|grade|group)\s+([A-Za-z0-9])\b""")
 
     /**
      * Local re-rank after AppSearch: adds a bounded bonus for the query terms (by stem prefix)

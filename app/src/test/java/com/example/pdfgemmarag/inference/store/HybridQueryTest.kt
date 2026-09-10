@@ -68,6 +68,15 @@ class HybridQueryTest {
     }
 
     @Test
+    fun `typed single letter class labels are rerank anchors only`() {
+        val question = "What is the maximum allowable slope for Type B soil?"
+        assertFalse("single letters must not enter the AppSearch keyword list", "b" in HybridQuery.keywordTerms(question))
+        assertTrue(HybridQuery.anchorTerms(question).contains("b"))
+        assertTrue(HybridQuery.anchorTerms("In the class table, what cement content is required for Class D?").contains("d"))
+        assertFalse(HybridQuery.anchorTerms("What is a trench?").contains("a"))
+    }
+
+    @Test
     fun `keeps CJK tokens of any length`() {
         assertEquals(listOf("東京", "首都"), HybridQuery.keywordTerms("東京 is the 首都"))
     }

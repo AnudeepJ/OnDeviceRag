@@ -199,11 +199,18 @@ class AnswerQuestionUseCase(
                     )
                 }
             }
-            val exactTableRow = buildTableLead(question, ranked)
+            val exactTableRow = buildTableLead(question, ranked, plan.resolvedTableId)
             if (exactTableRow.decisive) {
                 return deterministic(
                     generationId, t0, exactTableRow.text, listener, exactTableRow.citations,
                     plan.resolvedSectionId.orEmpty(), manifestFallback, "TABLE_ROW_LEAD", plan.intent,
+                )
+            }
+            val conditional = buildConditionalValueLead(question, ranked)
+            if (conditional.decisive) {
+                return deterministic(
+                    generationId, t0, conditional.text, listener, conditional.citations,
+                    plan.resolvedSectionId.orEmpty(), manifestFallback, "CONDITIONAL_VALUE_LEAD", plan.intent,
                 )
             }
         }
@@ -235,7 +242,7 @@ class AnswerQuestionUseCase(
         var firstVisibleToken = -1L
         var chars = 0
         val evidenceLead = when (plan.intent) {
-            QuestionIntent.FACT -> buildTableLead(question, ranked)
+            QuestionIntent.FACT -> buildTableLead(question, ranked, plan.resolvedTableId)
             QuestionIntent.SECTION_SUMMARY -> buildEnumeratedSummaryLead(ranked)
             QuestionIntent.DOCUMENT_OVERVIEW -> buildOverviewLead(ranked)
             QuestionIntent.AMBIGUOUS_SECTION -> SummaryLead.EMPTY
@@ -485,7 +492,16 @@ class AnswerQuestionUseCase(
         }
 
         /** Exact table rows plus their structural neighbours, ranked by query words and numbers. */
-        internal fun buildTableLead(question: String, candidates: List<Citation>): SummaryLead {
+        internal fun buildTableLead(
+            question: String,
+            candidates: List<Citation>,
+            resolvedTableId: String? = null,
+        ): SummaryLead {
+            val scoped = if (resolvedTableId.isNullOrBlank()) {
+                candidates
+            } else {
+                candidates.filter { it.tableId == resolvedTableId }.ifEmpty { candidates }
+            }
             val query = normalizeForEvidenceMatch(question)
             val toleranceAsk = TOLERANCE_QUERY_HINT.containsMatchIn(query)
             // Lists of ratios and numbered requirements are structured too; that alone must not
@@ -493,7 +509,7 @@ class AnswerQuestionUseCase(
             if (!TABLE_QUERY_HINT.containsMatchIn(query) && !toleranceAsk) return SummaryLead.EMPTY
             if (toleranceAsk) {
                 val queryEvidence = evidenceWords(query)
-                val matches = candidates.flatMap { citation ->
+                val matches = scoped.flatMap { citation ->
                     TOLERANCE_PARAGRAPH.findAll(citation.text).map { match ->
                         val label = match.groupValues[1]
                             .replace(Regex("\\s+"), " ")
@@ -521,11 +537,11 @@ class AnswerQuestionUseCase(
             // occur in the question, and the preceding scope window must beat every competing
             // label/value path by a safe margin. This keeps parent scopes such as structure type
             // and exposure condition attached to repeated child labels.
-            val flattened = buildFlattenedTableLead(query, candidates)
+            val flattened = buildFlattenedTableLead(query, scoped)
             if (flattened.decisive) return flattened
             // Some extractors preserve a table as pipe-delimited text even when geometry was too
             // weak for the conservative TABLE label. The delimiters are still explicit evidence.
-            val tables = candidates.filter { it.contentKind == "TABLE" || '|' in it.text }
+            val tables = scoped.filter { it.contentKind == "TABLE" || '|' in it.text }
             if (tables.isEmpty()) return SummaryLead.EMPTY
             val queryNumbers = NUMBER_TOKEN.findAll(query).map { it.value }.toSet()
             if (toleranceAsk) {
@@ -762,20 +778,30 @@ class AnswerQuestionUseCase(
             if (hits.isEmpty()) return SummaryLead.EMPTY
             val bestCaption = hits.maxOf { it.captionScore }
             val preferred = if (bestCaption > 0) hits.filter { it.captionScore == bestCaption } else hits
+            val uniqueRows = preferred.distinctBy {
+                normalizeForEvidenceMatch("${it.citation.chunkId}|${it.rowLabel}")
+            }
             val uniqueValues = preferred.distinctBy { normalizeForEvidenceMatch("${it.rowLabel}|${it.column}|${it.value}") }
-            val hit = uniqueValues.singleOrNull() ?: return SummaryLead.EMPTY
-            val body = if (hit.column.isNotBlank()) {
+            val hit = uniqueRows.singleOrNull() ?: uniqueValues.singleOrNull() ?: return SummaryLead.EMPTY
+            val typed = hit.cells.firstOrNull { it.matches(Regex("^[A-Za-z]\\d?$")) }
+            val classLabel = if (typed != null && CLASS_WORD.containsMatchIn(query)) "Class $typed. " else ""
+            val body = if (uniqueRows.size == 1) {
+                "${hit.rowLabel} — ${hit.cells.drop(1).filter(String::isNotBlank).joinToString(" — ")}"
+            } else if (hit.column.isNotBlank()) {
                 "${hit.rowLabel} — ${hit.column}: ${hit.value}"
             } else {
                 "${hit.rowLabel} — ${hit.value}"
             }
-            return SummaryLead("$body [Page ${hit.citation.pageNumber}]", listOf(hit.citation), decisive = true)
+            return SummaryLead("$classLabel$body [Page ${hit.citation.pageNumber}]", listOf(hit.citation), decisive = true)
         }
 
         private fun queryHasRowKey(query: String, label: String): Boolean {
             val q = rowKeyNormalize(query)
             val forms = rowKeyForms(label)
             val longest = forms.maxByOrNull { it.length }.orEmpty()
+            // A row whose only label is the word `class`/`type` is a header, not a key. `Class D`
+            // still matches through the short typed-label path below.
+            if (longest in GENERIC_ROW_KEYS) return false
             if (longest.length >= 4) {
                 if (forms.any { form ->
                     Regex("(?<![a-z0-9])" + Regex.escape(form) + "(?![a-z0-9])").containsMatchIn(q)
@@ -814,6 +840,41 @@ class AnswerQuestionUseCase(
             val b = ends.groupValues[2]
             return setOf(n, "$a $b", "$a-$b", "$a to $b", "$a and $b")
         }
+
+        /**
+         * Copies the one evidence sentence that names a typed class (`type B`, `class D`) together
+         * with a conditioned value (a ratio, measurement or range plus if/when/less-than/deep).
+         * Compact models otherwise keep the value and drop the qualifier. Ambiguous matches decline.
+         */
+        internal fun buildConditionalValueLead(question: String, candidates: List<Citation>): SummaryLead {
+            val labels = TYPED_CLASS.findAll(question).map { match ->
+                match.groupValues[1].lowercase() to match.groupValues[2].lowercase()
+            }.distinct().toList()
+            if (labels.size != 1) return SummaryLead.EMPTY
+            val (kind, label) = labels.single()
+            val mention = Regex("(?i)\\b" + Regex.escape(kind) + "\\s+" + Regex.escape(label) + "\\b")
+            val matches = candidates.flatMap { citation ->
+                evidenceSentences(citation.text).mapNotNull { sentence ->
+                    if (!mention.containsMatchIn(sentence)) return@mapNotNull null
+                    if (!CONDITION_CUE.containsMatchIn(sentence)) return@mapNotNull null
+                    val values = EvidenceValueLexer.lex(sentence)
+                    val hasBoundValue = values.tokens.any { token ->
+                        token.kind == EvidenceValueKind.RATIO ||
+                            token.kind == EvidenceValueKind.MEASUREMENT ||
+                            token.kind == EvidenceValueKind.RANGE ||
+                            token.kind == EvidenceValueKind.FRACTION
+                    }
+                    if (!hasBoundValue) return@mapNotNull null
+                    citation to sentence
+                }
+            }.distinctBy { (_, sentence) -> normalizeForEvidenceMatch(sentence).replace(Regex("\\s+"), " ") }
+            if (matches.size != 1) return SummaryLead.EMPTY
+            val (citation, sentence) = matches.single()
+            return SummaryLead("$sentence [Page ${citation.pageNumber}]", listOf(citation), decisive = true)
+        }
+
+        private fun evidenceSentences(text: String): List<String> =
+            text.split(SENTENCE_BOUNDARY).map(String::trim).filter { it.length >= 12 }
 
         /** Resolves explicit "which section" asks from a uniquely matching printed cross-reference. */
         internal fun buildSectionPointerAnswer(question: String, candidates: List<Citation>): SummaryLead {
@@ -960,6 +1021,13 @@ class AnswerQuestionUseCase(
             .replace(",", "")
         private val NUMBER_TOKEN = Regex("\\d+(?:\\.\\d+)?")
         private val RANGE_ENDS = Regex("^(\\d+)\\s*(?:to|and|-|–|—)\\s*(\\d+)$")
+        private val TYPED_CLASS = Regex("(?i)\\b(type|class|grade|group)\\s+([A-Za-z0-9]{1,4})\\b")
+        private val CLASS_WORD = Regex("\\bclass\\b")
+        private val GENERIC_ROW_KEYS = setOf("class", "type", "grade", "group", "item", "label", "category")
+        private val CONDITION_CUE = Regex(
+            "(?i)\\b(?:if|when|unless|where|less than|greater than|up to|below|above|deep|deeper|maximum|minimum)\\b",
+        )
+        private val SENTENCE_BOUNDARY = Regex("(?<=[.!?;\\n])\\s+")
         private val WORD_TOKEN = Regex("[a-z]{2,}")
         private val TABLE_QUERY_HINT = Regex("\\b(?:table|row|column|matrix|rating|schedule|class|slump|cement content)\\b")
         private val TOLERANCE_QUERY_HINT = Regex("\\b(?:tolerance|variation)\\b")

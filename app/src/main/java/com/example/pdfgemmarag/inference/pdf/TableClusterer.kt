@@ -34,19 +34,22 @@ class TableClusterer(
         while (i < page.lines.size) {
             val run = tableRunFrom(page, cellsPerLine, i, medianLineHeight)
             if (run != null) {
-                // "Table 3 — Cover" style captions sit on the line before or after the grid.
-                val before = page.lines.getOrNull(i - 1)?.text?.trim()
-                val after = page.lines.getOrNull(i + run.lineCount)?.text?.trim()
-                val caption = listOfNotNull(before, after).firstOrNull { TableIdentity.looksLikeCaption(it) && it.length <= MAX_CAPTION_CHARS }.orEmpty()
+                // "Table 3 — Cover" / "Table (1.1)" captions sit on a nearby line, sometimes
+                // sharing that line with the first header cells.
+                val before = (1..CAPTION_LOOKBACK).firstNotNullOfOrNull { delta ->
+                    page.lines.getOrNull(i - delta)?.text?.trim()?.let(TableIdentity::captionFrom)
+                }.orEmpty()
+                val afterLine = page.lines.getOrNull(i + run.lineCount)?.text?.trim().orEmpty()
+                val after = TableIdentity.captionFrom(afterLine).orEmpty()
+                val caption = before.ifBlank { after }
                 if (caption.isNotEmpty() && before == caption) {
-                    // Remove the caption from the pending paragraph so it is not emitted twice.
                     val idx = paragraph.lastIndexOf(caption)
                     if (idx >= 0) paragraph.setLength(idx)
                 }
                 flushParagraph()
                 segments += buildTable(page, run, caption, TableIdentity.numberFromCaption(caption))
                 i += run.lineCount
-                if (caption.isNotEmpty() && after == caption) i++
+                if (caption.isNotEmpty() && after == caption && afterLine == caption) i++
                 continue
             }
             val line = page.lines[i]
@@ -214,7 +217,7 @@ class TableClusterer(
         private const val WRAP_MAX_GAP_LINES = 1.3f
         private const val MAX_WRAPPED_LINES = 6
         private const val MAX_TRAILING_WRAPS = 2
-        private const val MAX_CAPTION_CHARS = 120
+        private const val CAPTION_LOOKBACK = 2
         private val ENUMERATOR = Regex(
             "^(?:[A-Za-z]|[0-9]+|[ivxl]{2,6}|[IVXL]{2,6})[.)]$|^\\([A-Za-z0-9]{1,4}\\)$|^[•▪■●○◦‣⁃➢➤►✓✔➔→*\\uE000-\\uF8FF]$",
         )

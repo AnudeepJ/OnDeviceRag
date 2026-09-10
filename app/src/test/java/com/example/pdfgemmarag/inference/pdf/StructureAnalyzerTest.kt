@@ -27,6 +27,24 @@ class StructureAnalyzerTest {
     }
 
     @Test
+    fun `parenthesized score cells are not list items`() {
+        val page = PageLayout(
+            1, 600f, 800f,
+            listOf(
+                line(40f, "(a) Provide access to the laboratory."),
+                line(52f, "(1) (3) hic (5)"),
+                line(64f, "(3) (6) (9)"),
+            ),
+            false, PageLayout.Source.TEXT,
+        )
+        val segments = StructureAnalyzer().analyse(page).segments
+        val list = segments.filterIsInstance<Segment.ListBlock>().single()
+        assertEquals(listOf("(a)"), list.items.map { it.label })
+        assertTrue(segments.filterIsInstance<Segment.Paragraph>().any { it.text.contains("(3) hic (5)") })
+        assertTrue(segments.filterIsInstance<Segment.Paragraph>().any { it.text.contains("(3) (6) (9)") })
+    }
+
+    @Test
     fun `enumerated clauses remain logical list items`() {
         val page = PageLayout(
             1, 600f, 800f,

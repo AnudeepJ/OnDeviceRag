@@ -275,7 +275,12 @@ class StructureAnalyzer(
 
     private fun listItem(text: String): Pair<String, String>? {
         val match = LIST_ITEM.matchEntire(text.trim()) ?: return null
-        return match.groupValues[1] to match.groupValues[2].trim()
+        val label = match.groupValues[1]
+        val body = match.groupValues[2].trim()
+        // `(1) (3) hic (5)` is a matrix score row, not an enumerated clause. A parenthesized
+        // label is a list item only when the body is prose.
+        if (label.startsWith("(") && !LIST_PROSE.containsMatchIn(body)) return null
+        return label to body
     }
 
     private fun median(values: List<Float>): Float {
@@ -314,6 +319,7 @@ class StructureAnalyzer(
         private val LIST_ITEM = Regex(
             "^((?:[A-Za-z]|[0-9]{1,3}|[ivxl]{2,6}|[IVXL]{2,6})[.)]|\\([A-Za-z0-9]{1,4}\\)|[•▪■●○◦‣⁃➢➤►✓✔➔→*\\uE000-\\uF8FF]|[-–—](?=\\s))\\s+(.+)$",
         )
+        private val LIST_PROSE = Regex("[A-Za-z]{4,}")
         private const val MAX_LABEL_LINE_CHARS = 90
 
     /** `13` for `13`, `XIII`, `xiii`; letters pass through upper-cased so `Appendix a` and `APPENDIX A` agree. */

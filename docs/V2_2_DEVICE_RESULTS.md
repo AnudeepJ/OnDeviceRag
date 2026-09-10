@@ -84,16 +84,56 @@ as headings and stripped before clustering. `StructureAnalyzer` now leaves capti
 page; the next reindex will populate `TableRecord.tableNumber` / caption. Row-key leads already
 answer from the grid without that identity.
 
-## Known limitations carried to the next milestone
+## Milestone 6a — Golden measurement (Nothing A001, index v23)
+
+Date: 2026-09-10. Same model/backend as above. External datasets (ITP / drawing schedule) and Pixel
+confirmation are **6b**, not this run.
+
+Reindex of the three on-device PDFs, then a caption/list follow-up reindex of `SafetyManual.pdf`
+only (255 chunks, still degraded outline: one top-level node). Lab captions now include
+`Table (1.1)`, `Table 1`, `Table 4` and `Table 5`. Construction `TABLE 5.1` grids on pp.10–12 and
+most Division 03 grids remain uncaptioned; row-key leads do not need the number.
+
+Generic fixes landed before the scored run: parenthesized captions (`Table (1.1)`), parenthesized
+score cells no longer stolen as lists, explicit table ids restrict the row lead, a unique row with
+several named columns is answered as one row (`Class D` on the fire table), and a bare `Class`
+header row is not treated as a row key (that false lead had broken plywood).
+
+| Suite | Result | Notes |
+|---|---|---|
+| `safety_manual_qa` (50, lab; 17 TABLE) | **39/50** answers, 45/50 retrieval; **9/17 tables** | v21 was 40/50 and 8/17 tables. Median generated TTFT 6.7 s, 9.4 tok/s. Table leads: fire Class D, laser Class 4, laser Table 5 distances. Risk-matrix 25 is generated from page 10 after `Table (1.1)` resolved. |
+| `single_pdf_baseline` (19, Division 03) | **17/19** answers, 19/19 retrieval | First Nothing v23 measurement (Pixel v22 was 19/19). `table-slump` cites p62 but omits the 1–3 in superplasticizer range. `script1-curb-level` is correct and cites p49 but emits `\pm` (scorer flags raw LaTeX). Plywood recovered after the generic `Class` row-key guard. 3 table leads. |
+| `generated_live_qa` (21, Division 03) | **19/21** answers, 20/21 pages | `live-form-remove-75` still answers `75 percent` from p47 instead of p10. `live-overview` is a grounding/citation-marker reject. Plywood class recovered. |
+| `safety_pdf_qa` (23) | **19/23** | All 4 table cases stay `TABLE_ROW_LEAD`. Same four non-table misses as M4 (`sp-type-b-slope`, `sp-type-c-followup`, `sp-ppe-when`, `sp-emergencies-list`). |
+| `construction_safety_qa` (12) | **11/12** | `cs-risk-matrix-level` stays `TABLE_ROW_LEAD`; `cs-hierarchy-controls` is still a figure. |
+
+Lab TABLE misses left on the board (not 6b work):
+
+| Case | Stage | Cause |
+|---|---|---|
+| `safety-risk-matrix-possible-moderate` | RETRIEVAL | Score `9` lives in a split matrix; reconstruction still drops that cell. |
+| `safety-severity-four` | ANSWER | Model reads list item 3 (Moderate) instead of 4 (Major / serious injury). |
+| `safety-extreme-risk-response` | RETRIEVAL | `Table (1.4)` is still an unnumbered grid on pp.11–12; the model refuses. |
+| `safety-engineering-controls` | ANSWER | `redesign` / `Isolation` are on p13; the model lists guarding/enclosures instead. |
+| `safety-ppe-table-eye-seal` | ANSWER | Lead hits the Protection×Eyes cell; column titles lost `Splash Goggles`. |
+| `safety-ppe-table-face-coverage` | RETRIEVAL | Cites the p18 prose recommendation, not Table 1 on p19. |
+| `safety-fire-class-e` | ANSWER | Electrical row retrieved on p31; answer names powder / CO₂ but not `Class E`. |
+| `safety-laser-class-3b` | RETRIEVAL | Table 5 distance row on p34 outranks Table 4 on p33 (`5-500 mW`, `Required`). |
+
+Non-table lab misses unchanged: `safety-mechanical-hazards` (grounding/citation), `safety-ppe-last-control` (`impractical`), `safety-housekeeping` (`immediately`).
+
+## Known limitations carried to 6b / later
 
 - Paraphrase recall: a chunk whose wording differs strongly from the question can fall outside the
   48 fetched candidates; the IDF-weighted, anchor-boosted re-rank only reorders what AppSearch
   returns. A larger candidate window or a second embedding query is the next lever.
 - Figure content (hierarchy of controls) needs the vision enrichment milestone.
-- Conditional values: the model sometimes drops the qualifying condition (depth, type) even with
-  the prompt instruction; a deterministic conditional-value lead would fix this in the same way the
-  list and definition leads did.
+- Conditional-value lead is implemented; `sp-type-b-slope` still dropped `20 feet (6Mt)` on this
+  Nothing run (lead did not fire; model kept `1:1` only).
+- Unbordered / parenthesized risk matrices still split cells (`Catastrop` / `hic`, Possible×Moderate
+  `9`). Caption numbers in parentheses now attach when the line is near the grid.
 - Speculative decoding was left off (`mtp_enabled.marker` absent); measure it on a cool device.
+- 6b: an ITP/QA-QC with dense tables, a scanned drawing schedule, and Pixel confirmation.
 
 ## Reading the reports
 
