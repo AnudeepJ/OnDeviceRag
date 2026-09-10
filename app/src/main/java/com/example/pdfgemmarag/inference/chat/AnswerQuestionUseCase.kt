@@ -153,13 +153,16 @@ class AnswerQuestionUseCase(
                 expandStructuralNeighbors(primary, manifest, retrievalQuestion)
             }
         }
+        // An explicit table identity is a hard evidence boundary. If its direct fetch failed, an
+        // unrelated hybrid hit must not answer in its place.
+        val answerEvidence = plan.resolvedTableId?.let { tableId -> ranked.filter { it.tableId == tableId } } ?: ranked
         if (plan.intent == QuestionIntent.FACT && plan.shape == AnswerShape.DEFINITION && manifest != null) {
-            val definition = buildDefinitionLead(question, ranked)
-            Log.i(TAG, "definition lead subject='${definitionSubject(question)}' decisive=${definition.decisive} candidates=${ranked.size}")
+            val definition = buildDefinitionLead(question, answerEvidence)
+            Log.i(TAG, "definition lead subject='${definitionSubject(question)}' decisive=${definition.decisive} candidates=${answerEvidence.size}")
             if (definition.decisive) {
                 // A definition that introduces its criteria with a colon needs the following list
                 // chunk even when retrieval did not surface it.
-                val complete = completeDefinition(definition, ranked, manifest, question)
+                val complete = completeDefinition(definition, answerEvidence, manifest, question)
                 return deterministic(
                     generationId, t0, complete.text, listener, complete.citations,
                     plan.resolvedSectionId.orEmpty(), manifestFallback, "DEFINITION_LEAD", plan.intent,
@@ -167,21 +170,21 @@ class AnswerQuestionUseCase(
             }
         }
         if (plan.intent == QuestionIntent.FACT) {
-            val standard = buildStandardReferenceLead(question, ranked)
+            val standard = buildStandardReferenceLead(question, answerEvidence)
             if (standard.decisive) {
                 return deterministic(
                     generationId, t0, standard.text, listener, standard.citations,
                     plan.resolvedSectionId.orEmpty(), manifestFallback, "STANDARD_REFERENCE_LEAD", plan.intent,
                 )
             }
-            val numberedList = buildNumberedListLead(question, ranked)
+            val numberedList = buildNumberedListLead(question, answerEvidence)
             if (numberedList.decisive) {
                 return deterministic(
                     generationId, t0, numberedList.text, listener, numberedList.citations,
                     plan.resolvedSectionId.orEmpty(), manifestFallback, "LIST_LEAD", plan.intent,
                 )
             }
-            val enumerated = buildEnumeratedValueAnswer(question, ranked)
+            val enumerated = buildEnumeratedValueAnswer(question, answerEvidence)
             if (enumerated.text.isNotEmpty()) {
                 return deterministic(
                     generationId, t0, enumerated.text, listener, enumerated.citations,
@@ -191,7 +194,7 @@ class AnswerQuestionUseCase(
             // Navigation is answered structurally only when the user asked where something is;
             // a definition or requirement question must never be turned into a section pointer.
             if (plan.shape == AnswerShape.NAVIGATION) {
-                val pointer = buildSectionPointerAnswer(question, ranked)
+                val pointer = buildSectionPointerAnswer(question, answerEvidence)
                 if (pointer.text.isNotEmpty()) {
                     return deterministic(
                         generationId, t0, pointer.text, listener, pointer.citations,
@@ -199,14 +202,14 @@ class AnswerQuestionUseCase(
                     )
                 }
             }
-            val exactTableRow = buildTableLead(question, ranked, plan.resolvedTableId)
+            val exactTableRow = buildTableLead(question, answerEvidence, plan.resolvedTableId)
             if (exactTableRow.decisive) {
                 return deterministic(
                     generationId, t0, exactTableRow.text, listener, exactTableRow.citations,
                     plan.resolvedSectionId.orEmpty(), manifestFallback, "TABLE_ROW_LEAD", plan.intent,
                 )
             }
-            val conditional = buildConditionalValueLead(question, ranked)
+            val conditional = buildConditionalValueLead(question, answerEvidence)
             if (conditional.decisive) {
                 return deterministic(
                     generationId, t0, conditional.text, listener, conditional.citations,
@@ -217,8 +220,8 @@ class AnswerQuestionUseCase(
         // A follow-up ("What about Type C?") is only meaningful with the previous question; the
         // model receives the same combined text that retrieval used.
         val promptQuestion = if (retrievalQuestion != question) retrievalQuestion else question
-        val selected = selector.select(promptQuestion, ranked, plan.intent, plan.shape)
-        Log.i(TAG, "planned ${plan.intent} retrieved ${ranked.size} -> ${selected.excerpts.size} chunks (~${selected.approxTokens} tokens) in ${SystemClock.elapsedRealtime() - t0} ms")
+        val selected = selector.select(promptQuestion, answerEvidence, plan.intent, plan.shape)
+        Log.i(TAG, "planned ${plan.intent} retrieved ${answerEvidence.size} -> ${selected.excerpts.size} chunks (~${selected.approxTokens} tokens) in ${SystemClock.elapsedRealtime() - t0} ms")
         selected.excerpts.forEachIndexed { i, c ->
             Log.i(TAG, "  cite[$i] p${c.pageNumber} c${c.chunkIndex} score=${"%.3f".format(c.score)} '${c.text.take(80).replace('\n', ' ')}'")
         }
@@ -242,9 +245,9 @@ class AnswerQuestionUseCase(
         var firstVisibleToken = -1L
         var chars = 0
         val evidenceLead = when (plan.intent) {
-            QuestionIntent.FACT -> buildTableLead(question, ranked, plan.resolvedTableId)
-            QuestionIntent.SECTION_SUMMARY -> buildEnumeratedSummaryLead(ranked)
-            QuestionIntent.DOCUMENT_OVERVIEW -> buildOverviewLead(ranked)
+            QuestionIntent.FACT -> buildTableLead(question, answerEvidence, plan.resolvedTableId)
+            QuestionIntent.SECTION_SUMMARY -> buildEnumeratedSummaryLead(answerEvidence)
+            QuestionIntent.DOCUMENT_OVERVIEW -> buildOverviewLead(answerEvidence)
             QuestionIntent.AMBIGUOUS_SECTION -> SummaryLead.EMPTY
         }
         if (evidenceLead.decisive) {
@@ -500,7 +503,7 @@ class AnswerQuestionUseCase(
             val scoped = if (resolvedTableId.isNullOrBlank()) {
                 candidates
             } else {
-                candidates.filter { it.tableId == resolvedTableId }.ifEmpty { candidates }
+                candidates.filter { it.tableId == resolvedTableId }
             }
             val query = normalizeForEvidenceMatch(question)
             val toleranceAsk = TOLERANCE_QUERY_HINT.containsMatchIn(query)
@@ -688,7 +691,7 @@ class AnswerQuestionUseCase(
 
         internal fun definingSentencePattern(subject: String): Regex = Regex(
             "(?im)(?:^|(?<=[.;:\\n]\\s{0,3})|(?<=\\b[A-Z]{3,40}\\s))(?:the\\s+term\\s+)?['\"‘’“”]?(?:an?\\s+|the\\s+)?" + Regex.escape(subject) +
-                "s?['\"‘’“”]?\\s+(?:is|are|means|refers\\s+to|is\\s+defined\\s+as|can\\s+be\\s+defined\\s+as|shall\\s+mean)\\b[^\\n]{3,400}?(?:[.;:]|$)",
+                "s?['\"‘’“”]?\\s+(?:is|are|means|refers\\s+to|is\\s+defined\\s+as|can\\s+be\\s+defined\\s+as|shall\\s+mean)\\b[^\\n]{3,400}?(?:(?<!\\d)[.:]|$)",
         )
 
         private const val DEFINITION_PROMOTION = 0.25
@@ -853,24 +856,65 @@ class AnswerQuestionUseCase(
             if (labels.size != 1) return SummaryLead.EMPTY
             val (kind, label) = labels.single()
             val mention = Regex("(?i)\\b" + Regex.escape(kind) + "\\s+" + Regex.escape(label) + "\\b")
-            val matches = candidates.flatMap { citation ->
+            val requestedTerms = HybridQuery.keywordTerms(question).toSet() - setOf(kind, label)
+            val bareFollowUp = FOLLOW_UP_PREFIXES.any { question.trim().lowercase().startsWith(it) }
+            fun matchesRequestedProperty(text: String): Boolean {
+                if (bareFollowUp) return true
+                val words = evidenceWords(text)
+                val overlap = requestedTerms.count { term ->
+                    val stem = HybridQuery.prefixTerm(term)?.removeSuffix("*") ?: term
+                    words.any { it == stem || (stem.length >= 4 && it.startsWith(stem)) }
+                }
+                return overlap >= minOf(2, requestedTerms.size)
+            }
+            fun hasConditionedValue(text: String): Boolean {
+                if (!CONDITION_CUE.containsMatchIn(text)) return false
+                return EvidenceValueLexer.lex(text).tokens.any { token ->
+                    token.kind == EvidenceValueKind.RATIO ||
+                        token.kind == EvidenceValueKind.MEASUREMENT ||
+                        token.kind == EvidenceValueKind.RANGE ||
+                        token.kind == EvidenceValueKind.FRACTION
+                }
+            }
+
+            data class ConditionalMatch(val citations: List<Citation>, val text: String)
+            val directMatches = candidates.flatMap { citation ->
                 evidenceSentences(citation.text).mapNotNull { sentence ->
                     if (!mention.containsMatchIn(sentence)) return@mapNotNull null
-                    if (!CONDITION_CUE.containsMatchIn(sentence)) return@mapNotNull null
-                    val values = EvidenceValueLexer.lex(sentence)
-                    val hasBoundValue = values.tokens.any { token ->
-                        token.kind == EvidenceValueKind.RATIO ||
-                            token.kind == EvidenceValueKind.MEASUREMENT ||
-                            token.kind == EvidenceValueKind.RANGE ||
-                            token.kind == EvidenceValueKind.FRACTION
-                    }
-                    if (!hasBoundValue) return@mapNotNull null
-                    citation to sentence
+                    if (!hasConditionedValue(sentence)) return@mapNotNull null
+                    // A substantive question must match its requested property/subject, not merely
+                    // the same class. Prefix matching covers ordinary inflections (slope/sloped).
+                    // A bare follow-up carries too little independent wording, so unique typed
+                    // evidence may still answer it.
+                    if (!matchesRequestedProperty(sentence)) return@mapNotNull null
+                    ConditionalMatch(listOf(citation), sentence)
                 }
-            }.distinctBy { (_, sentence) -> normalizeForEvidenceMatch(sentence).replace(Regex("\\s+"), " ") }
+            }
+
+            // PDF layout extraction commonly separates a typed row heading from its value block:
+            //   c721 "Excavations Made in Type B ..."
+            //   c722 "All simple slope excavations ... maximum allowable slope of 1:1 ..."
+            // Bind only the immediately following chunk on the same page. This preserves the row
+            // association and prevents nearby Type A/C value blocks from being mixed into the answer.
+            val byIndex = candidates.associateBy { it.chunkIndex }
+            val adjacentMatches = candidates.mapNotNull { heading ->
+                if (!mention.containsMatchIn(heading.text)) return@mapNotNull null
+                val value = byIndex[heading.chunkIndex + 1] ?: return@mapNotNull null
+                if (value.pageNumber != heading.pageNumber) return@mapNotNull null
+                val conditioned = evidenceSentences(value.text).filter(::hasConditionedValue)
+                if (conditioned.isEmpty()) return@mapNotNull null
+                val text = conditioned.joinToString(" ")
+                if (!matchesRequestedProperty(heading.text + " " + text)) return@mapNotNull null
+                ConditionalMatch(listOf(heading, value), text)
+            }
+
+            val matches = (directMatches + adjacentMatches).distinctBy { match ->
+                normalizeForEvidenceMatch(match.text).replace(Regex("\\s+"), " ")
+            }
             if (matches.size != 1) return SummaryLead.EMPTY
-            val (citation, sentence) = matches.single()
-            return SummaryLead("$sentence [Page ${citation.pageNumber}]", listOf(citation), decisive = true)
+            val match = matches.single()
+            val page = match.citations.last().pageNumber
+            return SummaryLead("${kind.replaceFirstChar(Char::uppercase)} ${label.uppercase()}: ${match.text} [Page $page]", match.citations, decisive = true)
         }
 
         private fun evidenceSentences(text: String): List<String> =
@@ -965,7 +1009,10 @@ class AnswerQuestionUseCase(
                 val items = listChunks.flatMap { chunk ->
                     splitListItems(chunk).map { text -> chunk to text }
                 }
-                if (items.isEmpty() || (requestedCount != null && items.size < requestedCount)) null
+                val missingContinuation = previous.contentKind == "LIST" &&
+                    previous.continuesToChunkIndex >= 0 &&
+                    listChunks.none { it.chunkIndex == previous.continuesToChunkIndex }
+                if (items.isEmpty() || missingContinuation || (requestedCount != null && items.size < requestedCount)) null
                 else introduction to items.take(requestedCount ?: items.size)
             }
             if (matches.size != 1) return SummaryLead.EMPTY

@@ -112,15 +112,16 @@ fun ModelManagerScreen(viewModel: RagViewModel, onBack: () -> Unit) {
                             Text("${file.length() shr 20} MB${if (loaded) " · loaded on ${ui.engine.backend}" else ""}", style = MaterialTheme.typography.bodySmall)
                         }
                         if (loaded) OutlinedButton(onClick = { viewModel.unloadEngine() }) { Text("Unload") }
-                        else Button(onClick = { viewModel.loadEngine(file.absolutePath) }, enabled = !loading && gate.canLoadLlm) { Text(if (loading) "Starting…" else "Use") }
+                        else Button(onClick = { viewModel.loadEngine(file.absolutePath) }, enabled = !loading && gate.canLoadLlm) { Text(if (loading) "Starting…" else "Load") }
                         IconButton(onClick = { viewModel.deleteModel(file) }) { Icon(Icons.Default.Delete, contentDescription = "Delete") }
                     }
                 }
             }
             item {
-                OutlinedButton(onClick = { filePicker.launch(arrayOf("*/*")) }, modifier = Modifier.fillMaxWidth()) {
-                    Text("Add a model file")
+                OutlinedButton(onClick = { filePicker.launch(arrayOf("*/*")) }, enabled = !ui.busy && ui.install == null, modifier = Modifier.fillMaxWidth()) {
+                    Text("Import model file")
                 }
+                Text("Choose a model from Downloads. Gemma starts automatically after import; use Load to start an already installed model.", style = MaterialTheme.typography.bodySmall)
                 Text("For document Q&A, also add the EmbeddingGemma .tflite file and tokenizer .model file.", style = MaterialTheme.typography.bodySmall)
                 ui.install?.let { (name, copied, total) ->
                     Spacer(Modifier.height(8.dp))

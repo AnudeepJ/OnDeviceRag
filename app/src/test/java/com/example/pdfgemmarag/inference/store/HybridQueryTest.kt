@@ -77,6 +77,23 @@ class HybridQueryTest {
     }
 
     @Test
+    fun `typed label anchor ranks the matching sibling first`() {
+        val question = "What is the slope for Type B soil?"
+        val hits = listOf("Type C soil slope" to 1.0, "Type B soil slope" to 1.0)
+
+        val ranked = HybridQuery.rerank(
+            hits,
+            HybridQuery.keywordTerms(question),
+            0.35,
+            score = { it.second },
+            text = { it.first },
+            anchors = HybridQuery.anchorTerms(question),
+        )
+
+        assertEquals("Type B soil slope", ranked.first().first.first)
+    }
+
+    @Test
     fun `keeps CJK tokens of any length`() {
         assertEquals(listOf("東京", "首都"), HybridQuery.keywordTerms("東京 is the 首都"))
     }

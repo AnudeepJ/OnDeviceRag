@@ -292,7 +292,9 @@ class QueryPlanner {
     private fun tableHasNumber(table: TableRecord, number: String): Boolean {
         if (table.tableNumber.equals(number, true)) return true
         if (TableIdentity.numberFromCaption(table.caption).equals(number, true)) return true
-        return Regex("(?i)\\btable\\s*\\(?\\s*" + Regex.escape(number) + "\\s*\\)?").containsMatchIn(table.caption)
+        return Regex(
+            "(?i)\\btable\\s*\\(?\\s*" + Regex.escape(number) + "\\s*\\)?(?![0-9A-Za-z.\\-])",
+        ).containsMatchIn(table.caption)
     }
 
     private fun tableTitleScore(phrase: String, table: TableRecord): Double {

@@ -130,9 +130,10 @@ class SinglePdfBaselineDeviceTest {
         val requestedHash = arguments.getString("documentHash")?.ifBlank { null } ?: defaultHash
         val requestedName = arguments.getString("documentName")?.ifBlank { null } ?: defaultName
         val docs = runBlocking { svc.listDocumentsAsync() }
-        val doc = requestedHash?.let { hash -> docs.firstOrNull { it.docHash.equals(hash, true) } }
-            ?: requestedName?.let { name -> docs.firstOrNull { it.displayName == name } }
-            ?: docs.takeIf { allowPageCountFallback && requestedHash == null && requestedName == null }?.firstOrNull { it.pageCount >= 70 }
+        val doc = (if (requestedHash != null) {
+            docs.firstOrNull { it.docHash.equals(requestedHash, true) }
+        } else requestedName?.let { name -> docs.firstOrNull { it.displayName == name } }
+            ?: docs.takeIf { allowPageCountFallback && requestedName == null }?.firstOrNull { it.pageCount >= 70 })
             ?: error("Required test PDF (hash=$requestedHash name=$requestedName) is not indexed on this device; indexed=${docs.map { it.displayName + ':' + it.docHash.take(8) }}")
         Log.i(TAG, "selected document '${doc.displayName}' hash=${doc.docHash} pages=${doc.pageCount} index=v${doc.indexVersion} ns=${doc.activeIndexNamespace}")
         return doc

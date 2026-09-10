@@ -105,4 +105,18 @@ class CitationMarkerToleranceTest {
         assertEquals("* bodily enter [Page 97]", out)
         assertFalse(filter.hadGroundingFailure)
     }
+
+    @Test
+    fun `invented member of a combined citation marks grounding failure`() {
+        val c = com.example.pdfgemmarag.core.model.Citation(
+            "c1", "doc", 97, 1, 1.0, "Supported text", indexNamespace = "x", excerptId = "E1",
+        )
+        val filter = GroundingStreamFilter("q", listOf(c))
+
+        val out = filter.accept("Supported [E1, E99]") + filter.finish()
+
+        assertEquals("Supported [Page 97]", out)
+        assertTrue(filter.hadGroundingFailure)
+        assertTrue(filter.groundingReasons.any { it.startsWith("CITATION_PARTIAL") })
+    }
 }

@@ -83,12 +83,17 @@ object HybridQuery {
             }
             .map { it.lowercase() }
             .toMutableSet()
-        TYPED_LETTER.findAll(question).forEach { anchors += it.groupValues[1].lowercase() }
+        TYPED_LABEL.findAll(question).forEach {
+            val kind = it.groupValues[1].lowercase()
+            val label = it.groupValues[2].lowercase()
+            anchors += label
+            anchors += "$kind:$label"
+        }
         return anchors
     }
 
     private val SUFFIXES = listOf("ations", "ation", "ings", "ing", "ied", "ies", "ed", "es", "ly", "s")
-    private val TYPED_LETTER = Regex("""(?i)\b(?:type|class|grade|group)\s+([A-Za-z0-9])\b""")
+    private val TYPED_LABEL = Regex("""(?i)\b(type|class|grade|group)\s+([A-Za-z0-9])\b""")
 
     /**
      * Local re-rank after AppSearch: adds a bounded bonus for the query terms (by stem prefix)
@@ -106,18 +111,29 @@ object HybridQuery {
         anchors: Set<String> = emptySet(),
     ): List<Pair<T, Double>> {
         if (terms.isEmpty() || hits.isEmpty()) return hits.map { it to score(it) }
-        val stems = terms.map { term -> prefixTerm(term)?.removeSuffix("*") ?: term }.distinct()
+        val stems = (
+            terms.map { term -> prefixTerm(term)?.removeSuffix("*") ?: term } +
+                anchors.filter { ':' in it }
+            ).distinct()
+        val normalizedTexts = hits.map { tokenRe.findAll(text(it).lowercase()).joinToString(" ") { token -> token.value } }
         val tokenSets = hits.map { hit -> tokenRe.findAll(text(hit).lowercase()).map { it.value }.toHashSet() }
-        fun matches(tokens: Set<String>, stem: String) = tokens.any { it == stem || (stem.length >= 4 && it.startsWith(stem)) }
+        fun matches(index: Int, stem: String): Boolean {
+            if (':' in stem) {
+                val (kind, label) = stem.split(':', limit = 2)
+                return Regex("(?<![a-z0-9])${Regex.escape(kind)} ${Regex.escape(label)}(?![a-z0-9])")
+                    .containsMatchIn(normalizedTexts[index])
+            }
+            return tokenSets[index].any { it == stem || (stem.length >= 4 && it.startsWith(stem)) }
+        }
         val idf = stems.associateWith { stem ->
-            val df = tokenSets.count { matches(it, stem) }
+            val df = hits.indices.count { matches(it, stem) }
             val base = Math.log((hits.size + 1.0) / (df + 1.0)) + 0.1
             // Acronyms and numbers in a question (HIRA, 03300, 21) are its most specific tokens.
             if (stem in anchors) base * ANCHOR_WEIGHT else base
         }
         val total = idf.values.sum().coerceAtLeast(1e-6)
         return hits.mapIndexed { index, hit ->
-            val covered = stems.filter { matches(tokenSets[index], it) }.sumOf { idf.getValue(it) }
+            val covered = stems.filter { matches(index, it) }.sumOf { idf.getValue(it) }
             hit to (score(hit) + weight * covered / total)
         }.sortedByDescending { it.second }
     }

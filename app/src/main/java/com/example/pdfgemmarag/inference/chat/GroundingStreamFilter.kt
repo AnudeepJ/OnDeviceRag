@@ -80,7 +80,9 @@ class GroundingStreamFilter(
                 // excerpt is still the evidence, the suffix is dropped.
                 val markerIds = marker.split(',').map { id ->
                     val trimmed = id.trim()
-                    if (trimmed !in excerptById && trimmed.length > 2 && trimmed.dropLast(1) in excerptById) trimmed.dropLast(1) else trimmed
+                    val suffixed = SUFFIXED_EXCERPT.matchEntire(trimmed)
+                    val base = suffixed?.groupValues?.get(1)
+                    if (trimmed !in excerptById && base != null && base in excerptById) base else trimmed
                 }.filter(String::isNotEmpty)
                 val valid = markerIds.filter { it in excerptById }
                 val citations = valid.mapNotNull(excerptById::get)
@@ -91,9 +93,7 @@ class GroundingStreamFilter(
                     citations.map { it.pageNumber }.distinct().forEach { page ->
                         output.append("[Page ").append(page).append(']')
                     }
-                    if (valid.size != markerIds.size && rejections.size < MAX_REASONS) {
-                        rejections += "CITATION_PARTIAL:" + (markerIds - valid.toSet()).joinToString(",")
-                    }
+                    if (valid.size != markerIds.size) reject("CITATION_PARTIAL:" + (markerIds - valid.toSet()).joinToString(","))
                 } else {
                     reject("CITATION:$marker")
                 }
@@ -253,6 +253,7 @@ class GroundingStreamFilter(
         private const val MAX_IDENTIFIER_PREFIX = 8
         private const val MAX_REASONS = 16
         private const val WAIT_FOR_UNIT = "\u0000"
+        private val SUFFIXED_EXCERPT = Regex("^(E\\d+)[A-Za-z]$")
         private val FOLLOWING_UNIT = Regex("^[ \\t]*([\\p{L}°µ][\\p{L}°µ/]{0,11})")
 
         internal fun valueTokens(text: String): Set<String> = EvidenceValueLexer.lex(text).values

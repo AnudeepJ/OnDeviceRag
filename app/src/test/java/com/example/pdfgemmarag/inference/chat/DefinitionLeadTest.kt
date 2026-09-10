@@ -32,6 +32,17 @@ class DefinitionLeadTest {
     }
 
     @Test
+    fun `definition preserves semicolon separated criteria until the sentence ends`() {
+        val lead = AnswerQuestionUseCase.buildDefinitionLead(
+            "What is a widget?",
+            listOf(chunk(1, "A widget is a component measuring 1.5 metres; it must remain sealed.")),
+        )
+
+        assertTrue(lead.decisive)
+        assertTrue(lead.text, lead.text.contains("1.5 metres; it must remain sealed."))
+    }
+
+    @Test
     fun `definition that introduces a list carries the following criteria`() {
         val define = chunk(660, "12.1 INTRODUCTION Confined space means a space that: The term 'confined space' has any of following defining features as, any space;", page = 97)
         val items = chunk(661, "a. In which a person can bodily enter;\nb. Contains material that has the potential to engulf an entrant\nc. Contains or has a potential to contain a hazardous atmosphere", page = 97, kind = "LIST")
