@@ -1,0 +1,10 @@
+{
+  "modelFile": "embeddinggemma-300m-seq512.tflite",
+  "modelBytes": 179132472,
+  "backend": "GPU",
+  "sequenceLength": 512,
+  "requestedOutputDimensions": 512,
+  "outputValueCounts": [
+    768
+  ]
+}

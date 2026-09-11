@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.pdfgemmarag.inference.pdf.RowKeyLeadTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-09-11T13:25:03.898Z" hostname="redacted-local-host" time="0.005">
+  <properties/>
+  <testcase name="a generic Class header row does not answer a plywood class question" classname="com.example.pdfgemmarag.inference.pdf.RowKeyLeadTest" time="0.002"/>
+  <testcase name="the same row key in two tables is ambiguous without a caption hint" classname="com.example.pdfgemmarag.inference.pdf.RowKeyLeadTest" time="0.0"/>
+  <testcase name="row label plus rating column is a unique cell" classname="com.example.pdfgemmarag.inference.pdf.RowKeyLeadTest" time="0.001"/>
+  <testcase name="typed short class label selects that row" classname="com.example.pdfgemmarag.inference.pdf.RowKeyLeadTest" time="0.0"/>
+  <testcase name="range row and named column answer from the grid alone" classname="com.example.pdfgemmarag.inference.pdf.RowKeyLeadTest" time="0.001"/>
+  <testcase name="a class question names the letter cell as Class D" classname="com.example.pdfgemmarag.inference.pdf.RowKeyLeadTest" time="0.001"/>
+  <testcase name="between and phrasing matches a hyphenated range row" classname="com.example.pdfgemmarag.inference.pdf.RowKeyLeadTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

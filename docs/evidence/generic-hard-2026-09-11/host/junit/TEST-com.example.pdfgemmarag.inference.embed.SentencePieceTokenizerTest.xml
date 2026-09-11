@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.pdfgemmarag.inference.embed.SentencePieceTokenizerTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-09-11T13:25:02.837Z" hostname="redacted-local-host" time="0.01">
+  <properties/>
+  <testcase name="encodeForModel adds bos eos and truncates" classname="com.example.pdfgemmarag.inference.embed.SentencePieceTokenizerTest" time="0.004"/>
+  <testcase name="dummy prefix option prepends a space" classname="com.example.pdfgemmarag.inference.embed.SentencePieceTokenizerTest" time="0.002"/>
+  <testcase name="control ids come from trainer spec" classname="com.example.pdfgemmarag.inference.embed.SentencePieceTokenizerTest" time="0.001"/>
+  <testcase name="greedy merges by score produce whole-word pieces" classname="com.example.pdfgemmarag.inference.embed.SentencePieceTokenizerTest" time="0.001"/>
+  <testcase name="round trip preserves whitespace runs" classname="com.example.pdfgemmarag.inference.embed.SentencePieceTokenizerTest" time="0.001"/>
+  <testcase name="unknown characters fall back to utf-8 bytes" classname="com.example.pdfgemmarag.inference.embed.SentencePieceTokenizerTest" time="0.001"/>
+  <testcase name="no dummy prefix means a leading word has no space marker" classname="com.example.pdfgemmarag.inference.embed.SentencePieceTokenizerTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

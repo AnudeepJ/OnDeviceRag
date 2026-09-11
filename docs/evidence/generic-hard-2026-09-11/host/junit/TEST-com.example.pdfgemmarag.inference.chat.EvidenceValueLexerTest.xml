@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.pdfgemmarag.inference.chat.EvidenceValueLexerTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-09-11T13:25:02.753Z" hostname="redacted-local-host" time="0.004">
+  <properties/>
+  <testcase name="mixed case compact unit is a unit but a single capital suffix is an identifier" classname="com.example.pdfgemmarag.inference.chat.EvidenceValueLexerTest" time="0.0"/>
+  <testcase name="ranges expose both ends and keep the range form" classname="com.example.pdfgemmarag.inference.chat.EvidenceValueLexerTest" time="0.0"/>
+  <testcase name="existing specification lexicon is preserved" classname="com.example.pdfgemmarag.inference.chat.EvidenceValueLexerTest" time="0.0"/>
+  <testcase name="ratios and unicode fractions are folded and decomposed" classname="com.example.pdfgemmarag.inference.chat.EvidenceValueLexerTest" time="0.001"/>
+  <testcase name="production grammar contains no document vocabulary" classname="com.example.pdfgemmarag.inference.chat.EvidenceValueLexerTest" time="0.002"/>
+  <testcase name="thousands separators and percent are normalized" classname="com.example.pdfgemmarag.inference.chat.EvidenceValueLexerTest" time="0.001"/>
+  <testcase name="compact and spaced units both produce a measurement with the same normalized pair" classname="com.example.pdfgemmarag.inference.chat.EvidenceValueLexerTest" time="0.0"/>
+  <testcase name="standard identifiers keep their year and expose it as a value" classname="com.example.pdfgemmarag.inference.chat.EvidenceValueLexerTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.pdfgemmarag.inference.store.HybridQueryTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-09-11T13:25:03.926Z" hostname="redacted-local-host" time="0.002">
+  <properties/>
+  <testcase name="required property scopes keyword and semantic retrieval before ranking" classname="com.example.pdfgemmarag.inference.store.HybridQueryTest" time="0.001"/>
+  <testcase name="strips stopwords and keeps distinctive terms" classname="com.example.pdfgemmarag.inference.store.HybridQueryTest" time="0.0"/>
+  <testcase name="typed label anchor ranks the matching sibling first" classname="com.example.pdfgemmarag.inference.store.HybridQueryTest" time="0.001"/>
+  <testcase name="semantic-only mode excludes keyword candidates" classname="com.example.pdfgemmarag.inference.store.HybridQueryTest" time="0.0"/>
+  <testcase name="no terms is semantic only" classname="com.example.pdfgemmarag.inference.store.HybridQueryTest" time="0.0"/>
+  <testcase name="formwork and plywood questions keep the nouns" classname="com.example.pdfgemmarag.inference.store.HybridQueryTest" time="0.0"/>
+  <testcase name="keeps CJK tokens of any length" classname="com.example.pdfgemmarag.inference.store.HybridQueryTest" time="0.0"/>
+  <testcase name="lexical-only mode excludes semantic candidates" classname="com.example.pdfgemmarag.inference.store.HybridQueryTest" time="0.0"/>
+  <testcase name="typed single letter class labels are rerank anchors only" classname="com.example.pdfgemmarag.inference.store.HybridQueryTest" time="0.0"/>
+  <testcase name="prefix forms of longer words widen keyword recall" classname="com.example.pdfgemmarag.inference.store.HybridQueryTest" time="0.0"/>
+  <testcase name="build ORs each term parameter plus semanticSearch" classname="com.example.pdfgemmarag.inference.store.HybridQueryTest" time="0.0"/>
+  <testcase name="unsafe property term cannot enter query expression" classname="com.example.pdfgemmarag.inference.store.HybridQueryTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

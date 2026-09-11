@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.pdfgemmarag.inference.chat.NumericGroundingTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-09-11T13:25:02.798Z" hostname="redacted-local-host" time="0.001">
+  <properties/>
+  <testcase name="repairs one unambiguous truncated source decimal" classname="com.example.pdfgemmarag.inference.chat.NumericGroundingTest" time="0.0"/>
+  <testcase name="pronoun follow up includes previous question" classname="com.example.pdfgemmarag.inference.chat.NumericGroundingTest" time="0.0"/>
+  <testcase name="table lead prefers rows matching query numbers and includes neighbour" classname="com.example.pdfgemmarag.inference.chat.NumericGroundingTest" time="0.001"/>
+  <testcase name="independent short question is not rewritten as follow up" classname="com.example.pdfgemmarag.inference.chat.NumericGroundingTest" time="0.0"/>
+  <testcase name="table header and paired limits request structural neighbours even when labeled paragraph" classname="com.example.pdfgemmarag.inference.chat.NumericGroundingTest" time="0.0"/>
+  <testcase name="ordinary ratio fact does not emit an unrelated available table" classname="com.example.pdfgemmarag.inference.chat.NumericGroundingTest" time="0.0"/>
+  <testcase name="does not guess when multiple source decimals share prefix" classname="com.example.pdfgemmarag.inference.chat.NumericGroundingTest" time="0.0"/>
+  <testcase name="leaves exact source decimals unchanged" classname="com.example.pdfgemmarag.inference.chat.NumericGroundingTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

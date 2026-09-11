@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.pdfgemmarag.inference.llm.ContextSelectorTest" tests="13" skipped="0" failures="0" errors="0" timestamp="2026-09-11T13:25:02.851Z" hostname="redacted-local-host" time="0.008">
+  <properties/>
+  <testcase name="constrained min max table question excludes a weaker sibling section" classname="com.example.pdfgemmarag.inference.llm.ContextSelectorTest" time="0.002"/>
+  <testcase name="uses stable excerpt ids and exact boundary dedupe" classname="com.example.pdfgemmarag.inference.llm.ContextSelectorTest" time="0.0"/>
+  <testcase name="fact puts the excerpt with literal question coverage nearest the question" classname="com.example.pdfgemmarag.inference.llm.ContextSelectorTest" time="0.0"/>
+  <testcase name="document overview preserves structural breadth instead of fact ranking" classname="com.example.pdfgemmarag.inference.llm.ContextSelectorTest" time="0.001"/>
+  <testcase name="summary keeps anchors then prioritizes high information requirements" classname="com.example.pdfgemmarag.inference.llm.ContextSelectorTest" time="0.0"/>
+  <testcase name="exact duration evidence outranks higher scored generic training prose" classname="com.example.pdfgemmarag.inference.llm.ContextSelectorTest" time="0.0"/>
+  <testcase name="list question gets complete procedural prompt instead of short fact limit" classname="com.example.pdfgemmarag.inference.llm.ContextSelectorTest" time="0.0"/>
+  <testcase name="summary prioritizes a continued multi-decimal requirement block" classname="com.example.pdfgemmarag.inference.llm.ContextSelectorTest" time="0.0"/>
+  <testcase name="list evidence is retained for an implicit enumeration question" classname="com.example.pdfgemmarag.inference.llm.ContextSelectorTest" time="0.003"/>
+  <testcase name="expanded neighbours cannot consume the primary retrieval quota" classname="com.example.pdfgemmarag.inference.llm.ContextSelectorTest" time="0.001"/>
+  <testcase name="proximity scored ordinary neighbor survives relative score filtering" classname="com.example.pdfgemmarag.inference.llm.ContextSelectorTest" time="0.001"/>
+  <testcase name="mixed numeric and color question stays in the strongest section" classname="com.example.pdfgemmarag.inference.llm.ContextSelectorTest" time="0.0"/>
+  <testcase name="summary keeps opening anchors then presents high information nearest the question" classname="com.example.pdfgemmarag.inference.llm.ContextSelectorTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

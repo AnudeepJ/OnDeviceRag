@@ -1,0 +1,18 @@
+{
+  "preferredGpu": {
+    "backend": "GPU",
+    "queryMars": 0,
+    "queryVenus": 0,
+    "queryDogs": 0,
+    "marsVenus": 0,
+    "marsDogs": 0
+  },
+  "cpu": {
+    "backend": "CPU",
+    "queryMars": 0.666624903678894,
+    "queryVenus": 0.30805954337120056,
+    "queryDogs": 0.08977415412664413,
+    "marsVenus": 0.4668426513671875,
+    "marsDogs": 0.3474242389202118
+  }
+}

@@ -1,0 +1,411 @@
+{
+  "dataset": "acme-210-v1",
+  "device": "A001",
+  "androidRelease": "16",
+  "appVersion": "1.0",
+  "appVersionCode": 1,
+  "embeddingSignature": "embeddinggemma-300m-seq512-512d-v2.1-section-title",
+  "embeddingMode": "real EmbeddingGemma document and query vectors",
+  "tokenAudit": [
+    {
+      "language": "en",
+      "meanQuestionTokens": 15.966666666666667,
+      "maxQuestionTokens": 21,
+      "meanDocumentTokens": 21.4,
+      "maxDocumentTokens": 28
+    },
+    {
+      "language": "zh",
+      "meanQuestionTokens": 15.3,
+      "maxQuestionTokens": 20,
+      "meanDocumentTokens": 20.333333333333332,
+      "maxDocumentTokens": 25
+    },
+    {
+      "language": "fr",
+      "meanQuestionTokens": 18,
+      "maxQuestionTokens": 26,
+      "meanDocumentTokens": 25.733333333333334,
+      "maxDocumentTokens": 32
+    },
+    {
+      "language": "de",
+      "meanQuestionTokens": 17.933333333333334,
+      "maxQuestionTokens": 25,
+      "meanDocumentTokens": 24.666666666666668,
+      "maxDocumentTokens": 28
+    },
+    {
+      "language": "it",
+      "meanQuestionTokens": 17.966666666666665,
+      "maxQuestionTokens": 23,
+      "meanDocumentTokens": 25.4,
+      "maxDocumentTokens": 31
+    },
+    {
+      "language": "ja",
+      "meanQuestionTokens": 18.066666666666666,
+      "maxQuestionTokens": 24,
+      "meanDocumentTokens": 24.266666666666666,
+      "maxDocumentTokens": 30
+    },
+    {
+      "language": "ko",
+      "meanQuestionTokens": 17.966666666666665,
+      "maxQuestionTokens": 24,
+      "meanDocumentTokens": 25.133333333333333,
+      "maxDocumentTokens": 30
+    }
+  ],
+  "thermalStatusStart": 1,
+  "thermalStatusEnd": 1,
+  "thermalOverride": false,
+  "speculativeDecodingOverride": false,
+  "strategies": [
+    {
+      "name": "dense_only",
+      "semanticWeight": 1,
+      "keywordWeight": 0,
+      "localRerankWeight": 0,
+      "questions": 210,
+      "hitAt1": 0.06666666666666667,
+      "hitAt5": 0.06666666666666667,
+      "mrr": 0.06666666666666667,
+      "elapsedMsSamples": [
+        2078,
+        2082,
+        2236
+      ],
+      "medianElapsedMs": 2082,
+      "medianQueryLatencyMs": 9,
+      "p95QueryLatencyMs": 11,
+      "perLanguage": [
+        {
+          "language": "de",
+          "questions": 30,
+          "hitAt1": 0.06666666666666667,
+          "hitAt5": 0.06666666666666667,
+          "mrr": 0.06666666666666667
+        },
+        {
+          "language": "en",
+          "questions": 30,
+          "hitAt1": 0.06666666666666667,
+          "hitAt5": 0.06666666666666667,
+          "mrr": 0.06666666666666667
+        },
+        {
+          "language": "fr",
+          "questions": 30,
+          "hitAt1": 0.06666666666666667,
+          "hitAt5": 0.06666666666666667,
+          "mrr": 0.06666666666666667
+        },
+        {
+          "language": "it",
+          "questions": 30,
+          "hitAt1": 0.06666666666666667,
+          "hitAt5": 0.06666666666666667,
+          "mrr": 0.06666666666666667
+        },
+        {
+          "language": "ja",
+          "questions": 30,
+          "hitAt1": 0.06666666666666667,
+          "hitAt5": 0.06666666666666667,
+          "mrr": 0.06666666666666667
+        },
+        {
+          "language": "ko",
+          "questions": 30,
+          "hitAt1": 0.06666666666666667,
+          "hitAt5": 0.06666666666666667,
+          "mrr": 0.06666666666666667
+        },
+        {
+          "language": "zh",
+          "questions": 30,
+          "hitAt1": 0.06666666666666667,
+          "hitAt5": 0.06666666666666667,
+          "mrr": 0.06666666666666667
+        }
+      ]
+    },
+    {
+      "name": "lexical_only",
+      "semanticWeight": 0,
+      "keywordWeight": 1,
+      "localRerankWeight": 0.35,
+      "questions": 210,
+      "hitAt1": 0.638095238095238,
+      "hitAt5": 0.7047619047619048,
+      "mrr": 0.6678571428571428,
+      "elapsedMsSamples": [
+        2075,
+        2141,
+        2198
+      ],
+      "medianElapsedMs": 2141,
+      "medianQueryLatencyMs": 10,
+      "p95QueryLatencyMs": 11,
+      "perLanguage": [
+        {
+          "language": "de",
+          "questions": 30,
+          "hitAt1": 0.8,
+          "hitAt5": 0.9666666666666667,
+          "mrr": 0.8694444444444444
+        },
+        {
+          "language": "en",
+          "questions": 30,
+          "hitAt1": 0.9333333333333333,
+          "hitAt5": 0.9333333333333333,
+          "mrr": 0.9333333333333333
+        },
+        {
+          "language": "fr",
+          "questions": 30,
+          "hitAt1": 0.8,
+          "hitAt5": 0.9666666666666667,
+          "mrr": 0.8722222222222221
+        },
+        {
+          "language": "it",
+          "questions": 30,
+          "hitAt1": 0.8666666666666667,
+          "hitAt5": 0.9333333333333333,
+          "mrr": 0.9
+        },
+        {
+          "language": "ja",
+          "questions": 30,
+          "hitAt1": 0.13333333333333333,
+          "hitAt5": 0.13333333333333333,
+          "mrr": 0.13333333333333333
+        },
+        {
+          "language": "ko",
+          "questions": 30,
+          "hitAt1": 0.7333333333333333,
+          "hitAt5": 0.7666666666666667,
+          "mrr": 0.75
+        },
+        {
+          "language": "zh",
+          "questions": 30,
+          "hitAt1": 0.2,
+          "hitAt5": 0.23333333333333334,
+          "mrr": 0.21666666666666667
+        }
+      ]
+    },
+    {
+      "name": "hybrid_default",
+      "semanticWeight": 1,
+      "keywordWeight": 0.05,
+      "localRerankWeight": 0.35,
+      "questions": 210,
+      "hitAt1": 0.638095238095238,
+      "hitAt5": 0.7047619047619048,
+      "mrr": 0.6678571428571428,
+      "elapsedMsSamples": [
+        2095,
+        2107,
+        2194
+      ],
+      "medianElapsedMs": 2107,
+      "medianQueryLatencyMs": 10,
+      "p95QueryLatencyMs": 10,
+      "perLanguage": [
+        {
+          "language": "de",
+          "questions": 30,
+          "hitAt1": 0.8,
+          "hitAt5": 0.9666666666666667,
+          "mrr": 0.8694444444444444
+        },
+        {
+          "language": "en",
+          "questions": 30,
+          "hitAt1": 0.9333333333333333,
+          "hitAt5": 0.9333333333333333,
+          "mrr": 0.9333333333333333
+        },
+        {
+          "language": "fr",
+          "questions": 30,
+          "hitAt1": 0.8,
+          "hitAt5": 0.9666666666666667,
+          "mrr": 0.8722222222222221
+        },
+        {
+          "language": "it",
+          "questions": 30,
+          "hitAt1": 0.8666666666666667,
+          "hitAt5": 0.9333333333333333,
+          "mrr": 0.9
+        },
+        {
+          "language": "ja",
+          "questions": 30,
+          "hitAt1": 0.13333333333333333,
+          "hitAt5": 0.13333333333333333,
+          "mrr": 0.13333333333333333
+        },
+        {
+          "language": "ko",
+          "questions": 30,
+          "hitAt1": 0.7333333333333333,
+          "hitAt5": 0.7666666666666667,
+          "mrr": 0.75
+        },
+        {
+          "language": "zh",
+          "questions": 30,
+          "hitAt1": 0.2,
+          "hitAt5": 0.23333333333333334,
+          "mrr": 0.21666666666666667
+        }
+      ]
+    },
+    {
+      "name": "hybrid_balanced",
+      "semanticWeight": 1,
+      "keywordWeight": 0.1,
+      "localRerankWeight": 0.35,
+      "questions": 210,
+      "hitAt1": 0.638095238095238,
+      "hitAt5": 0.7047619047619048,
+      "mrr": 0.6678571428571428,
+      "elapsedMsSamples": [
+        2084,
+        2112,
+        2177
+      ],
+      "medianElapsedMs": 2112,
+      "medianQueryLatencyMs": 10,
+      "p95QueryLatencyMs": 10,
+      "perLanguage": [
+        {
+          "language": "de",
+          "questions": 30,
+          "hitAt1": 0.8,
+          "hitAt5": 0.9666666666666667,
+          "mrr": 0.8694444444444444
+        },
+        {
+          "language": "en",
+          "questions": 30,
+          "hitAt1": 0.9333333333333333,
+          "hitAt5": 0.9333333333333333,
+          "mrr": 0.9333333333333333
+        },
+        {
+          "language": "fr",
+          "questions": 30,
+          "hitAt1": 0.8,
+          "hitAt5": 0.9666666666666667,
+          "mrr": 0.8722222222222221
+        },
+        {
+          "language": "it",
+          "questions": 30,
+          "hitAt1": 0.8666666666666667,
+          "hitAt5": 0.9333333333333333,
+          "mrr": 0.9
+        },
+        {
+          "language": "ja",
+          "questions": 30,
+          "hitAt1": 0.13333333333333333,
+          "hitAt5": 0.13333333333333333,
+          "mrr": 0.13333333333333333
+        },
+        {
+          "language": "ko",
+          "questions": 30,
+          "hitAt1": 0.7333333333333333,
+          "hitAt5": 0.7666666666666667,
+          "mrr": 0.75
+        },
+        {
+          "language": "zh",
+          "questions": 30,
+          "hitAt1": 0.2,
+          "hitAt5": 0.23333333333333334,
+          "mrr": 0.21666666666666667
+        }
+      ]
+    },
+    {
+      "name": "hybrid_keyword_strong",
+      "semanticWeight": 1,
+      "keywordWeight": 0.2,
+      "localRerankWeight": 0.35,
+      "questions": 210,
+      "hitAt1": 0.638095238095238,
+      "hitAt5": 0.7047619047619048,
+      "mrr": 0.6678571428571428,
+      "elapsedMsSamples": [
+        2109,
+        2112,
+        2132
+      ],
+      "medianElapsedMs": 2112,
+      "medianQueryLatencyMs": 9,
+      "p95QueryLatencyMs": 11,
+      "perLanguage": [
+        {
+          "language": "de",
+          "questions": 30,
+          "hitAt1": 0.8,
+          "hitAt5": 0.9666666666666667,
+          "mrr": 0.8694444444444444
+        },
+        {
+          "language": "en",
+          "questions": 30,
+          "hitAt1": 0.9333333333333333,
+          "hitAt5": 0.9333333333333333,
+          "mrr": 0.9333333333333333
+        },
+        {
+          "language": "fr",
+          "questions": 30,
+          "hitAt1": 0.8,
+          "hitAt5": 0.9666666666666667,
+          "mrr": 0.8722222222222221
+        },
+        {
+          "language": "it",
+          "questions": 30,
+          "hitAt1": 0.8666666666666667,
+          "hitAt5": 0.9333333333333333,
+          "mrr": 0.9
+        },
+        {
+          "language": "ja",
+          "questions": 30,
+          "hitAt1": 0.13333333333333333,
+          "hitAt5": 0.13333333333333333,
+          "mrr": 0.13333333333333333
+        },
+        {
+          "language": "ko",
+          "questions": 30,
+          "hitAt1": 0.7333333333333333,
+          "hitAt5": 0.7666666666666667,
+          "mrr": 0.75
+        },
+        {
+          "language": "zh",
+          "questions": 30,
+          "hitAt1": 0.2,
+          "hitAt5": 0.23333333333333334,
+          "mrr": 0.21666666666666667
+        }
+      ]
+    }
+  ]
+}

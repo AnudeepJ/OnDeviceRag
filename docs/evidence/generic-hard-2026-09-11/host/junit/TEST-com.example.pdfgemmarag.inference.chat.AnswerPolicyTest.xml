@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.pdfgemmarag.inference.chat.AnswerPolicyTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-09-11T13:25:02.704Z" hostname="redacted-local-host" time="0.001">
+  <properties/>
+  <testcase name="does not classify explanatory fact merely by substring" classname="com.example.pdfgemmarag.inference.chat.AnswerPolicyTest" time="0.001"/>
+  <testcase name="prompt and generation can share the same procedural decision" classname="com.example.pdfgemmarag.inference.chat.AnswerPolicyTest" time="0.0"/>
+  <testcase name="recognizes procedural wording without document-specific terms" classname="com.example.pdfgemmarag.inference.chat.AnswerPolicyTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

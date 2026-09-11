@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.pdfgemmarag.inference.store.EvidenceManifestContractTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-09-11T13:25:03.917Z" hostname="redacted-local-host" time="0.009">
+  <properties/>
+  <testcase name="explicit parents support book part then chapter outlines" classname="com.example.pdfgemmarag.inference.store.EvidenceManifestContractTest" time="0.0"/>
+  <testcase name="bounded subtree keeps both ends instead of truncating the tail" classname="com.example.pdfgemmarag.inference.store.EvidenceManifestContractTest" time="0.001"/>
+  <testcase name="canonical cells answer a matrix lookup after table splitting" classname="com.example.pdfgemmarag.inference.store.EvidenceManifestContractTest" time="0.004"/>
+  <testcase name="degraded overview samples physical pages" classname="com.example.pdfgemmarag.inference.store.EvidenceManifestContractTest" time="0.001"/>
+  <testcase name="v25 persists hierarchy lists cells and every source page" classname="com.example.pdfgemmarag.inference.store.EvidenceManifestContractTest" time="0.001"/>
+  <testcase name="canonical cells retain identical source rows" classname="com.example.pdfgemmarag.inference.store.EvidenceManifestContractTest" time="0.0"/>
+  <testcase name="explicit parents support specification section then part outlines" classname="com.example.pdfgemmarag.inference.store.EvidenceManifestContractTest" time="0.0"/>
+  <testcase name="explicit parents isolate repeated root paths" classname="com.example.pdfgemmarag.inference.store.EvidenceManifestContractTest" time="0.001"/>
+  <testcase name="canonical cells survive table token splitting" classname="com.example.pdfgemmarag.inference.store.EvidenceManifestContractTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.pdfgemmarag.inference.pdf.TextNormalizerTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-09-11T13:25:03.915Z" hostname="redacted-local-host" time="0.001">
+  <properties/>
+  <testcase name="fullwidth ascii and ligatures are folded" classname="com.example.pdfgemmarag.inference.pdf.TextNormalizerTest" time="0.001"/>
+  <testcase name="ascii input is returned as-is" classname="com.example.pdfgemmarag.inference.pdf.TextNormalizerTest" time="0.0"/>
+  <testcase name="korean and ordinary cjk are untouched" classname="com.example.pdfgemmarag.inference.pdf.TextNormalizerTest" time="0.0"/>
+  <testcase name="kangxi radicals and radicals supplement fold to unified ideographs" classname="com.example.pdfgemmarag.inference.pdf.TextNormalizerTest" time="0.0"/>
+  <testcase name="supplementary unified ideographs are not truncated to UTF-16" classname="com.example.pdfgemmarag.inference.pdf.TextNormalizerTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

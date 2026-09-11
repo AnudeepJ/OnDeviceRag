@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.pdfgemmarag.inference.chat.AnswerQuestionUseCaseRankingTest" tests="33" skipped="0" failures="0" errors="0" timestamp="2026-09-11T13:25:02.707Z" hostname="redacted-local-host" time="0.029">
+  <properties/>
+  <testcase name="boolean attribute row reverse lookup returns the option with yes" classname="com.example.pdfgemmarag.inference.chat.AnswerQuestionUseCaseRankingTest" time="0.007"/>
+  <testcase name="section lookup resolves a uniquely matching printed cross reference" classname="com.example.pdfgemmarag.inference.chat.AnswerQuestionUseCaseRankingTest" time="0.001"/>
+  <testcase name="flattened table declines equally matching sibling rows" classname="com.example.pdfgemmarag.inference.chat.AnswerQuestionUseCaseRankingTest" time="0.0"/>
+  <testcase name="flattened signed tolerance row is returned verbatim" classname="com.example.pdfgemmarag.inference.chat.AnswerQuestionUseCaseRankingTest" time="0.001"/>
+  <testcase name="flattened risk matrix tolerates scores emitted after their descriptions" classname="com.example.pdfgemmarag.inference.chat.AnswerQuestionUseCaseRankingTest" time="0.002"/>
+  <testcase name="typed table row matches when class and power are reordered in the question" classname="com.example.pdfgemmarag.inference.chat.AnswerQuestionUseCaseRankingTest" time="0.001"/>
+  <testcase name="typed first data row remains addressable when the header is missing" classname="com.example.pdfgemmarag.inference.chat.AnswerQuestionUseCaseRankingTest" time="0.0"/>
+  <testcase name="flattened min max table returns every requested row" classname="com.example.pdfgemmarag.inference.chat.AnswerQuestionUseCaseRankingTest" time="0.001"/>
+  <testcase name="numbered severity row returns its full meaning" classname="com.example.pdfgemmarag.inference.chat.AnswerQuestionUseCaseRankingTest" time="0.0"/>
+  <testcase name="flattened electrical fire row returns explicit class and methods" classname="com.example.pdfgemmarag.inference.chat.AnswerQuestionUseCaseRankingTest" time="0.002"/>
+  <testcase name="manifest scoped fallback ranks the requested facts first" classname="com.example.pdfgemmarag.inference.chat.AnswerQuestionUseCaseRankingTest" time="0.0"/>
+  <testcase name="short typed first row remains addressable when the header is missing" classname="com.example.pdfgemmarag.inference.chat.AnswerQuestionUseCaseRankingTest" time="0.001"/>
+  <testcase name="same-page adjacent evidence crosses a heading boundary only with query support" classname="com.example.pdfgemmarag.inference.chat.AnswerQuestionUseCaseRankingTest" time="0.0"/>
+  <testcase name="numbered rule list keeps adjacent items associated with its introduction" classname="com.example.pdfgemmarag.inference.chat.AnswerQuestionUseCaseRankingTest" time="0.004"/>
+  <testcase name="overview lead exposes distinct cited document roots immediately" classname="com.example.pdfgemmarag.inference.chat.AnswerQuestionUseCaseRankingTest" time="0.0"/>
+  <testcase name="overview samples top-level sections across the document" classname="com.example.pdfgemmarag.inference.chat.AnswerQuestionUseCaseRankingTest" time="0.001"/>
+  <testcase name="flattened shortcut declines a multi row values request" classname="com.example.pdfgemmarag.inference.chat.AnswerQuestionUseCaseRankingTest" time="0.0"/>
+  <testcase name="flattened table keeps parent scope attached to repeated row label" classname="com.example.pdfgemmarag.inference.chat.AnswerQuestionUseCaseRankingTest" time="0.001"/>
+  <testcase name="adjacent expansion follows rank and query-relative score rather than absolute score" classname="com.example.pdfgemmarag.inference.chat.AnswerQuestionUseCaseRankingTest" time="0.0"/>
+  <testcase name="curb tolerance is not hijacked by plumb paragraph through function words" classname="com.example.pdfgemmarag.inference.chat.AnswerQuestionUseCaseRankingTest" time="0.001"/>
+  <testcase name="summary preserves a unique adjacent multi-value block" classname="com.example.pdfgemmarag.inference.chat.AnswerQuestionUseCaseRankingTest" time="0.0"/>
+  <testcase name="quantified scaffold questions prefer words in the returned sentence" classname="com.example.pdfgemmarag.inference.chat.AnswerQuestionUseCaseRankingTest" time="0.001"/>
+  <testcase name="printed table number scopes a caption and its local continuation" classname="com.example.pdfgemmarag.inference.chat.AnswerQuestionUseCaseRankingTest" time="0.001"/>
+  <testcase name="enumerated ratios do not hijack a nearby slump question" classname="com.example.pdfgemmarag.inference.chat.AnswerQuestionUseCaseRankingTest" time="0.0"/>
+  <testcase name="corrupt manifest fallback is restricted to facts with a matching trusted namespace" classname="com.example.pdfgemmarag.inference.chat.AnswerQuestionUseCaseRankingTest" time="0.0"/>
+  <testcase name="tolerance question returns one uniquely matching table row" classname="com.example.pdfgemmarag.inference.chat.AnswerQuestionUseCaseRankingTest" time="0.001"/>
+  <testcase name="risk response row includes an immediately following action list" classname="com.example.pdfgemmarag.inference.chat.AnswerQuestionUseCaseRankingTest" time="0.0"/>
+  <testcase name="numbered items in one compact list chunk remain individually answerable" classname="com.example.pdfgemmarag.inference.chat.AnswerQuestionUseCaseRankingTest" time="0.001"/>
+  <testcase name="variation question returns exact value from flattened schedule paragraph" classname="com.example.pdfgemmarag.inference.chat.AnswerQuestionUseCaseRankingTest" time="0.0"/>
+  <testcase name="paired never and always directive is preserved" classname="com.example.pdfgemmarag.inference.chat.AnswerQuestionUseCaseRankingTest" time="0.0"/>
+  <testcase name="list question resolves adjacent enumerated value block without generation" classname="com.example.pdfgemmarag.inference.chat.AnswerQuestionUseCaseRankingTest" time="0.0"/>
+  <testcase name="named table category resolves a letter-labelled list row" classname="com.example.pdfgemmarag.inference.chat.AnswerQuestionUseCaseRankingTest" time="0.0"/>
+  <testcase name="flattened risk matrix resolves row and consequence intersection" classname="com.example.pdfgemmarag.inference.chat.AnswerQuestionUseCaseRankingTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

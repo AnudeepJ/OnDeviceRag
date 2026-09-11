@@ -1,0 +1,2167 @@
+{
+  "document": "home.pdf",
+  "docHash": "27780f0b8f05d19f8ef03ead2a5a2ad6",
+  "indexVersion": 27,
+  "indexNamespace": "27780f0b8f05d19f8ef03ead2a5a2ad6:v27:mtwb50pj",
+  "device": "A001",
+  "androidRelease": "16",
+  "appVersion": "1.0",
+  "appVersionCode": 1,
+  "appLastUpdateTime": 1789101531295,
+  "debugBuild": true,
+  "embeddingSignature": "embeddinggemma-300m-seq512-512d-v2.1-section-title",
+  "sourcePageCount": 70,
+  "pageRecords": 70,
+  "structureSections": 11,
+  "structureTables": 26,
+  "structureLists": 84,
+  "canonicalTableCells": 644,
+  "thermalStatusStart": 0,
+  "thermalStatusEnd": 0,
+  "thermalOverride": false,
+  "speculativeDecodingOverride": false,
+  "pipelineStages": {
+    "extraction": {
+      "sourcePages": 70,
+      "pageRecords": 70,
+      "script": "LATIN"
+    },
+    "structure": {
+      "sections": 11,
+      "tables": 26,
+      "lists": 84,
+      "canonicalTableCells": 644
+    }
+  },
+  "total": 19,
+  "retrievalPassed": 1,
+  "answerPassed": 1,
+  "byStage": {
+    "RETRIEVAL": 18,
+    "PASS": 1
+  },
+  "generatedTurns": 8,
+  "medianModelTtftMs": 6148,
+  "medianDecodeTokensPerSecond": 9.233282429519829,
+  "medianPrefillTokensPerSecond": 240.62826612076125,
+  "cases": [
+    {
+      "id": "ambiguous-concrete-mix",
+      "intent": "AMBIGUOUS_SECTION",
+      "question": "Summarize concrete mix",
+      "retrievalPassed": false,
+      "answerPassed": false,
+      "stage": "RETRIEVAL",
+      "plannerIntent": "SECTION_SUMMARY",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 1284,
+      "prefillTokensPerSecond": 177.3199724223748,
+      "decodeTokensPerSecond": 9.12594631749178,
+      "retrievalReasons": [
+        "expected pages [17, 60], got [59, 60, 22]"
+      ],
+      "answerReasons": [
+        "expected clarification or both matching sections"
+      ],
+      "retrievedPages": [
+        59,
+        60,
+        22
+      ],
+      "modelTtftMs": 13548,
+      "visibleTtftMs": 13611,
+      "totalMs": 35323,
+      "tokensPerSecond": 9.12594631749178,
+      "backend": "GPU",
+      "retrievedChunks": 10,
+      "contextTokens": 979,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 7,
+          "chunkIds": [
+            "c0000263",
+            "c0000323",
+            "c0000110",
+            "c0000128",
+            "c0000109",
+            "c0000320",
+            "c0000329"
+          ],
+          "pages": [
+            51,
+            60,
+            22,
+            26,
+            59,
+            61
+          ]
+        },
+        "expandedCandidates": {
+          "count": 22,
+          "chunkIds": [
+            "c0000263",
+            "c0000262",
+            "c0000264",
+            "c0000323",
+            "c0000322",
+            "c0000324",
+            "c0000110",
+            "c0000111",
+            "c0000128",
+            "c0000127",
+            "c0000109",
+            "c0000108",
+            "c0000320",
+            "c0000321",
+            "c0000319",
+            "c0000318",
+            "c0000317",
+            "c0000329",
+            "c0000328",
+            "c0000330",
+            "c0000327",
+            "c0000326"
+          ],
+          "provenance": [
+            "c0000263:RETRIEVED:",
+            "c0000262:ADJACENT:c0000263",
+            "c0000264:ADJACENT:c0000263",
+            "c0000323:RETRIEVED:",
+            "c0000322:ADJACENT:c0000323",
+            "c0000324:ADJACENT:c0000323",
+            "c0000110:RETRIEVED:",
+            "c0000111:CONTINUATION:c0000110",
+            "c0000128:RETRIEVED:",
+            "c0000127:ADJACENT:c0000128",
+            "c0000109:RETRIEVED:",
+            "c0000108:ADJACENT:c0000109",
+            "c0000320:RETRIEVED:",
+            "c0000321:CONTINUATION:c0000320",
+            "c0000319:STRUCTURAL:c0000320",
+            "c0000318:STRUCTURAL:c0000320",
+            "c0000317:STRUCTURAL:c0000320",
+            "c0000329:RETRIEVED:",
+            "c0000328:STRUCTURAL:c0000329",
+            "c0000330:STRUCTURAL:c0000329",
+            "c0000327:STRUCTURAL:c0000329",
+            "c0000326:STRUCTURAL:c0000329"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000263",
+            "c0000322",
+            "c0000262",
+            "c0000329",
+            "c0000330",
+            "c0000110",
+            "c0000111",
+            "c0000320",
+            "c0000321",
+            "c0000323"
+          ],
+          "pages": [
+            51,
+            60,
+            61,
+            22,
+            23,
+            59
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000320",
+            "c0000321",
+            "c0000323",
+            "c0000110"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "*   Fly ash, lime, and aggregates like slag, 20MPa, and gypsum can be used to manufacture blocks with a compressive strength of 7.5 [Page 59].\n*   Hollow cement blocks made from cement, sand, and 50% can have a compressive strength of 3.5 to 15 MPa and an apparent density of 1300 [Page 60].\n*   Porous concrete made by gas-aerated autoclaving has a compressive strength of 700 forming and grade of 4.2-5.0MPa and a thermal conductivity of 0.1 0- [Page 60].\n*   Concrete blocks can be used instead of bricks when covering plus 20mm cement mortar finish is required [Page 22].\n*   Concrete blocks made from silicate materials, lime, aluminum powder, and water have a thermal conductivity of 0.16W\/(m.K) [Page 60]."
+    },
+    {
+      "id": "summary-03300-205",
+      "intent": "SECTION_SUMMARY",
+      "question": "Summarize section 2.05 concrete mix in specification 03300",
+      "retrievalPassed": false,
+      "answerPassed": false,
+      "stage": "RETRIEVAL",
+      "plannerIntent": "",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 0,
+      "prefillTokensPerSecond": 0,
+      "decodeTokensPerSecond": 0,
+      "retrievalReasons": [
+        "expected pages [17], got []"
+      ],
+      "answerReasons": [
+        "missing phrases [5.75, 2400, 4000, 0.50]",
+        "missing user-visible page citation"
+      ],
+      "retrievedPages": [],
+      "modelTtftMs": 0,
+      "visibleTtftMs": 867,
+      "totalMs": 867,
+      "tokensPerSecond": 0,
+      "backend": "GPU",
+      "retrievedChunks": 0,
+      "contextTokens": 0,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 0,
+          "chunkIds": [],
+          "pages": []
+        },
+        "expandedCandidates": {
+          "count": 0,
+          "chunkIds": [],
+          "provenance": []
+        },
+        "selectedContext": {
+          "chunkIds": [],
+          "pages": []
+        },
+        "answerCitations": {
+          "chunkIds": []
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "The document does not appear to contain information about that."
+    },
+    {
+      "id": "summary-03310-202",
+      "intent": "SECTION_SUMMARY",
+      "question": "Summarize section 2.02 concrete mix in specification 03310",
+      "retrievalPassed": false,
+      "answerPassed": false,
+      "stage": "RETRIEVAL",
+      "plannerIntent": "",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 0,
+      "prefillTokensPerSecond": 0,
+      "decodeTokensPerSecond": 0,
+      "retrievalReasons": [
+        "expected pages [60, 61, 62, 63], got []"
+      ],
+      "answerReasons": [
+        "missing phrases [testing laboratory, 0.45, 0.55, 4 to 6 percent]",
+        "missing user-visible page citation"
+      ],
+      "retrievedPages": [],
+      "modelTtftMs": 0,
+      "visibleTtftMs": 861,
+      "totalMs": 860,
+      "tokensPerSecond": 0,
+      "backend": "GPU",
+      "retrievedChunks": 0,
+      "contextTokens": 0,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 0,
+          "chunkIds": [],
+          "pages": []
+        },
+        "expandedCandidates": {
+          "count": 0,
+          "chunkIds": [],
+          "provenance": []
+        },
+        "selectedContext": {
+          "chunkIds": [],
+          "pages": []
+        },
+        "answerCitations": {
+          "chunkIds": []
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "The document does not appear to contain information about that."
+    },
+    {
+      "id": "fact-03300-ratio",
+      "intent": "FACT",
+      "question": "What is the maximum water cement ratio in section 2.05 of specification 03300",
+      "retrievalPassed": false,
+      "answerPassed": false,
+      "stage": "RETRIEVAL",
+      "plannerIntent": "",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 0,
+      "prefillTokensPerSecond": 0,
+      "decodeTokensPerSecond": 0,
+      "retrievalReasons": [
+        "expected pages [17], got []"
+      ],
+      "answerReasons": [
+        "missing phrases [0.50]",
+        "missing user-visible page citation"
+      ],
+      "retrievedPages": [],
+      "modelTtftMs": 0,
+      "visibleTtftMs": 839,
+      "totalMs": 837,
+      "tokensPerSecond": 0,
+      "backend": "GPU",
+      "retrievedChunks": 0,
+      "contextTokens": 0,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 0,
+          "chunkIds": [],
+          "pages": []
+        },
+        "expandedCandidates": {
+          "count": 0,
+          "chunkIds": [],
+          "provenance": []
+        },
+        "selectedContext": {
+          "chunkIds": [],
+          "pages": []
+        },
+        "answerCitations": {
+          "chunkIds": []
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "The document does not appear to contain information about that."
+    },
+    {
+      "id": "fact-03300-strength-slump",
+      "intent": "MULTI_FACT",
+      "question": "What compressive strengths and slump ranges are specified in section 2.05 of specification 03300",
+      "retrievalPassed": false,
+      "answerPassed": false,
+      "stage": "RETRIEVAL",
+      "plannerIntent": "",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 0,
+      "prefillTokensPerSecond": 0,
+      "decodeTokensPerSecond": 0,
+      "retrievalReasons": [
+        "expected pages [17], got []"
+      ],
+      "answerReasons": [
+        "missing phrases [2400, 4000, 3 to 4, 5 to 6]",
+        "missing user-visible page citation"
+      ],
+      "retrievedPages": [],
+      "modelTtftMs": 0,
+      "visibleTtftMs": 887,
+      "totalMs": 885,
+      "tokensPerSecond": 0,
+      "backend": "GPU",
+      "retrievedChunks": 0,
+      "contextTokens": 0,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 0,
+          "chunkIds": [],
+          "pages": []
+        },
+        "expandedCandidates": {
+          "count": 0,
+          "chunkIds": [],
+          "provenance": []
+        },
+        "selectedContext": {
+          "chunkIds": [],
+          "pages": []
+        },
+        "answerCitations": {
+          "chunkIds": []
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "The document does not appear to contain information about that."
+    },
+    {
+      "id": "fact-03300-admixtures",
+      "intent": "MULTI_FACT",
+      "question": "When may accelerating and set retarding admixtures be used in section 2.05 of specification 03300",
+      "retrievalPassed": false,
+      "answerPassed": false,
+      "stage": "RETRIEVAL",
+      "plannerIntent": "",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 0,
+      "prefillTokensPerSecond": 0,
+      "decodeTokensPerSecond": 0,
+      "retrievalReasons": [
+        "expected pages [17], got []"
+      ],
+      "answerReasons": [
+        "missing phrases [cold weather, hot weather, approved]",
+        "missing user-visible page citation"
+      ],
+      "retrievedPages": [],
+      "modelTtftMs": 0,
+      "visibleTtftMs": 874,
+      "totalMs": 871,
+      "tokensPerSecond": 0,
+      "backend": "GPU",
+      "retrievedChunks": 0,
+      "contextTokens": 0,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 0,
+          "chunkIds": [],
+          "pages": []
+        },
+        "expandedCandidates": {
+          "count": 0,
+          "chunkIds": [],
+          "provenance": []
+        },
+        "selectedContext": {
+          "chunkIds": [],
+          "pages": []
+        },
+        "answerCitations": {
+          "chunkIds": []
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "The document does not appear to contain information about that."
+    },
+    {
+      "id": "summary-03300-curing",
+      "intent": "SECTION_SUMMARY",
+      "question": "Summarize section 3.26 curing in specification 03300",
+      "retrievalPassed": false,
+      "answerPassed": false,
+      "stage": "RETRIEVAL",
+      "plannerIntent": "",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 0,
+      "prefillTokensPerSecond": 0,
+      "decodeTokensPerSecond": 0,
+      "retrievalReasons": [
+        "expected pages [44, 45], got []"
+      ],
+      "answerReasons": [
+        "missing phrases [7 curing days, 3 curing days, curing compound]",
+        "missing user-visible page citation"
+      ],
+      "retrievedPages": [],
+      "modelTtftMs": 0,
+      "visibleTtftMs": 887,
+      "totalMs": 885,
+      "tokensPerSecond": 0,
+      "backend": "GPU",
+      "retrievedChunks": 0,
+      "contextTokens": 0,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 0,
+          "chunkIds": [],
+          "pages": []
+        },
+        "expandedCandidates": {
+          "count": 0,
+          "chunkIds": [],
+          "provenance": []
+        },
+        "selectedContext": {
+          "chunkIds": [],
+          "pages": []
+        },
+        "answerCitations": {
+          "chunkIds": []
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "The document does not appear to contain information about that."
+    },
+    {
+      "id": "fact-curing-material",
+      "intent": "MULTI_FACT",
+      "question": "What minimum solids content and color requirement apply to membrane forming curing compound in specification 03300",
+      "retrievalPassed": false,
+      "answerPassed": false,
+      "stage": "RETRIEVAL",
+      "plannerIntent": "",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 0,
+      "prefillTokensPerSecond": 0,
+      "decodeTokensPerSecond": 0,
+      "retrievalReasons": [
+        "expected pages [24], got []"
+      ],
+      "answerReasons": [
+        "missing phrases [30 percent, white]",
+        "missing user-visible page citation"
+      ],
+      "retrievedPages": [],
+      "modelTtftMs": 0,
+      "visibleTtftMs": 853,
+      "totalMs": 850,
+      "tokensPerSecond": 0,
+      "backend": "GPU",
+      "retrievedChunks": 0,
+      "contextTokens": 0,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 0,
+          "chunkIds": [],
+          "pages": []
+        },
+        "expandedCandidates": {
+          "count": 0,
+          "chunkIds": [],
+          "provenance": []
+        },
+        "selectedContext": {
+          "chunkIds": [],
+          "pages": []
+        },
+        "answerCitations": {
+          "chunkIds": []
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "The document does not appear to contain information about that."
+    },
+    {
+      "id": "table-slump",
+      "intent": "TABLE_LOOKUP",
+      "question": "What are the minimum and maximum slump values for Portland cement concrete and concrete dosed with superplasticizer",
+      "retrievalPassed": false,
+      "answerPassed": false,
+      "stage": "RETRIEVAL",
+      "plannerIntent": "FACT",
+      "answeredBy": "QUANTIFIED_SENTENCE_LEAD",
+      "groundingReasons": "",
+      "prefillTokens": 0,
+      "prefillTokensPerSecond": 0,
+      "decodeTokensPerSecond": 0,
+      "retrievalReasons": [
+        "expected pages [62], got [22]"
+      ],
+      "answerReasons": [
+        "missing phrases [Portland, superplasticizer, 4]"
+      ],
+      "retrievedPages": [
+        22
+      ],
+      "modelTtftMs": 0,
+      "visibleTtftMs": 1080,
+      "totalMs": 1075,
+      "tokensPerSecond": 0,
+      "backend": "GPU",
+      "retrievedChunks": 0,
+      "contextTokens": 0,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000130",
+            "c0000110",
+            "c0000109",
+            "c0000320",
+            "c0000029",
+            "c0000041",
+            "c0000060",
+            "c0000323",
+            "c0000329",
+            "c0000128",
+            "c0000321",
+            "c0000052"
+          ],
+          "pages": [
+            27,
+            22,
+            59,
+            5,
+            11,
+            15,
+            60,
+            61,
+            26,
+            13
+          ]
+        },
+        "expandedCandidates": {
+          "count": 29,
+          "chunkIds": [
+            "c0000130",
+            "c0000129",
+            "c0000131",
+            "c0000132",
+            "c0000133",
+            "c0000110",
+            "c0000111",
+            "c0000108",
+            "c0000107",
+            "c0000109",
+            "c0000320",
+            "c0000319",
+            "c0000318",
+            "c0000317",
+            "c0000029",
+            "c0000028",
+            "c0000041",
+            "c0000060",
+            "c0000323",
+            "c0000329",
+            "c0000328",
+            "c0000330",
+            "c0000327",
+            "c0000326",
+            "c0000128",
+            "c0000321",
+            "c0000322",
+            "c0000324",
+            "c0000052"
+          ],
+          "provenance": [
+            "c0000130:RETRIEVED:",
+            "c0000129:STRUCTURAL:c0000130",
+            "c0000131:STRUCTURAL:c0000130",
+            "c0000132:STRUCTURAL:c0000130",
+            "c0000133:STRUCTURAL:c0000130",
+            "c0000110:RETRIEVED:",
+            "c0000111:CONTINUATION:c0000110",
+            "c0000108:ADJACENT:c0000110",
+            "c0000107:ADJACENT:c0000110",
+            "c0000109:RETRIEVED:",
+            "c0000320:RETRIEVED:",
+            "c0000319:STRUCTURAL:c0000320",
+            "c0000318:STRUCTURAL:c0000320",
+            "c0000317:STRUCTURAL:c0000320",
+            "c0000029:RETRIEVED:",
+            "c0000028:ADJACENT:c0000029",
+            "c0000041:RETRIEVED:",
+            "c0000060:RETRIEVED:",
+            "c0000323:RETRIEVED:",
+            "c0000329:RETRIEVED:",
+            "c0000328:STRUCTURAL:c0000329",
+            "c0000330:STRUCTURAL:c0000329",
+            "c0000327:STRUCTURAL:c0000329",
+            "c0000326:STRUCTURAL:c0000329",
+            "c0000128:RETRIEVED:",
+            "c0000321:RETRIEVED:",
+            "c0000322:STRUCTURAL:c0000321",
+            "c0000324:STRUCTURAL:c0000321",
+            "c0000052:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000109"
+          ],
+          "pages": [
+            22
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000109"
+          ]
+        },
+        "answer": {
+          "route": "QUANTIFIED_SENTENCE_LEAD",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "in roofs\nFigure 12: RCC slab + 75mm Inverted earthen pot in lime concrete + 20mm cement mortar\nfinish\nFigure 13: RCC slab + 75mm brick laid at intervals of 230mm c\/c+ brick tile [Page 22]"
+    },
+    {
+      "id": "table-class-d",
+      "intent": "TABLE_LOOKUP",
+      "question": "Which concrete class has 5000 psi compressive strength and 658 pounds of cement per cubic yard",
+      "retrievalPassed": false,
+      "answerPassed": false,
+      "stage": "RETRIEVAL",
+      "plannerIntent": "FACT",
+      "answeredBy": "TABLE_ROW_LEAD",
+      "groundingReasons": "",
+      "prefillTokens": 0,
+      "prefillTokensPerSecond": 0,
+      "decodeTokensPerSecond": 0,
+      "retrievalReasons": [
+        "expected pages [63], got [60]"
+      ],
+      "answerReasons": [
+        "missing phrases [Class D, 5000, 658]"
+      ],
+      "retrievedPages": [
+        60
+      ],
+      "modelTtftMs": 0,
+      "visibleTtftMs": 1029,
+      "totalMs": 1025,
+      "tokensPerSecond": 0,
+      "backend": "GPU",
+      "retrievedChunks": 0,
+      "contextTokens": 0,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000320",
+            "c0000321",
+            "c0000323",
+            "c0000296",
+            "c0000315",
+            "c0000110",
+            "c0000319",
+            "c0000109",
+            "c0000324",
+            "c0000272",
+            "c0000012",
+            "c0000256"
+          ],
+          "pages": [
+            59,
+            60,
+            56,
+            22,
+            53,
+            3,
+            50
+          ]
+        },
+        "expandedCandidates": {
+          "count": 23,
+          "chunkIds": [
+            "c0000320",
+            "c0000318",
+            "c0000317",
+            "c0000321",
+            "c0000322",
+            "c0000323",
+            "c0000296",
+            "c0000295",
+            "c0000297",
+            "c0000315",
+            "c0000314",
+            "c0000316",
+            "c0000110",
+            "c0000111",
+            "c0000319",
+            "c0000109",
+            "c0000324",
+            "c0000325",
+            "c0000272",
+            "c0000012",
+            "c0000256",
+            "c0000257",
+            "c0000255"
+          ],
+          "provenance": [
+            "c0000320:RETRIEVED:",
+            "c0000318:STRUCTURAL:c0000320",
+            "c0000317:STRUCTURAL:c0000320",
+            "c0000321:RETRIEVED:",
+            "c0000322:STRUCTURAL:c0000321",
+            "c0000323:RETRIEVED:",
+            "c0000296:RETRIEVED:",
+            "c0000295:ADJACENT:c0000296",
+            "c0000297:ADJACENT:c0000296",
+            "c0000315:RETRIEVED:",
+            "c0000314:ADJACENT:c0000315",
+            "c0000316:ADJACENT:c0000315",
+            "c0000110:RETRIEVED:",
+            "c0000111:CONTINUATION:c0000110",
+            "c0000319:RETRIEVED:",
+            "c0000109:RETRIEVED:",
+            "c0000324:RETRIEVED:",
+            "c0000325:STRUCTURAL:c0000324",
+            "c0000272:RETRIEVED:",
+            "c0000012:RETRIEVED:",
+            "c0000256:RETRIEVED:",
+            "c0000257:LIST_MEMBER:c0000256",
+            "c0000255:INTRODUCTION:c0000256"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000323"
+          ],
+          "pages": [
+            60
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000323"
+          ]
+        },
+        "answer": {
+          "route": "TABLE_ROW_LEAD",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "The porous concrete made by gas- Compressive strength of 700 forming and grade — 4.2 [Page 60]"
+    },
+    {
+      "id": "regression-plywood",
+      "intent": "FACT",
+      "question": "What standard and class must plywood form material meet",
+      "retrievalPassed": false,
+      "answerPassed": false,
+      "stage": "RETRIEVAL",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 1055,
+      "prefillTokensPerSecond": 219.08377676862304,
+      "decodeTokensPerSecond": 9.173774938146511,
+      "retrievalReasons": [
+        "expected pages [3, 17], got []"
+      ],
+      "answerReasons": [
+        "missing phrases [PS 1, Class 1]",
+        "unexpected refusal contradicts a source-backed expected answer",
+        "missing user-visible page citation"
+      ],
+      "retrievedPages": [],
+      "modelTtftMs": 6312,
+      "visibleTtftMs": 6314,
+      "totalMs": 8128,
+      "tokensPerSecond": 9.173774938146511,
+      "backend": "GPU",
+      "retrievedChunks": 8,
+      "contextTokens": 1056,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000296",
+            "c0000231",
+            "c0000027",
+            "c0000340",
+            "c0000114",
+            "c0000302",
+            "c0000342",
+            "c0000197",
+            "c0000323",
+            "c0000198",
+            "c0000260",
+            "c0000230"
+          ],
+          "pages": [
+            56,
+            47,
+            4,
+            63,
+            24,
+            40,
+            60,
+            51
+          ]
+        },
+        "expandedCandidates": {
+          "count": 26,
+          "chunkIds": [
+            "c0000296",
+            "c0000295",
+            "c0000297",
+            "c0000231",
+            "c0000232",
+            "c0000027",
+            "c0000028",
+            "c0000026",
+            "c0000340",
+            "c0000114",
+            "c0000302",
+            "c0000342",
+            "c0000341",
+            "c0000339",
+            "c0000197",
+            "c0000196",
+            "c0000323",
+            "c0000198",
+            "c0000260",
+            "c0000261",
+            "c0000259",
+            "c0000258",
+            "c0000262",
+            "c0000257",
+            "c0000263",
+            "c0000230"
+          ],
+          "provenance": [
+            "c0000296:RETRIEVED:",
+            "c0000295:ADJACENT:c0000296",
+            "c0000297:ADJACENT:c0000296",
+            "c0000231:RETRIEVED:",
+            "c0000232:ADJACENT:c0000231",
+            "c0000027:RETRIEVED:",
+            "c0000028:LIST_MEMBER:c0000027",
+            "c0000026:INTRODUCTION:c0000027",
+            "c0000340:RETRIEVED:",
+            "c0000114:RETRIEVED:",
+            "c0000302:RETRIEVED:",
+            "c0000342:RETRIEVED:",
+            "c0000341:STRUCTURAL:c0000342",
+            "c0000339:STRUCTURAL:c0000342",
+            "c0000197:RETRIEVED:",
+            "c0000196:CONTINUATION:c0000197",
+            "c0000323:RETRIEVED:",
+            "c0000198:RETRIEVED:",
+            "c0000260:RETRIEVED:",
+            "c0000261:LIST_MEMBER:c0000260",
+            "c0000259:STRUCTURAL:c0000260",
+            "c0000258:STRUCTURAL:c0000260",
+            "c0000262:STRUCTURAL:c0000260",
+            "c0000257:STRUCTURAL:c0000260",
+            "c0000263:STRUCTURAL:c0000260",
+            "c0000230:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000028",
+            "c0000232",
+            "c0000295",
+            "c0000297",
+            "c0000114",
+            "c0000231",
+            "c0000302",
+            "c0000027"
+          ],
+          "pages": [
+            5,
+            47,
+            56,
+            24,
+            4
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": []
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "The document does not contain information about the standard and class plywood form material must meet."
+    },
+    {
+      "id": "regression-ratios-03310",
+      "intent": "MULTI_FACT",
+      "question": "List the maximum water cement ratios in specification 03310",
+      "retrievalPassed": false,
+      "answerPassed": false,
+      "stage": "RETRIEVAL",
+      "plannerIntent": "",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 0,
+      "prefillTokensPerSecond": 0,
+      "decodeTokensPerSecond": 0,
+      "retrievalReasons": [
+        "expected pages [62], got []"
+      ],
+      "answerReasons": [
+        "missing phrases [0.45, 0.40, 0.55]",
+        "missing user-visible page citation"
+      ],
+      "retrievedPages": [],
+      "modelTtftMs": 0,
+      "visibleTtftMs": 822,
+      "totalMs": 820,
+      "tokensPerSecond": 0,
+      "backend": "GPU",
+      "retrievedChunks": 0,
+      "contextTokens": 0,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 0,
+          "chunkIds": [],
+          "pages": []
+        },
+        "expandedCandidates": {
+          "count": 0,
+          "chunkIds": [],
+          "provenance": []
+        },
+        "selectedContext": {
+          "chunkIds": [],
+          "pages": []
+        },
+        "answerCitations": {
+          "chunkIds": []
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "The document does not appear to contain information about that."
+    },
+    {
+      "id": "negative-handrail-color",
+      "intent": "UNSUPPORTED",
+      "question": "What color must structural steel handrails be painted",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 803,
+      "prefillTokensPerSecond": 238.6394074100054,
+      "decodeTokensPerSecond": 9.313600019111506,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [],
+      "modelTtftMs": 4825,
+      "visibleTtftMs": 4827,
+      "totalMs": 6617,
+      "tokensPerSecond": 9.313600019111506,
+      "backend": "GPU",
+      "retrievedChunks": 8,
+      "contextTokens": 659,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000305",
+            "c0000250",
+            "c0000114",
+            "c0000254",
+            "c0000324",
+            "c0000260",
+            "c0000311",
+            "c0000326",
+            "c0000037",
+            "c0000320",
+            "c0000237",
+            "c0000120"
+          ],
+          "pages": [
+            56,
+            50,
+            24,
+            60,
+            51,
+            57,
+            61,
+            9,
+            59,
+            48
+          ]
+        },
+        "expandedCandidates": {
+          "count": 34,
+          "chunkIds": [
+            "c0000305",
+            "c0000304",
+            "c0000250",
+            "c0000249",
+            "c0000251",
+            "c0000114",
+            "c0000113",
+            "c0000115",
+            "c0000254",
+            "c0000324",
+            "c0000323",
+            "c0000325",
+            "c0000322",
+            "c0000321",
+            "c0000260",
+            "c0000261",
+            "c0000259",
+            "c0000258",
+            "c0000262",
+            "c0000257",
+            "c0000263",
+            "c0000311",
+            "c0000326",
+            "c0000037",
+            "c0000320",
+            "c0000319",
+            "c0000318",
+            "c0000317",
+            "c0000237",
+            "c0000236",
+            "c0000238",
+            "c0000239",
+            "c0000240",
+            "c0000120"
+          ],
+          "provenance": [
+            "c0000305:RETRIEVED:",
+            "c0000304:ADJACENT:c0000305",
+            "c0000250:RETRIEVED:",
+            "c0000249:ADJACENT:c0000250",
+            "c0000251:ADJACENT:c0000250",
+            "c0000114:RETRIEVED:",
+            "c0000113:ADJACENT:c0000114",
+            "c0000115:ADJACENT:c0000114",
+            "c0000254:RETRIEVED:",
+            "c0000324:RETRIEVED:",
+            "c0000323:STRUCTURAL:c0000324",
+            "c0000325:STRUCTURAL:c0000324",
+            "c0000322:STRUCTURAL:c0000324",
+            "c0000321:STRUCTURAL:c0000324",
+            "c0000260:RETRIEVED:",
+            "c0000261:LIST_MEMBER:c0000260",
+            "c0000259:STRUCTURAL:c0000260",
+            "c0000258:STRUCTURAL:c0000260",
+            "c0000262:STRUCTURAL:c0000260",
+            "c0000257:STRUCTURAL:c0000260",
+            "c0000263:STRUCTURAL:c0000260",
+            "c0000311:RETRIEVED:",
+            "c0000326:RETRIEVED:",
+            "c0000037:RETRIEVED:",
+            "c0000320:RETRIEVED:",
+            "c0000319:STRUCTURAL:c0000320",
+            "c0000318:STRUCTURAL:c0000320",
+            "c0000317:STRUCTURAL:c0000320",
+            "c0000237:RETRIEVED:",
+            "c0000236:CONTINUATION:c0000237",
+            "c0000238:LIST_MEMBER:c0000237",
+            "c0000239:STRUCTURAL:c0000237",
+            "c0000240:STRUCTURAL:c0000237",
+            "c0000120:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000113",
+            "c0000249",
+            "c0000251",
+            "c0000304",
+            "c0000254",
+            "c0000250",
+            "c0000114",
+            "c0000305"
+          ],
+          "pages": [
+            24,
+            50,
+            56
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": []
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "The document does not contain information about the required paint color for structural steel handrails."
+    },
+    {
+      "id": "fact-mass-curing",
+      "intent": "FACT",
+      "question": "What is the minimum curing period for mass concrete in specification 03300",
+      "retrievalPassed": false,
+      "answerPassed": false,
+      "stage": "RETRIEVAL",
+      "plannerIntent": "",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 0,
+      "prefillTokensPerSecond": 0,
+      "decodeTokensPerSecond": 0,
+      "retrievalReasons": [
+        "expected pages [45], got []"
+      ],
+      "answerReasons": [
+        "missing phrases [2 weeks]",
+        "missing user-visible page citation"
+      ],
+      "retrievedPages": [],
+      "modelTtftMs": 0,
+      "visibleTtftMs": 825,
+      "totalMs": 822,
+      "tokensPerSecond": 0,
+      "backend": "GPU",
+      "retrievedChunks": 0,
+      "contextTokens": 0,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 0,
+          "chunkIds": [],
+          "pages": []
+        },
+        "expandedCandidates": {
+          "count": 0,
+          "chunkIds": [],
+          "provenance": []
+        },
+        "selectedContext": {
+          "chunkIds": [],
+          "pages": []
+        },
+        "answerCitations": {
+          "chunkIds": []
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "The document does not appear to contain information about that."
+    },
+    {
+      "id": "followup-mass-freezing",
+      "intent": "FOLLOW_UP",
+      "question": "What about when ambient temperature is below freezing",
+      "retrievalPassed": false,
+      "answerPassed": false,
+      "stage": "RETRIEVAL",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "IDENTIFIER_MISMATCH:fication030",
+      "prefillTokens": 1169,
+      "prefillTokensPerSecond": 264.22999446676624,
+      "decodeTokensPerSecond": 9.357057188909565,
+      "retrievalReasons": [
+        "expected pages [45], got []"
+      ],
+      "answerReasons": [
+        "grounding filter rejected generated content",
+        "internal or malformed citation\/value marker",
+        "missing phrases [32]",
+        "unexpected refusal contradicts a source-backed expected answer",
+        "missing user-visible page citation"
+      ],
+      "retrievedPages": [],
+      "modelTtftMs": 6148,
+      "visibleTtftMs": 6152,
+      "totalMs": 9557,
+      "tokensPerSecond": 9.357057188909565,
+      "backend": "GPU",
+      "retrievedChunks": 8,
+      "contextTokens": 891,
+      "groundingFailure": true,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000130",
+            "c0000017",
+            "c0000238",
+            "c0000335",
+            "c0000329",
+            "c0000153",
+            "c0000041",
+            "c0000155",
+            "c0000253",
+            "c0000323",
+            "c0000131",
+            "c0000136"
+          ],
+          "pages": [
+            27,
+            3,
+            48,
+            62,
+            61,
+            31,
+            11,
+            50,
+            60,
+            28
+          ]
+        },
+        "expandedCandidates": {
+          "count": 26,
+          "chunkIds": [
+            "c0000130",
+            "c0000129",
+            "c0000132",
+            "c0000133",
+            "c0000017",
+            "c0000016",
+            "c0000018",
+            "c0000015",
+            "c0000019",
+            "c0000014",
+            "c0000020",
+            "c0000238",
+            "c0000237",
+            "c0000335",
+            "c0000329",
+            "c0000328",
+            "c0000330",
+            "c0000327",
+            "c0000326",
+            "c0000153",
+            "c0000041",
+            "c0000155",
+            "c0000253",
+            "c0000323",
+            "c0000131",
+            "c0000136"
+          ],
+          "provenance": [
+            "c0000130:RETRIEVED:",
+            "c0000129:STRUCTURAL:c0000130",
+            "c0000132:STRUCTURAL:c0000130",
+            "c0000133:STRUCTURAL:c0000130",
+            "c0000017:RETRIEVED:",
+            "c0000016:ADJACENT:c0000017",
+            "c0000018:ADJACENT:c0000017",
+            "c0000015:ADJACENT:c0000017",
+            "c0000019:ADJACENT:c0000017",
+            "c0000014:ADJACENT:c0000017",
+            "c0000020:ADJACENT:c0000017",
+            "c0000238:RETRIEVED:",
+            "c0000237:INTRODUCTION:c0000238",
+            "c0000335:RETRIEVED:",
+            "c0000329:RETRIEVED:",
+            "c0000328:STRUCTURAL:c0000329",
+            "c0000330:STRUCTURAL:c0000329",
+            "c0000327:STRUCTURAL:c0000329",
+            "c0000326:STRUCTURAL:c0000329",
+            "c0000153:RETRIEVED:",
+            "c0000041:RETRIEVED:",
+            "c0000155:RETRIEVED:",
+            "c0000253:RETRIEVED:",
+            "c0000323:RETRIEVED:",
+            "c0000131:RETRIEVED:",
+            "c0000136:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000016",
+            "c0000129",
+            "c0000132",
+            "c0000133",
+            "c0000041",
+            "c0000329",
+            "c0000017",
+            "c0000130"
+          ],
+          "pages": [
+            3,
+            27,
+            11,
+            61
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": []
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": true
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "The document does not contain information about the minimum curing period for mass concrete in specification [unverified value] or conditions when the ambient temperature is below freezing."
+    },
+    {
+      "id": "script1-plumb-piers",
+      "intent": "TABLE_LOOKUP",
+      "question": "The surveying team is checking the formwork for the new piers. What is the maximum allowable variation from plumb?",
+      "retrievalPassed": false,
+      "answerPassed": false,
+      "stage": "RETRIEVAL",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 946,
+      "prefillTokensPerSecond": 262.86573666927166,
+      "decodeTokensPerSecond": 9.233282429519829,
+      "retrievalReasons": [
+        "expected pages [12, 49], got [38]"
+      ],
+      "answerReasons": [
+        "missing phrases [1\/2, 10]",
+        "unexpected refusal contradicts a source-backed expected answer"
+      ],
+      "retrievedPages": [
+        38
+      ],
+      "modelTtftMs": 5427,
+      "visibleTtftMs": 5431,
+      "totalMs": 7669,
+      "tokensPerSecond": 9.233282429519829,
+      "backend": "GPU",
+      "retrievedChunks": 8,
+      "contextTokens": 790,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000060",
+            "c0000191",
+            "c0000188",
+            "c0000130",
+            "c0000276",
+            "c0000282",
+            "c0000366",
+            "c0000006",
+            "c0000023",
+            "c0000235",
+            "c0000050",
+            "c0000201"
+          ],
+          "pages": [
+            15,
+            38,
+            27,
+            54,
+            55,
+            67,
+            2,
+            4,
+            47,
+            13,
+            41
+          ]
+        },
+        "expandedCandidates": {
+          "count": 46,
+          "chunkIds": [
+            "c0000060",
+            "c0000059",
+            "c0000061",
+            "c0000062",
+            "c0000063",
+            "c0000191",
+            "c0000192",
+            "c0000189",
+            "c0000193",
+            "c0000194",
+            "c0000188",
+            "c0000186",
+            "c0000190",
+            "c0000185",
+            "c0000130",
+            "c0000129",
+            "c0000131",
+            "c0000132",
+            "c0000133",
+            "c0000276",
+            "c0000275",
+            "c0000277",
+            "c0000278",
+            "c0000279",
+            "c0000282",
+            "c0000281",
+            "c0000283",
+            "c0000280",
+            "c0000284",
+            "c0000285",
+            "c0000366",
+            "c0000365",
+            "c0000367",
+            "c0000364",
+            "c0000368",
+            "c0000369",
+            "c0000006",
+            "c0000005",
+            "c0000007",
+            "c0000004",
+            "c0000008",
+            "c0000003",
+            "c0000023",
+            "c0000235",
+            "c0000050",
+            "c0000201"
+          ],
+          "provenance": [
+            "c0000060:RETRIEVED:",
+            "c0000059:ADJACENT:c0000060",
+            "c0000061:ADJACENT:c0000060",
+            "c0000062:ADJACENT:c0000060",
+            "c0000063:ADJACENT:c0000060",
+            "c0000191:RETRIEVED:",
+            "c0000192:ADJACENT:c0000191",
+            "c0000189:ADJACENT:c0000191",
+            "c0000193:ADJACENT:c0000191",
+            "c0000194:ADJACENT:c0000191",
+            "c0000188:RETRIEVED:",
+            "c0000186:ADJACENT:c0000188",
+            "c0000190:ADJACENT:c0000188",
+            "c0000185:ADJACENT:c0000188",
+            "c0000130:RETRIEVED:",
+            "c0000129:STRUCTURAL:c0000130",
+            "c0000131:STRUCTURAL:c0000130",
+            "c0000132:STRUCTURAL:c0000130",
+            "c0000133:STRUCTURAL:c0000130",
+            "c0000276:RETRIEVED:",
+            "c0000275:ADJACENT:c0000276",
+            "c0000277:ADJACENT:c0000276",
+            "c0000278:ADJACENT:c0000276",
+            "c0000279:ADJACENT:c0000276",
+            "c0000282:RETRIEVED:",
+            "c0000281:ADJACENT:c0000282",
+            "c0000283:ADJACENT:c0000282",
+            "c0000280:ADJACENT:c0000282",
+            "c0000284:ADJACENT:c0000282",
+            "c0000285:ADJACENT:c0000282",
+            "c0000366:RETRIEVED:",
+            "c0000365:STRUCTURAL:c0000366",
+            "c0000367:STRUCTURAL:c0000366",
+            "c0000364:STRUCTURAL:c0000366",
+            "c0000368:STRUCTURAL:c0000366",
+            "c0000369:STRUCTURAL:c0000366",
+            "c0000006:RETRIEVED:",
+            "c0000005:STRUCTURAL:c0000006",
+            "c0000007:STRUCTURAL:c0000006",
+            "c0000004:STRUCTURAL:c0000006",
+            "c0000008:STRUCTURAL:c0000006",
+            "c0000003:STRUCTURAL:c0000006",
+            "c0000023:RETRIEVED:",
+            "c0000235:RETRIEVED:",
+            "c0000050:RETRIEVED:",
+            "c0000201:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000189",
+            "c0000059",
+            "c0000061",
+            "c0000062",
+            "c0000006",
+            "c0000282",
+            "c0000130",
+            "c0000060"
+          ],
+          "pages": [
+            38,
+            15,
+            2,
+            55,
+            27
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000189"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "The document does not contain information about the maximum allowable variation from plumb formwork checking [Page 38]."
+    },
+    {
+      "id": "script1-column-cross-section",
+      "intent": "FOLLOW_UP",
+      "question": "Got it. What about the cross-sectional dimensions? How much tolerance do we have on the column thickness?",
+      "retrievalPassed": false,
+      "answerPassed": false,
+      "stage": "RETRIEVAL",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 1007,
+      "prefillTokensPerSecond": 283.71216083191274,
+      "decodeTokensPerSecond": 9.390088635796587,
+      "retrievalReasons": [
+        "expected pages [12, 48, 49], got []"
+      ],
+      "answerReasons": [
+        "missing phrases [-1\/4]",
+        "missing phrase alternatives [[+1\/2, ±1\/2]]",
+        "unexpected refusal contradicts a source-backed expected answer",
+        "missing user-visible page citation"
+      ],
+      "retrievedPages": [],
+      "modelTtftMs": 6299,
+      "visibleTtftMs": 6302,
+      "totalMs": 8394,
+      "tokensPerSecond": 9.390088635796587,
+      "backend": "GPU",
+      "retrievedChunks": 8,
+      "contextTokens": 951,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000191",
+            "c0000188",
+            "c0000060",
+            "c0000276",
+            "c0000130",
+            "c0000282",
+            "c0000366",
+            "c0000006",
+            "c0000023",
+            "c0000235",
+            "c0000050",
+            "c0000201"
+          ],
+          "pages": [
+            38,
+            15,
+            54,
+            27,
+            55,
+            67,
+            2,
+            4,
+            47,
+            13,
+            41
+          ]
+        },
+        "expandedCandidates": {
+          "count": 46,
+          "chunkIds": [
+            "c0000191",
+            "c0000192",
+            "c0000189",
+            "c0000193",
+            "c0000194",
+            "c0000188",
+            "c0000186",
+            "c0000190",
+            "c0000185",
+            "c0000060",
+            "c0000059",
+            "c0000061",
+            "c0000062",
+            "c0000063",
+            "c0000276",
+            "c0000275",
+            "c0000277",
+            "c0000278",
+            "c0000279",
+            "c0000130",
+            "c0000129",
+            "c0000131",
+            "c0000132",
+            "c0000133",
+            "c0000282",
+            "c0000281",
+            "c0000283",
+            "c0000280",
+            "c0000284",
+            "c0000285",
+            "c0000366",
+            "c0000365",
+            "c0000367",
+            "c0000364",
+            "c0000368",
+            "c0000369",
+            "c0000006",
+            "c0000005",
+            "c0000007",
+            "c0000004",
+            "c0000008",
+            "c0000003",
+            "c0000023",
+            "c0000235",
+            "c0000050",
+            "c0000201"
+          ],
+          "provenance": [
+            "c0000191:RETRIEVED:",
+            "c0000192:ADJACENT:c0000191",
+            "c0000189:ADJACENT:c0000191",
+            "c0000193:ADJACENT:c0000191",
+            "c0000194:ADJACENT:c0000191",
+            "c0000188:RETRIEVED:",
+            "c0000186:ADJACENT:c0000188",
+            "c0000190:ADJACENT:c0000188",
+            "c0000185:ADJACENT:c0000188",
+            "c0000060:RETRIEVED:",
+            "c0000059:ADJACENT:c0000060",
+            "c0000061:ADJACENT:c0000060",
+            "c0000062:ADJACENT:c0000060",
+            "c0000063:ADJACENT:c0000060",
+            "c0000276:RETRIEVED:",
+            "c0000275:ADJACENT:c0000276",
+            "c0000277:ADJACENT:c0000276",
+            "c0000278:ADJACENT:c0000276",
+            "c0000279:ADJACENT:c0000276",
+            "c0000130:RETRIEVED:",
+            "c0000129:STRUCTURAL:c0000130",
+            "c0000131:STRUCTURAL:c0000130",
+            "c0000132:STRUCTURAL:c0000130",
+            "c0000133:STRUCTURAL:c0000130",
+            "c0000282:RETRIEVED:",
+            "c0000281:ADJACENT:c0000282",
+            "c0000283:ADJACENT:c0000282",
+            "c0000280:ADJACENT:c0000282",
+            "c0000284:ADJACENT:c0000282",
+            "c0000285:ADJACENT:c0000282",
+            "c0000366:RETRIEVED:",
+            "c0000365:STRUCTURAL:c0000366",
+            "c0000367:STRUCTURAL:c0000366",
+            "c0000364:STRUCTURAL:c0000366",
+            "c0000368:STRUCTURAL:c0000366",
+            "c0000369:STRUCTURAL:c0000366",
+            "c0000006:RETRIEVED:",
+            "c0000005:STRUCTURAL:c0000006",
+            "c0000007:STRUCTURAL:c0000006",
+            "c0000004:STRUCTURAL:c0000006",
+            "c0000008:STRUCTURAL:c0000006",
+            "c0000003:STRUCTURAL:c0000006",
+            "c0000023:RETRIEVED:",
+            "c0000235:RETRIEVED:",
+            "c0000050:RETRIEVED:",
+            "c0000201:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000192",
+            "c0000193",
+            "c0000008",
+            "c0000189",
+            "c0000282",
+            "c0000130",
+            "c0000060",
+            "c0000235"
+          ],
+          "pages": [
+            38,
+            2,
+            55,
+            27,
+            15,
+            47
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": []
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "The document does not contain information about the maximum allowable variation from plumb or the tolerance on column thickness."
+    },
+    {
+      "id": "script1-curb-level",
+      "intent": "FOLLOW_UP",
+      "question": "Okay, and what is the tolerance for the level of the top surfaces of the curbs?",
+      "retrievalPassed": false,
+      "answerPassed": false,
+      "stage": "RETRIEVAL",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 835,
+      "prefillTokensPerSecond": 240.62826612076125,
+      "decodeTokensPerSecond": 8.264175606235632,
+      "retrievalReasons": [
+        "expected pages [12, 49], got []"
+      ],
+      "answerReasons": [
+        "missing phrases [3\/16, 10]",
+        "unexpected refusal contradicts a source-backed expected answer",
+        "missing user-visible page citation"
+      ],
+      "retrievedPages": [],
+      "modelTtftMs": 4770,
+      "visibleTtftMs": 4775,
+      "totalMs": 7171,
+      "tokensPerSecond": 8.264175606235632,
+      "backend": "GPU",
+      "retrievedChunks": 8,
+      "contextTokens": 720,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000065",
+            "c0000132",
+            "c0000302",
+            "c0000046",
+            "c0000054",
+            "c0000207",
+            "c0000045",
+            "c0000120",
+            "c0000069",
+            "c0000047",
+            "c0000211",
+            "c0000144"
+          ],
+          "pages": [
+            15,
+            27,
+            56,
+            12,
+            13,
+            41,
+            24,
+            42,
+            29
+          ]
+        },
+        "expandedCandidates": {
+          "count": 25,
+          "chunkIds": [
+            "c0000065",
+            "c0000064",
+            "c0000066",
+            "c0000132",
+            "c0000131",
+            "c0000133",
+            "c0000302",
+            "c0000301",
+            "c0000303",
+            "c0000046",
+            "c0000054",
+            "c0000055",
+            "c0000207",
+            "c0000206",
+            "c0000045",
+            "c0000044",
+            "c0000120",
+            "c0000069",
+            "c0000068",
+            "c0000047",
+            "c0000048",
+            "c0000049",
+            "c0000211",
+            "c0000144",
+            "c0000145"
+          ],
+          "provenance": [
+            "c0000065:RETRIEVED:",
+            "c0000064:ADJACENT:c0000065",
+            "c0000066:ADJACENT:c0000065",
+            "c0000132:RETRIEVED:",
+            "c0000131:ADJACENT:c0000132",
+            "c0000133:ADJACENT:c0000132",
+            "c0000302:RETRIEVED:",
+            "c0000301:ADJACENT:c0000302",
+            "c0000303:ADJACENT:c0000302",
+            "c0000046:RETRIEVED:",
+            "c0000054:RETRIEVED:",
+            "c0000055:LIST_MEMBER:c0000054",
+            "c0000207:RETRIEVED:",
+            "c0000206:INTRODUCTION:c0000207",
+            "c0000045:RETRIEVED:",
+            "c0000044:LIST_MEMBER:c0000045",
+            "c0000120:RETRIEVED:",
+            "c0000069:RETRIEVED:",
+            "c0000068:INTRODUCTION:c0000069",
+            "c0000047:RETRIEVED:",
+            "c0000048:LIST_MEMBER:c0000047",
+            "c0000049:LIST_MEMBER:c0000047",
+            "c0000211:RETRIEVED:",
+            "c0000144:RETRIEVED:",
+            "c0000145:CONTINUATION:c0000144"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000131",
+            "c0000133",
+            "c0000064",
+            "c0000066",
+            "c0000054",
+            "c0000302",
+            "c0000132",
+            "c0000065"
+          ],
+          "pages": [
+            27,
+            15,
+            13,
+            56
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": []
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "The document does not contain information about the tolerance for the level of the top surfaces of the curbs."
+    },
+    {
+      "id": "script1-testing-laboratory",
+      "intent": "FACT",
+      "question": "We will need the lab out here to test the mix. What section of the specifications covers the testing laboratory services?",
+      "retrievalPassed": false,
+      "answerPassed": false,
+      "stage": "RETRIEVAL",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 855,
+      "prefillTokensPerSecond": 209.17171384760562,
+      "decodeTokensPerSecond": 8.736705268226286,
+      "retrievalReasons": [
+        "expected pages [13, 43, 51, 53, 56], got []"
+      ],
+      "answerReasons": [
+        "missing phrases [01450, Testing Laboratory Services]",
+        "unexpected refusal contradicts a source-backed expected answer",
+        "missing user-visible page citation"
+      ],
+      "retrievedPages": [],
+      "modelTtftMs": 5965,
+      "visibleTtftMs": 5977,
+      "totalMs": 6814,
+      "tokensPerSecond": 8.736705268226286,
+      "backend": "GPU",
+      "retrievedChunks": 8,
+      "contextTokens": 766,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000025",
+            "c0000253",
+            "c0000335",
+            "c0000152",
+            "c0000255",
+            "c0000096",
+            "c0000263",
+            "c0000110",
+            "c0000076",
+            "c0000094",
+            "c0000359",
+            "c0000227"
+          ],
+          "pages": [
+            4,
+            50,
+            62,
+            31,
+            20,
+            51,
+            22,
+            17,
+            65,
+            46
+          ]
+        },
+        "expandedCandidates": {
+          "count": 24,
+          "chunkIds": [
+            "c0000025",
+            "c0000024",
+            "c0000026",
+            "c0000253",
+            "c0000252",
+            "c0000254",
+            "c0000335",
+            "c0000152",
+            "c0000255",
+            "c0000256",
+            "c0000257",
+            "c0000096",
+            "c0000263",
+            "c0000110",
+            "c0000111",
+            "c0000076",
+            "c0000075",
+            "c0000094",
+            "c0000359",
+            "c0000358",
+            "c0000357",
+            "c0000356",
+            "c0000227",
+            "c0000226"
+          ],
+          "provenance": [
+            "c0000025:RETRIEVED:",
+            "c0000024:ADJACENT:c0000025",
+            "c0000026:ADJACENT:c0000025",
+            "c0000253:RETRIEVED:",
+            "c0000252:ADJACENT:c0000253",
+            "c0000254:ADJACENT:c0000253",
+            "c0000335:RETRIEVED:",
+            "c0000152:RETRIEVED:",
+            "c0000255:RETRIEVED:",
+            "c0000256:LIST_MEMBER:c0000255",
+            "c0000257:LIST_MEMBER:c0000255",
+            "c0000096:RETRIEVED:",
+            "c0000263:RETRIEVED:",
+            "c0000110:RETRIEVED:",
+            "c0000111:CONTINUATION:c0000110",
+            "c0000076:RETRIEVED:",
+            "c0000075:CONTINUATION:c0000076",
+            "c0000094:RETRIEVED:",
+            "c0000359:RETRIEVED:",
+            "c0000358:STRUCTURAL:c0000359",
+            "c0000357:STRUCTURAL:c0000359",
+            "c0000356:STRUCTURAL:c0000359",
+            "c0000227:RETRIEVED:",
+            "c0000226:CONTINUATION:c0000227"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000252",
+            "c0000254",
+            "c0000024",
+            "c0000026",
+            "c0000253",
+            "c0000227",
+            "c0000094",
+            "c0000025"
+          ],
+          "pages": [
+            50,
+            4,
+            46,
+            20
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": []
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "The document does not contain that information."
+    }
+  ]
+}

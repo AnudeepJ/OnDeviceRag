@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.pdfgemmarag.inference.chat.GroundingStreamFilterTest" tests="18" skipped="0" failures="0" errors="0" timestamp="2026-09-11T13:25:02.758Z" hostname="redacted-local-host" time="0.006">
+  <properties/>
+  <testcase name="fragmented compound identifier remains allowed" classname="com.example.pdfgemmarag.inference.chat.GroundingStreamFilterTest" time="0.0"/>
+  <testcase name="numeric value is repaired using its following unit" classname="com.example.pdfgemmarag.inference.chat.GroundingStreamFilterTest" time="0.001"/>
+  <testcase name="combined excerpt citations map to distinct source pages" classname="com.example.pdfgemmarag.inference.chat.GroundingStreamFilterTest" time="0.001"/>
+  <testcase name="ordinary following word does not turn an allowed value into a unit mismatch" classname="com.example.pdfgemmarag.inference.chat.GroundingStreamFilterTest" time="0.0"/>
+  <testcase name="spaced identifier asserted by question is not authoritative evidence" classname="com.example.pdfgemmarag.inference.chat.GroundingStreamFilterTest" time="0.001"/>
+  <testcase name="manifest validated numeric pointer is not mistaken for a unit bearing value" classname="com.example.pdfgemmarag.inference.chat.GroundingStreamFilterTest" time="0.0"/>
+  <testcase name="wrong generated structural pointers are corrected from unique citation metadata" classname="com.example.pdfgemmarag.inference.chat.GroundingStreamFilterTest" time="0.0"/>
+  <testcase name="incomplete internal citation is discarded and marked as grounding failure" classname="com.example.pdfgemmarag.inference.chat.GroundingStreamFilterTest" time="0.0"/>
+  <testcase name="list marker at line start is structural" classname="com.example.pdfgemmarag.inference.chat.GroundingStreamFilterTest" time="0.001"/>
+  <testcase name="repairs unique numeric prefix without buffering whole answer" classname="com.example.pdfgemmarag.inference.chat.GroundingStreamFilterTest" time="0.0"/>
+  <testcase name="retrieved citation identifiers are authoritative structural metadata" classname="com.example.pdfgemmarag.inference.chat.GroundingStreamFilterTest" time="0.0"/>
+  <testcase name="metadata values visible to model are grounded evidence" classname="com.example.pdfgemmarag.inference.chat.GroundingStreamFilterTest" time="0.001"/>
+  <testcase name="lexicon covers formats used by specifications" classname="com.example.pdfgemmarag.inference.chat.GroundingStreamFilterTest" time="0.0"/>
+  <testcase name="unsupported identifier is not allowed through" classname="com.example.pdfgemmarag.inference.chat.GroundingStreamFilterTest" time="0.0"/>
+  <testcase name="hyphenated dimension survives numeric token boundary" classname="com.example.pdfgemmarag.inference.chat.GroundingStreamFilterTest" time="0.0"/>
+  <testcase name="streams fragmented values and maps excerpt marker" classname="com.example.pdfgemmarag.inference.chat.GroundingStreamFilterTest" time="0.001"/>
+  <testcase name="identifier asserted by question is not authoritative evidence" classname="com.example.pdfgemmarag.inference.chat.GroundingStreamFilterTest" time="0.0"/>
+  <testcase name="table value remains grounded when its unit is in a separate header chunk" classname="com.example.pdfgemmarag.inference.chat.GroundingStreamFilterTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

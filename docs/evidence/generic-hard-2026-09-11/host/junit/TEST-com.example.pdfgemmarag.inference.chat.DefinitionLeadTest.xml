@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.pdfgemmarag.inference.chat.DefinitionLeadTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-09-11T13:25:02.744Z" hostname="redacted-local-host" time="0.003">
+  <properties/>
+  <testcase name="definition that introduces a list carries the following criteria" classname="com.example.pdfgemmarag.inference.chat.DefinitionLeadTest" time="0.001"/>
+  <testcase name="unique defining sentence is returned verbatim with its page" classname="com.example.pdfgemmarag.inference.chat.DefinitionLeadTest" time="0.001"/>
+  <testcase name="competing definitions leave the answer to grounded generation" classname="com.example.pdfgemmarag.inference.chat.DefinitionLeadTest" time="0.0"/>
+  <testcase name="definition preserves semicolon separated criteria until the sentence ends" classname="com.example.pdfgemmarag.inference.chat.DefinitionLeadTest" time="0.0"/>
+  <testcase name="prefix stems and coverage rerank recover morphological variants" classname="com.example.pdfgemmarag.inference.chat.DefinitionLeadTest" time="0.0"/>
+  <testcase name="subject extraction covers the definition phrasings" classname="com.example.pdfgemmarag.inference.chat.DefinitionLeadTest" time="0.0"/>
+  <testcase name="non definition question yields no subject" classname="com.example.pdfgemmarag.inference.chat.DefinitionLeadTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

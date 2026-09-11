@@ -1,0 +1,6210 @@
+{
+  "document": "SafetyManual.pdf",
+  "docHash": "f7a26e28fdfc60153819ded2a2405695",
+  "indexVersion": 29,
+  "indexNamespace": "f7a26e28fdfc60153819ded2a2405695:v29:mtwxeiko",
+  "device": "A001",
+  "androidRelease": "16",
+  "appVersion": "1.0",
+  "appVersionCode": 1,
+  "appLastUpdateTime": 1789129300583,
+  "debugBuild": true,
+  "embeddingSignature": "embeddinggemma-300m-seq512-512d-v2.2-validated-backend",
+  "sourcePageCount": 50,
+  "pageRecords": 50,
+  "structureSections": 58,
+  "structureTables": 11,
+  "structureLists": 63,
+  "canonicalTableCells": 344,
+  "thermalStatusStart": 1,
+  "thermalStatusEnd": 1,
+  "thermalOverride": false,
+  "speculativeDecodingOverride": false,
+  "pipelineStages": {
+    "extraction": {
+      "sourcePages": 50,
+      "pageRecords": 50,
+      "script": "LATIN"
+    },
+    "structure": {
+      "sections": 58,
+      "tables": 11,
+      "lists": 63,
+      "canonicalTableCells": 344
+    }
+  },
+  "total": 50,
+  "retrievalPassed": 50,
+  "answerPassed": 50,
+  "byStage": {
+    "PASS": 50
+  },
+  "generatedTurns": 34,
+  "medianModelTtftMs": 6723,
+  "medianDecodeTokensPerSecond": 9.452814820664639,
+  "medianPrefillTokensPerSecond": 250.10812594887022,
+  "cases": [
+    {
+      "id": "safety-golden-rules",
+      "intent": "LIST",
+      "question": "What are the two golden rules for a safe and productive laboratory?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "LIST_LEAD",
+      "groundingReasons": "",
+      "prefillTokens": 0,
+      "prefillTokensPerSecond": 0,
+      "decodeTokensPerSecond": 0,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        2
+      ],
+      "modelTtftMs": 0,
+      "visibleTtftMs": 2582,
+      "totalMs": 2553,
+      "tokensPerSecond": 0,
+      "backend": "GPU",
+      "retrievedChunks": 0,
+      "contextTokens": 0,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000003",
+            "c0000200",
+            "c0000016",
+            "c0000203",
+            "c0000080",
+            "c0000018",
+            "c0000198",
+            "c0000005",
+            "c0000035",
+            "c0000123",
+            "c0000202",
+            "c0000138"
+          ],
+          "pages": [
+            2,
+            39,
+            5,
+            40,
+            14,
+            38,
+            8,
+            23,
+            27
+          ]
+        },
+        "expandedCandidates": {
+          "count": 19,
+          "chunkIds": [
+            "c0000003",
+            "c0000004",
+            "c0000002",
+            "c0000006",
+            "c0000200",
+            "c0000016",
+            "c0000203",
+            "c0000080",
+            "c0000081",
+            "c0000018",
+            "c0000198",
+            "c0000005",
+            "c0000035",
+            "c0000123",
+            "c0000124",
+            "c0000122",
+            "c0000202",
+            "c0000201",
+            "c0000138"
+          ],
+          "provenance": [
+            "c0000003:RETRIEVED:",
+            "c0000004:LIST_MEMBER:c0000003",
+            "c0000002:STRUCTURAL:c0000003",
+            "c0000006:STRUCTURAL:c0000003",
+            "c0000200:RETRIEVED:",
+            "c0000016:RETRIEVED:",
+            "c0000203:RETRIEVED:",
+            "c0000080:RETRIEVED:",
+            "c0000081:LIST_MEMBER:c0000080",
+            "c0000018:RETRIEVED:",
+            "c0000198:RETRIEVED:",
+            "c0000005:RETRIEVED:",
+            "c0000035:RETRIEVED:",
+            "c0000123:RETRIEVED:",
+            "c0000124:LIST_MEMBER:c0000123",
+            "c0000122:LIST_MEMBER:c0000123",
+            "c0000202:RETRIEVED:",
+            "c0000201:CONTINUATION:c0000202",
+            "c0000138:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000004"
+          ],
+          "pages": [
+            2
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000004"
+          ]
+        },
+        "answer": {
+          "route": "LIST_LEAD",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "COMPLETE",
+        "evidenceComplete": true,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "1) Whenever you use a lab, it is your responsibility to see that unsafe conditions are corrected immediately; and [Page 2]\n2) Always leave a laboratory in better condition than when you found it. If we all take on this level of personal responsibility, our facilities can only improve. [Page 2]"
+    },
+    {
+      "id": "safety-manual-purpose",
+      "intent": "FACT",
+      "question": "What is the purpose of this safety manual, and who ultimately owns experiment safety?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 1238,
+      "prefillTokensPerSecond": 211.64203182934367,
+      "decodeTokensPerSecond": 8.743086177877355,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        5
+      ],
+      "modelTtftMs": 7596,
+      "visibleTtftMs": 7596,
+      "totalMs": 13712,
+      "tokensPerSecond": 8.743086177877355,
+      "backend": "GPU",
+      "retrievedChunks": 8,
+      "contextTokens": 1296,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000013",
+            "c0000083",
+            "c0000035",
+            "c0000087",
+            "c0000080",
+            "c0000024",
+            "c0000119",
+            "c0000182",
+            "c0000002",
+            "c0000018",
+            "c0000014",
+            "c0000004"
+          ],
+          "pages": [
+            5,
+            15,
+            8,
+            16,
+            14,
+            6,
+            22,
+            35,
+            2
+          ]
+        },
+        "expandedCandidates": {
+          "count": 18,
+          "chunkIds": [
+            "c0000013",
+            "c0000012",
+            "c0000083",
+            "c0000082",
+            "c0000084",
+            "c0000085",
+            "c0000035",
+            "c0000087",
+            "c0000080",
+            "c0000081",
+            "c0000024",
+            "c0000119",
+            "c0000182",
+            "c0000002",
+            "c0000018",
+            "c0000014",
+            "c0000004",
+            "c0000003"
+          ],
+          "provenance": [
+            "c0000013:RETRIEVED:",
+            "c0000012:ADJACENT:c0000013",
+            "c0000083:RETRIEVED:",
+            "c0000082:INTRODUCTION:c0000083",
+            "c0000084:LIST_MEMBER:c0000083",
+            "c0000085:LIST_MEMBER:c0000083",
+            "c0000035:RETRIEVED:",
+            "c0000087:RETRIEVED:",
+            "c0000080:RETRIEVED:",
+            "c0000081:LIST_MEMBER:c0000080",
+            "c0000024:RETRIEVED:",
+            "c0000119:RETRIEVED:",
+            "c0000182:RETRIEVED:",
+            "c0000002:RETRIEVED:",
+            "c0000018:RETRIEVED:",
+            "c0000014:RETRIEVED:",
+            "c0000004:RETRIEVED:",
+            "c0000003:INTRODUCTION:c0000004"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000003",
+            "c0000081",
+            "c0000080",
+            "c0000082",
+            "c0000084",
+            "c0000085",
+            "c0000012",
+            "c0000013"
+          ],
+          "pages": [
+            2,
+            15,
+            14,
+            16,
+            5
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000013"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "The purpose of the manual is to make all users of IIT Hyderabad Mechanical & Aerospace Laboratory facilities aware of safety and emergency protocols (do’s and don’ts) that must be followed [Page 5]. The ultimate responsibility for conducting a safe experiment resides with the experimentalist [Page 5]."
+    },
+    {
+      "id": "safety-five-principles",
+      "intent": "LIST",
+      "question": "List the five essential laboratory safety principles in section 1.1.",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 683,
+      "prefillTokensPerSecond": 207.11481736402075,
+      "decodeTokensPerSecond": 9.420675275847755,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        5
+      ],
+      "modelTtftMs": 4288,
+      "visibleTtftMs": 4291,
+      "totalMs": 10623,
+      "tokensPerSecond": 9.420675275847755,
+      "backend": "GPU",
+      "retrievedChunks": 3,
+      "contextTokens": 473,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 2,
+          "chunkIds": [
+            "c0000016",
+            "c0000015"
+          ],
+          "pages": [
+            5
+          ]
+        },
+        "expandedCandidates": {
+          "count": 4,
+          "chunkIds": [
+            "c0000016",
+            "c0000017",
+            "c0000018",
+            "c0000015"
+          ],
+          "provenance": [
+            "c0000016:RETRIEVED:",
+            "c0000017:ADJACENT:c0000016",
+            "c0000018:ADJACENT:c0000016",
+            "c0000015:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000017",
+            "c0000018",
+            "c0000016"
+          ],
+          "pages": [
+            5
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000016"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "7f02e8d3238240589484711b",
+      "error": null,
+      "answer": "* Following rules [Page 5]\n* Personal responsibility towards safety [Page 5]\n* Trust system more than people [Page 5]\n* Hazard Identification and Risk Assessment (HIRA) [Page 5]\n* Prompt response to non-conformity, incidents and emergencies [Page 5]"
+    },
+    {
+      "id": "safety-personal-responsibility",
+      "intent": "FACT",
+      "question": "Why can laboratory staff not be treated as the sole safeguard for every operation?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 1348,
+      "prefillTokensPerSecond": 248.83950039315766,
+      "decodeTokensPerSecond": 9.514458274825152,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        6
+      ],
+      "modelTtftMs": 6723,
+      "visibleTtftMs": 6727,
+      "totalMs": 12156,
+      "tokensPerSecond": 9.514458274825152,
+      "backend": "GPU",
+      "retrievedChunks": 8,
+      "contextTokens": 1339,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000022",
+            "c0000091",
+            "c0000096",
+            "c0000080",
+            "c0000018",
+            "c0000030",
+            "c0000187",
+            "c0000235",
+            "c0000014",
+            "c0000225",
+            "c0000087",
+            "c0000035"
+          ],
+          "pages": [
+            6,
+            16,
+            17,
+            14,
+            5,
+            36,
+            47,
+            44,
+            8
+          ]
+        },
+        "expandedCandidates": {
+          "count": 20,
+          "chunkIds": [
+            "c0000022",
+            "c0000021",
+            "c0000091",
+            "c0000092",
+            "c0000096",
+            "c0000095",
+            "c0000080",
+            "c0000081",
+            "c0000018",
+            "c0000030",
+            "c0000031",
+            "c0000187",
+            "c0000188",
+            "c0000235",
+            "c0000234",
+            "c0000014",
+            "c0000225",
+            "c0000226",
+            "c0000087",
+            "c0000035"
+          ],
+          "provenance": [
+            "c0000022:RETRIEVED:",
+            "c0000021:CONTINUATION:c0000022",
+            "c0000091:RETRIEVED:",
+            "c0000092:LIST_MEMBER:c0000091",
+            "c0000096:RETRIEVED:",
+            "c0000095:ADJACENT:c0000096",
+            "c0000080:RETRIEVED:",
+            "c0000081:LIST_MEMBER:c0000080",
+            "c0000018:RETRIEVED:",
+            "c0000030:RETRIEVED:",
+            "c0000031:CONTINUATION:c0000030",
+            "c0000187:RETRIEVED:",
+            "c0000188:LIST_MEMBER:c0000187",
+            "c0000235:RETRIEVED:",
+            "c0000234:INTRODUCTION:c0000235",
+            "c0000014:RETRIEVED:",
+            "c0000225:RETRIEVED:",
+            "c0000226:LIST_MEMBER:c0000225",
+            "c0000087:RETRIEVED:",
+            "c0000035:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000031",
+            "c0000081",
+            "c0000021",
+            "c0000092",
+            "c0000096",
+            "c0000225",
+            "c0000030",
+            "c0000022"
+          ],
+          "pages": [
+            7,
+            15,
+            5,
+            17,
+            44,
+            6
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000022"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "The staff cannot oversee or supervise operations all the time [Page 6]. Under these conditions, any inconsiderate user can endanger their own and the safety of others [Page 6]. Most problems, incidents, and violations in the laboratory result from haste [Page 6]."
+    },
+    {
+      "id": "safety-hira-purpose",
+      "intent": "FACT",
+      "question": "What does HIRA require laboratories to do with workplace risks?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 1095,
+      "prefillTokensPerSecond": 282.34771041325325,
+      "decodeTokensPerSecond": 9.190548712243041,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        6
+      ],
+      "modelTtftMs": 5005,
+      "visibleTtftMs": 5009,
+      "totalMs": 11287,
+      "tokensPerSecond": 9.190548712243041,
+      "backend": "GPU",
+      "retrievedChunks": 7,
+      "contextTokens": 827,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000026",
+            "c0000068",
+            "c0000016",
+            "c0000025",
+            "c0000081",
+            "c0000120",
+            "c0000080",
+            "c0000007",
+            "c0000118",
+            "c0000064",
+            "c0000065",
+            "c0000035"
+          ],
+          "pages": [
+            6,
+            13,
+            5,
+            15,
+            23,
+            14,
+            3,
+            22,
+            12,
+            8
+          ]
+        },
+        "expandedCandidates": {
+          "count": 16,
+          "chunkIds": [
+            "c0000026",
+            "c0000068",
+            "c0000067",
+            "c0000016",
+            "c0000015",
+            "c0000025",
+            "c0000081",
+            "c0000082",
+            "c0000120",
+            "c0000080",
+            "c0000007",
+            "c0000008",
+            "c0000118",
+            "c0000064",
+            "c0000065",
+            "c0000035"
+          ],
+          "provenance": [
+            "c0000026:RETRIEVED:",
+            "c0000068:RETRIEVED:",
+            "c0000067:ADJACENT:c0000068",
+            "c0000016:RETRIEVED:",
+            "c0000015:ADJACENT:c0000016",
+            "c0000025:RETRIEVED:",
+            "c0000081:RETRIEVED:",
+            "c0000082:ADJACENT:c0000081",
+            "c0000120:RETRIEVED:",
+            "c0000080:RETRIEVED:",
+            "c0000007:RETRIEVED:",
+            "c0000008:STRUCTURAL:c0000007",
+            "c0000118:RETRIEVED:",
+            "c0000064:RETRIEVED:",
+            "c0000065:RETRIEVED:",
+            "c0000035:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000008",
+            "c0000015",
+            "c0000067",
+            "c0000025",
+            "c0000016",
+            "c0000068",
+            "c0000026"
+          ],
+          "pages": [
+            3,
+            5,
+            13,
+            6
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000026"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "HIRA requires identifying, quantifying, and assessing the potential risk in the workplace [Page 6]. Risk control through elimination, substitution, reduction, engineering control, and administrative control is essential for a safer work environment [Page 6]. Risk assessment must be carried out qualitatively and quantitatively [Page 6]."
+    },
+    {
+      "id": "safety-network-escalation",
+      "intent": "FACT",
+      "question": "Who is the first contact for a departmental lab safety concern, and where is an unresolved issue escalated?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 1310,
+      "prefillTokensPerSecond": 233.6162059945871,
+      "decodeTokensPerSecond": 9.499164937683323,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        7
+      ],
+      "modelTtftMs": 7112,
+      "visibleTtftMs": 7116,
+      "totalMs": 13610,
+      "tokensPerSecond": 9.499164937683323,
+      "backend": "GPU",
+      "retrievedChunks": 8,
+      "contextTokens": 1238,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000033",
+            "c0000222",
+            "c0000030",
+            "c0000235",
+            "c0000022",
+            "c0000244",
+            "c0000083",
+            "c0000249",
+            "c0000089",
+            "c0000253",
+            "c0000080",
+            "c0000254"
+          ],
+          "pages": [
+            7,
+            44,
+            6,
+            47,
+            48,
+            15,
+            49,
+            16,
+            50,
+            14
+          ]
+        },
+        "expandedCandidates": {
+          "count": 25,
+          "chunkIds": [
+            "c0000033",
+            "c0000032",
+            "c0000222",
+            "c0000030",
+            "c0000031",
+            "c0000235",
+            "c0000234",
+            "c0000022",
+            "c0000021",
+            "c0000244",
+            "c0000245",
+            "c0000246",
+            "c0000243",
+            "c0000242",
+            "c0000241",
+            "c0000083",
+            "c0000082",
+            "c0000084",
+            "c0000085",
+            "c0000249",
+            "c0000089",
+            "c0000253",
+            "c0000080",
+            "c0000081",
+            "c0000254"
+          ],
+          "provenance": [
+            "c0000033:RETRIEVED:",
+            "c0000032:ADJACENT:c0000033",
+            "c0000222:RETRIEVED:",
+            "c0000030:RETRIEVED:",
+            "c0000031:CONTINUATION:c0000030",
+            "c0000235:RETRIEVED:",
+            "c0000234:INTRODUCTION:c0000235",
+            "c0000022:RETRIEVED:",
+            "c0000021:CONTINUATION:c0000022",
+            "c0000244:RETRIEVED:",
+            "c0000245:LIST_MEMBER:c0000244",
+            "c0000246:LIST_MEMBER:c0000244",
+            "c0000243:STRUCTURAL:c0000244",
+            "c0000242:STRUCTURAL:c0000244",
+            "c0000241:STRUCTURAL:c0000244",
+            "c0000083:RETRIEVED:",
+            "c0000082:INTRODUCTION:c0000083",
+            "c0000084:LIST_MEMBER:c0000083",
+            "c0000085:LIST_MEMBER:c0000083",
+            "c0000249:RETRIEVED:",
+            "c0000089:RETRIEVED:",
+            "c0000253:RETRIEVED:",
+            "c0000080:RETRIEVED:",
+            "c0000081:LIST_MEMBER:c0000080",
+            "c0000254:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000022",
+            "c0000234",
+            "c0000084",
+            "c0000245",
+            "c0000246",
+            "c0000244",
+            "c0000030",
+            "c0000033"
+          ],
+          "pages": [
+            6,
+            47,
+            15,
+            48,
+            49,
+            7
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000033"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "The Department Safety Champion or Safety Coordinator is the primary contact point for any safety-related issue or concern in a departmental laboratory [Page 7]. If the champion or coordinator cannot resolve the issue, it needs to be put before the safety committee through office@mae.ith.ac.in [Page 7]."
+    },
+    {
+      "id": "safety-hazard-definition",
+      "intent": "FACT",
+      "question": "How does section 2.1 define a hazard?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 654,
+      "prefillTokensPerSecond": 205.25290516029025,
+      "decodeTokensPerSecond": 9.129703454583645,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        8
+      ],
+      "modelTtftMs": 4074,
+      "visibleTtftMs": 4077,
+      "totalMs": 6804,
+      "tokensPerSecond": 9.129703454583645,
+      "backend": "GPU",
+      "retrievedChunks": 4,
+      "contextTokens": 436,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 6,
+          "chunkIds": [
+            "c0000038",
+            "c0000037",
+            "c0000041",
+            "c0000039",
+            "c0000040",
+            "c0000036"
+          ],
+          "pages": [
+            8
+          ]
+        },
+        "expandedCandidates": {
+          "count": 8,
+          "chunkIds": [
+            "c0000038",
+            "c0000037",
+            "c0000041",
+            "c0000039",
+            "c0000040",
+            "c0000042",
+            "c0000043",
+            "c0000036"
+          ],
+          "provenance": [
+            "c0000038:RETRIEVED:",
+            "c0000037:RETRIEVED:",
+            "c0000041:RETRIEVED:",
+            "c0000039:RETRIEVED:",
+            "c0000040:RETRIEVED:",
+            "c0000042:STRUCTURAL:c0000040",
+            "c0000043:STRUCTURAL:c0000040",
+            "c0000036:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000039",
+            "c0000041",
+            "c0000037",
+            "c0000038"
+          ],
+          "pages": [
+            8
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000038"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "bafa75018cb17dce75f4f3d1",
+      "error": null,
+      "answer": "A hazard is a substance, object, or situation that may result in an accident (injury or damage) [Page 8]."
+    },
+    {
+      "id": "safety-risk-formula",
+      "intent": "FACT",
+      "question": "What formula is used for qualitative risk assessment?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 1460,
+      "prefillTokensPerSecond": 247.67378785924407,
+      "decodeTokensPerSecond": 9.419248030808582,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        10,
+        6
+      ],
+      "modelTtftMs": 6986,
+      "visibleTtftMs": 6990,
+      "totalMs": 10371,
+      "tokensPerSecond": 9.419248030808582,
+      "backend": "GPU",
+      "retrievedChunks": 8,
+      "contextTokens": 1065,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000051",
+            "c0000026",
+            "c0000050",
+            "c0000053",
+            "c0000007",
+            "c0000025",
+            "c0000068",
+            "c0000064",
+            "c0000052",
+            "c0000071",
+            "c0000038",
+            "c0000016"
+          ],
+          "pages": [
+            10,
+            6,
+            3,
+            13,
+            12,
+            8,
+            5
+          ]
+        },
+        "expandedCandidates": {
+          "count": 17,
+          "chunkIds": [
+            "c0000051",
+            "c0000026",
+            "c0000050",
+            "c0000049",
+            "c0000053",
+            "c0000054",
+            "c0000055",
+            "c0000007",
+            "c0000008",
+            "c0000025",
+            "c0000068",
+            "c0000064",
+            "c0000065",
+            "c0000052",
+            "c0000071",
+            "c0000038",
+            "c0000016"
+          ],
+          "provenance": [
+            "c0000051:RETRIEVED:",
+            "c0000026:RETRIEVED:",
+            "c0000050:RETRIEVED:",
+            "c0000049:LIST_MEMBER:c0000050",
+            "c0000053:RETRIEVED:",
+            "c0000054:STRUCTURAL:c0000053",
+            "c0000055:STRUCTURAL:c0000053",
+            "c0000007:RETRIEVED:",
+            "c0000008:STRUCTURAL:c0000007",
+            "c0000025:RETRIEVED:",
+            "c0000068:RETRIEVED:",
+            "c0000064:RETRIEVED:",
+            "c0000065:CONTINUATION:c0000064",
+            "c0000052:RETRIEVED:",
+            "c0000071:RETRIEVED:",
+            "c0000038:RETRIEVED:",
+            "c0000016:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000054",
+            "c0000049",
+            "c0000065",
+            "c0000052",
+            "c0000008",
+            "c0000007",
+            "c0000026",
+            "c0000051"
+          ],
+          "pages": [
+            10,
+            9,
+            13,
+            3,
+            6
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000051",
+            "c0000026"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "The formula for qualitative risk assessment is Risk = Severity x Likelihood [Page 10]. This involves making a formal judgment on the consequences and probability [Page 6]."
+    },
+    {
+      "id": "safety-accident-effects",
+      "intent": "LIST",
+      "question": "Name the effects of accidents listed in the manual.",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "LIST_LEAD",
+      "groundingReasons": "",
+      "prefillTokens": 0,
+      "prefillTokensPerSecond": 0,
+      "decodeTokensPerSecond": 0,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        8
+      ],
+      "modelTtftMs": 0,
+      "visibleTtftMs": 844,
+      "totalMs": 842,
+      "tokensPerSecond": 0,
+      "backend": "GPU",
+      "retrievedChunks": 0,
+      "contextTokens": 0,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000040",
+            "c0000024",
+            "c0000043",
+            "c0000118",
+            "c0000120",
+            "c0000110",
+            "c0000035",
+            "c0000038",
+            "c0000089",
+            "c0000080",
+            "c0000188",
+            "c0000251"
+          ],
+          "pages": [
+            8,
+            6,
+            22,
+            23,
+            21,
+            16,
+            14,
+            37,
+            50
+          ]
+        },
+        "expandedCandidates": {
+          "count": 19,
+          "chunkIds": [
+            "c0000040",
+            "c0000041",
+            "c0000039",
+            "c0000042",
+            "c0000037",
+            "c0000024",
+            "c0000043",
+            "c0000118",
+            "c0000120",
+            "c0000110",
+            "c0000035",
+            "c0000038",
+            "c0000089",
+            "c0000080",
+            "c0000081",
+            "c0000188",
+            "c0000187",
+            "c0000251",
+            "c0000250"
+          ],
+          "provenance": [
+            "c0000040:RETRIEVED:",
+            "c0000041:LIST_MEMBER:c0000040",
+            "c0000039:STRUCTURAL:c0000040",
+            "c0000042:STRUCTURAL:c0000040",
+            "c0000037:STRUCTURAL:c0000040",
+            "c0000024:RETRIEVED:",
+            "c0000043:RETRIEVED:",
+            "c0000118:RETRIEVED:",
+            "c0000120:RETRIEVED:",
+            "c0000110:RETRIEVED:",
+            "c0000035:RETRIEVED:",
+            "c0000038:RETRIEVED:",
+            "c0000089:RETRIEVED:",
+            "c0000080:RETRIEVED:",
+            "c0000081:LIST_MEMBER:c0000080",
+            "c0000188:RETRIEVED:",
+            "c0000187:LIST_MEMBER:c0000188",
+            "c0000251:RETRIEVED:",
+            "c0000250:LIST_MEMBER:c0000251"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000041"
+          ],
+          "pages": [
+            8
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000041"
+          ]
+        },
+        "answer": {
+          "route": "LIST_LEAD",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "COMPLETE",
+        "evidenceComplete": true,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "● Injury to Person [Page 8]\n● Equipment Damage [Page 8]\n● Material Loss [Page 8]\n● Financial Loss [Page 8]\n● Loss of Business [Page 8]"
+    },
+    {
+      "id": "safety-mechanical-hazards",
+      "intent": "LIST",
+      "question": "Give four examples of mechanical hazards from section 2.3.1.",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 424,
+      "prefillTokensPerSecond": 200.95270244917094,
+      "decodeTokensPerSecond": 9.483565165460512,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        9
+      ],
+      "modelTtftMs": 2373,
+      "visibleTtftMs": 2375,
+      "totalMs": 5609,
+      "tokensPerSecond": 9.483565165460512,
+      "backend": "GPU",
+      "retrievedChunks": 1,
+      "contextTokens": 165,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 1,
+          "chunkIds": [
+            "c0000045"
+          ],
+          "pages": [
+            9
+          ]
+        },
+        "expandedCandidates": {
+          "count": 1,
+          "chunkIds": [
+            "c0000045"
+          ],
+          "provenance": [
+            "c0000045:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000045"
+          ],
+          "pages": [
+            9
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000045"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "COMPLETE",
+        "evidenceComplete": true,
+        "selectionComplete": true
+      },
+      "sourceSectionId": "6bbd617964f33545c720a039",
+      "error": null,
+      "answer": "Four examples of mechanical hazards from section 2.3 are: Blades, Moving or rotating belts or chains, Gears, and Shafts [Page 9]."
+    },
+    {
+      "id": "safety-risk-matrix-certain-catastrophic",
+      "intent": "TABLE",
+      "question": "In Table 1.1, what risk score results from Almost Certain likelihood and Catastrophic consequence?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "TABLE_ROW_LEAD",
+      "groundingReasons": "",
+      "prefillTokens": 0,
+      "prefillTokensPerSecond": 0,
+      "decodeTokensPerSecond": 0,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        10
+      ],
+      "modelTtftMs": 0,
+      "visibleTtftMs": 807,
+      "totalMs": 805,
+      "tokensPerSecond": 0,
+      "backend": "GPU",
+      "retrievedChunks": 0,
+      "contextTokens": 0,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000053",
+            "c0000052",
+            "c0000051",
+            "c0000038",
+            "c0000064",
+            "c0000059",
+            "c0000061",
+            "c0000058",
+            "c0000060",
+            "c0000056",
+            "c0000054",
+            "c0000026"
+          ],
+          "pages": [
+            10,
+            8,
+            12,
+            11,
+            6
+          ]
+        },
+        "expandedCandidates": {
+          "count": 9,
+          "chunkIds": [
+            "c0000053",
+            "c0000055",
+            "c0000050",
+            "c0000054",
+            "c0000052",
+            "c0000051",
+            "c0000053:row0",
+            "c0000053:row1",
+            "c0000053:row2"
+          ],
+          "provenance": [
+            "c0000053:RETRIEVED:",
+            "c0000055:STRUCTURAL:c0000053",
+            "c0000050:STRUCTURAL:c0000053",
+            "c0000054:RETRIEVED:",
+            "c0000052:RETRIEVED:",
+            "c0000051:RETRIEVED:",
+            "c0000053:row0:CANONICAL_CELL:c0000053",
+            "c0000053:row1:CANONICAL_CELL:c0000053",
+            "c0000053:row2:CANONICAL_CELL:c0000053"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000053"
+          ],
+          "pages": [
+            10
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000053"
+          ]
+        },
+        "answer": {
+          "route": "TABLE_ROW_LEAD",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "Almost certain × Catastrophic: 25 [Page 10]"
+    },
+    {
+      "id": "safety-risk-matrix-possible-moderate",
+      "intent": "TABLE",
+      "question": "Using Table 1.1, what is the assessed risk for Possible likelihood and Moderate consequence?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "TABLE_ROW_LEAD",
+      "groundingReasons": "",
+      "prefillTokens": 0,
+      "prefillTokensPerSecond": 0,
+      "decodeTokensPerSecond": 0,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        10
+      ],
+      "modelTtftMs": 0,
+      "visibleTtftMs": 799,
+      "totalMs": 797,
+      "tokensPerSecond": 0,
+      "backend": "GPU",
+      "retrievedChunks": 0,
+      "contextTokens": 0,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000052",
+            "c0000053",
+            "c0000051",
+            "c0000060",
+            "c0000054",
+            "c0000026",
+            "c0000025",
+            "c0000061",
+            "c0000064",
+            "c0000016",
+            "c0000007",
+            "c0000038"
+          ],
+          "pages": [
+            10,
+            11,
+            6,
+            12,
+            5,
+            3,
+            8
+          ]
+        },
+        "expandedCandidates": {
+          "count": 9,
+          "chunkIds": [
+            "c0000053",
+            "c0000055",
+            "c0000050",
+            "c0000054",
+            "c0000052",
+            "c0000051",
+            "c0000053:row0",
+            "c0000053:row1",
+            "c0000053:row2"
+          ],
+          "provenance": [
+            "c0000053:RETRIEVED:",
+            "c0000055:STRUCTURAL:c0000053",
+            "c0000050:STRUCTURAL:c0000053",
+            "c0000054:RETRIEVED:",
+            "c0000052:RETRIEVED:",
+            "c0000051:RETRIEVED:",
+            "c0000053:row0:CANONICAL_CELL:c0000053",
+            "c0000053:row1:CANONICAL_CELL:c0000053",
+            "c0000053:row2:CANONICAL_CELL:c0000053"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000054"
+          ],
+          "pages": [
+            10
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000054"
+          ]
+        },
+        "answer": {
+          "route": "TABLE_ROW_LEAD",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "Possible × Moderate: 9 [Page 10]"
+    },
+    {
+      "id": "safety-severity-four",
+      "intent": "TABLE",
+      "question": "According to Table 1.2, what does severity level 4 mean?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "TABLE_ROW_LEAD",
+      "groundingReasons": "",
+      "prefillTokens": 0,
+      "prefillTokensPerSecond": 0,
+      "decodeTokensPerSecond": 0,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        11
+      ],
+      "modelTtftMs": 0,
+      "visibleTtftMs": 784,
+      "totalMs": 781,
+      "tokensPerSecond": 0,
+      "backend": "GPU",
+      "retrievedChunks": 0,
+      "contextTokens": 0,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000056",
+            "c0000064",
+            "c0000060",
+            "c0000052",
+            "c0000053",
+            "c0000065",
+            "c0000061",
+            "c0000158",
+            "c0000051",
+            "c0000096",
+            "c0000174",
+            "c0000170"
+          ],
+          "pages": [
+            11,
+            12,
+            10,
+            13,
+            31,
+            17,
+            33,
+            32
+          ]
+        },
+        "expandedCandidates": {
+          "count": 7,
+          "chunkIds": [
+            "c0000056",
+            "c0000055",
+            "c0000057",
+            "c0000059",
+            "c0000053",
+            "c0000054",
+            "c0000058"
+          ],
+          "provenance": [
+            "c0000056:RETRIEVED:",
+            "c0000055:CONTINUATION:c0000056",
+            "c0000057:ADJACENT:c0000056",
+            "c0000059:ADJACENT:c0000060",
+            "c0000053:RETRIEVED:",
+            "c0000054:STRUCTURAL:c0000053",
+            "c0000058:STRUCTURAL:c0000061"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000057"
+          ],
+          "pages": [
+            11
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000057"
+          ]
+        },
+        "answer": {
+          "route": "TABLE_ROW_LEAD",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "Severity level 4: Major Serious injury (injuries) requiring special Medical Treatment and\/or Hospitalization [Page 11]"
+    },
+    {
+      "id": "safety-probability-d",
+      "intent": "TABLE",
+      "question": "In Table 1.3, which probability category is D and how is it described?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "TABLE_ROW_LEAD",
+      "groundingReasons": "",
+      "prefillTokens": 0,
+      "prefillTokensPerSecond": 0,
+      "decodeTokensPerSecond": 0,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        11
+      ],
+      "modelTtftMs": 0,
+      "visibleTtftMs": 739,
+      "totalMs": 729,
+      "tokensPerSecond": 0,
+      "backend": "GPU",
+      "retrievedChunks": 0,
+      "contextTokens": 0,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000058",
+            "c0000053",
+            "c0000152",
+            "c0000061",
+            "c0000032",
+            "c0000034",
+            "c0000059",
+            "c0000051",
+            "c0000038",
+            "c0000050",
+            "c0000024",
+            "c0000033"
+          ],
+          "pages": [
+            11,
+            10,
+            29,
+            7,
+            8,
+            6
+          ]
+        },
+        "expandedCandidates": {
+          "count": 6,
+          "chunkIds": [
+            "c0000058",
+            "c0000057",
+            "c0000055",
+            "c0000061",
+            "c0000060",
+            "c0000059"
+          ],
+          "provenance": [
+            "c0000058:RETRIEVED:",
+            "c0000057:ADJACENT:c0000058",
+            "c0000055:STRUCTURAL:c0000053",
+            "c0000061:RETRIEVED:",
+            "c0000060:STRUCTURAL:c0000061",
+            "c0000059:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000059"
+          ],
+          "pages": [
+            11
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000059"
+          ]
+        },
+        "answer": {
+          "route": "TABLE_ROW_LEAD",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "Category D. Unlikely Not likely to occur within the foreseeable future, or within the project lifecycle [Page 11]"
+    },
+    {
+      "id": "safety-extreme-risk-response",
+      "intent": "TABLE",
+      "question": "What actions does Table 1.4 prescribe for an Extreme assessed risk?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "TABLE_ROW_LEAD",
+      "groundingReasons": "",
+      "prefillTokens": 0,
+      "prefillTokensPerSecond": 0,
+      "decodeTokensPerSecond": 0,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        12
+      ],
+      "modelTtftMs": 0,
+      "visibleTtftMs": 779,
+      "totalMs": 777,
+      "tokensPerSecond": 0,
+      "backend": "GPU",
+      "retrievedChunks": 0,
+      "contextTokens": 0,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000060",
+            "c0000052",
+            "c0000061",
+            "c0000053",
+            "c0000026",
+            "c0000219",
+            "c0000025",
+            "c0000031",
+            "c0000051",
+            "c0000068",
+            "c0000210",
+            "c0000064"
+          ],
+          "pages": [
+            11,
+            10,
+            6,
+            43,
+            7,
+            13,
+            41,
+            12
+          ]
+        },
+        "expandedCandidates": {
+          "count": 11,
+          "chunkIds": [
+            "c0000061",
+            "c0000059",
+            "c0000058",
+            "c0000060",
+            "c0000062",
+            "c0000063",
+            "c0000061:row0",
+            "c0000061:row1",
+            "c0000061:row2",
+            "c0000061:row3",
+            "c0000061:row4"
+          ],
+          "provenance": [
+            "c0000061:RETRIEVED:",
+            "c0000059:STRUCTURAL:c0000061",
+            "c0000058:STRUCTURAL:c0000061",
+            "c0000060:RETRIEVED:",
+            "c0000062:RETRIEVED:",
+            "c0000063:STRUCTURAL:c0000062",
+            "c0000061:row0:CANONICAL_CELL:c0000061",
+            "c0000061:row1:CANONICAL_CELL:c0000061",
+            "c0000061:row2:CANONICAL_CELL:c0000061",
+            "c0000061:row3:CANONICAL_CELL:c0000061",
+            "c0000061:row4:CANONICAL_CELL:c0000061"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000062",
+            "c0000063"
+          ],
+          "pages": [
+            12
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000062",
+            "c0000063"
+          ]
+        },
+        "answer": {
+          "route": "TABLE_ROW_LEAD",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "-Consider alternatives to doing the Extreme would be likely that a activity. permanent, debilitating injury - Significant control measures will or death would result need to be implemented to ensure safety - Immediate action required by [Page 12]"
+    },
+    {
+      "id": "safety-control-elimination",
+      "intent": "TABLE",
+      "question": "In Table 1.6, what does elimination mean?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 620,
+      "prefillTokensPerSecond": 204.44185698433645,
+      "decodeTokensPerSecond": 9.367941017365753,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        13
+      ],
+      "modelTtftMs": 3931,
+      "visibleTtftMs": 3933,
+      "totalMs": 5713,
+      "tokensPerSecond": 9.367941017365753,
+      "backend": "GPU",
+      "retrievedChunks": 3,
+      "contextTokens": 379,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000065",
+            "c0000069",
+            "c0000070",
+            "c0000071",
+            "c0000064",
+            "c0000052",
+            "c0000026",
+            "c0000008",
+            "c0000158",
+            "c0000019",
+            "c0000066",
+            "c0000212"
+          ],
+          "pages": [
+            13,
+            12,
+            10,
+            6,
+            3,
+            31,
+            5,
+            42
+          ]
+        },
+        "expandedCandidates": {
+          "count": 3,
+          "chunkIds": [
+            "c0000065",
+            "c0000064",
+            "c0000066"
+          ],
+          "provenance": [
+            "c0000065:RETRIEVED:",
+            "c0000064:RETRIEVED:",
+            "c0000066:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000066",
+            "c0000064",
+            "c0000065"
+          ],
+          "pages": [
+            13,
+            12
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000065"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": true
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "Elimination means to remove the hazard completely from the workplace or activity [Page 13]."
+    },
+    {
+      "id": "safety-engineering-controls",
+      "intent": "TABLE",
+      "question": "What two engineering-control examples are given in Table 1.6?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 1062,
+      "prefillTokensPerSecond": 273.53302853676746,
+      "decodeTokensPerSecond": 9.312291520166038,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        13
+      ],
+      "modelTtftMs": 4917,
+      "visibleTtftMs": 4920,
+      "totalMs": 11114,
+      "tokensPerSecond": 9.312291520166038,
+      "backend": "GPU",
+      "retrievedChunks": 7,
+      "contextTokens": 868,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000073",
+            "c0000072",
+            "c0000064",
+            "c0000066",
+            "c0000065",
+            "c0000195",
+            "c0000026",
+            "c0000196",
+            "c0000080",
+            "c0000078",
+            "c0000198",
+            "c0000061"
+          ],
+          "pages": [
+            13,
+            12,
+            38,
+            6,
+            14,
+            11
+          ]
+        },
+        "expandedCandidates": {
+          "count": 7,
+          "chunkIds": [
+            "c0000064",
+            "c0000063",
+            "c0000066",
+            "c0000067",
+            "c0000065",
+            "c0000061",
+            "c0000062"
+          ],
+          "provenance": [
+            "c0000064:RETRIEVED:",
+            "c0000063:ADJACENT:c0000064",
+            "c0000066:RETRIEVED:",
+            "c0000067:ADJACENT:c0000066",
+            "c0000065:RETRIEVED:",
+            "c0000061:RETRIEVED:",
+            "c0000062:CONTINUATION:c0000061"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000061",
+            "c0000067",
+            "c0000063",
+            "c0000062",
+            "c0000066",
+            "c0000065",
+            "c0000064"
+          ],
+          "pages": [
+            11,
+            13,
+            12
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000066"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": true
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "The two engineering-control examples given are:\n*   Redesigning a machine or work process to make it safer, such as raising a bench to reduce bending [Page 13].\n*   Isolation, which involves separating people from the hazard, like a safety barrier [Page 13]."
+    },
+    {
+      "id": "safety-ppe-last-control",
+      "intent": "FACT",
+      "question": "When should PPE be considered as a risk-control method?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 1998,
+      "prefillTokensPerSecond": 250.10812594887022,
+      "decodeTokensPerSecond": 9.442366695079427,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        14
+      ],
+      "modelTtftMs": 9072,
+      "visibleTtftMs": 9076,
+      "totalMs": 19206,
+      "tokensPerSecond": 9.442366695079427,
+      "backend": "GPU",
+      "retrievedChunks": 8,
+      "contextTokens": 1592,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000077",
+            "c0000078",
+            "c0000008",
+            "c0000080",
+            "c0000191",
+            "c0000073",
+            "c0000064",
+            "c0000067",
+            "c0000070",
+            "c0000072",
+            "c0000205",
+            "c0000026"
+          ],
+          "pages": [
+            14,
+            3,
+            37,
+            13,
+            12,
+            40,
+            6
+          ]
+        },
+        "expandedCandidates": {
+          "count": 16,
+          "chunkIds": [
+            "c0000077",
+            "c0000078",
+            "c0000008",
+            "c0000009",
+            "c0000007",
+            "c0000080",
+            "c0000081",
+            "c0000191",
+            "c0000073",
+            "c0000064",
+            "c0000065",
+            "c0000067",
+            "c0000070",
+            "c0000072",
+            "c0000205",
+            "c0000026"
+          ],
+          "provenance": [
+            "c0000077:RETRIEVED:",
+            "c0000078:RETRIEVED:",
+            "c0000008:RETRIEVED:",
+            "c0000009:CONTINUATION:c0000008",
+            "c0000007:STRUCTURAL:c0000008",
+            "c0000080:RETRIEVED:",
+            "c0000081:LIST_MEMBER:c0000080",
+            "c0000191:RETRIEVED:",
+            "c0000073:RETRIEVED:",
+            "c0000064:RETRIEVED:",
+            "c0000065:CONTINUATION:c0000064",
+            "c0000067:RETRIEVED:",
+            "c0000070:RETRIEVED:",
+            "c0000072:RETRIEVED:",
+            "c0000205:RETRIEVED:",
+            "c0000026:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000081",
+            "c0000007",
+            "c0000009",
+            "c0000065",
+            "c0000080",
+            "c0000008",
+            "c0000078",
+            "c0000077"
+          ],
+          "pages": [
+            15,
+            3,
+            4,
+            13,
+            14
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000077",
+            "c0000078"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "PPE should only be considered when all other control methods are impractical [Page 14]. This includes considerations for eyes (e.g., safety glasses), face (e.g., face shield), head (e.g., hard hat), ear (e.g., ear plugs), hand (e.g., rubber gloves), foot (e.g., safety shoes), body (e.g., rubber apron), and respiratory (e.g., respirator) [Page 14]."
+    },
+    {
+      "id": "safety-restricted-material-approval",
+      "intent": "FACT",
+      "question": "Whose prior approval is needed before using restricted chemicals or materials?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 1552,
+      "prefillTokensPerSecond": 219.40271416405344,
+      "decodeTokensPerSecond": 9.443194136259583,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        14
+      ],
+      "modelTtftMs": 8379,
+      "visibleTtftMs": 8383,
+      "totalMs": 12792,
+      "tokensPerSecond": 9.443194136259583,
+      "backend": "GPU",
+      "retrievedChunks": 8,
+      "contextTokens": 1697,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000080",
+            "c0000224",
+            "c0000131",
+            "c0000122",
+            "c0000123",
+            "c0000134",
+            "c0000083",
+            "c0000253",
+            "c0000106",
+            "c0000033",
+            "c0000143",
+            "c0000133"
+          ],
+          "pages": [
+            14,
+            44,
+            25,
+            23,
+            26,
+            15,
+            50,
+            20,
+            7,
+            28
+          ]
+        },
+        "expandedCandidates": {
+          "count": 22,
+          "chunkIds": [
+            "c0000080",
+            "c0000081",
+            "c0000224",
+            "c0000223",
+            "c0000225",
+            "c0000131",
+            "c0000132",
+            "c0000122",
+            "c0000124",
+            "c0000123",
+            "c0000134",
+            "c0000083",
+            "c0000082",
+            "c0000084",
+            "c0000085",
+            "c0000253",
+            "c0000106",
+            "c0000033",
+            "c0000143",
+            "c0000142",
+            "c0000141",
+            "c0000133"
+          ],
+          "provenance": [
+            "c0000080:RETRIEVED:",
+            "c0000081:LIST_MEMBER:c0000080",
+            "c0000224:RETRIEVED:",
+            "c0000223:ADJACENT:c0000224",
+            "c0000225:ADJACENT:c0000224",
+            "c0000131:RETRIEVED:",
+            "c0000132:LIST_MEMBER:c0000131",
+            "c0000122:RETRIEVED:",
+            "c0000124:LIST_MEMBER:c0000122",
+            "c0000123:RETRIEVED:",
+            "c0000134:RETRIEVED:",
+            "c0000083:RETRIEVED:",
+            "c0000082:INTRODUCTION:c0000083",
+            "c0000084:LIST_MEMBER:c0000083",
+            "c0000085:LIST_MEMBER:c0000083",
+            "c0000253:RETRIEVED:",
+            "c0000106:RETRIEVED:",
+            "c0000033:RETRIEVED:",
+            "c0000143:RETRIEVED:",
+            "c0000142:LIST_MEMBER:c0000143",
+            "c0000141:LIST_MEMBER:c0000143",
+            "c0000133:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000085",
+            "c0000124",
+            "c0000132",
+            "c0000081",
+            "c0000134",
+            "c0000123",
+            "c0000224",
+            "c0000080"
+          ],
+          "pages": [
+            16,
+            24,
+            25,
+            15,
+            26,
+            23,
+            44,
+            14
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000080"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "Prior approval from the PI or laboratory supervisor is needed before using restricted chemicals and other materials [Page 14]. This is also required for using highly hazardous materials or conducting certain higher-risk experimental procedures [Page 14]."
+    },
+    {
+      "id": "safety-food-policy",
+      "intent": "FACT",
+      "question": "Is food or drink allowed inside Mechanical and Aerospace laboratories?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 1570,
+      "prefillTokensPerSecond": 224.32148491015732,
+      "decodeTokensPerSecond": 9.46723999006592,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        15,
+        16
+      ],
+      "modelTtftMs": 8190,
+      "visibleTtftMs": 8195,
+      "totalMs": 12280,
+      "tokensPerSecond": 9.46723999006592,
+      "backend": "GPU",
+      "retrievedChunks": 8,
+      "contextTokens": 1643,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000084",
+            "c0000086",
+            "c0000085",
+            "c0000005",
+            "c0000013",
+            "c0000114",
+            "c0000133",
+            "c0000018",
+            "c0000149",
+            "c0000030",
+            "c0000081",
+            "c0000141"
+          ],
+          "pages": [
+            15,
+            16,
+            2,
+            5,
+            22,
+            26,
+            29,
+            6,
+            27
+          ]
+        },
+        "expandedCandidates": {
+          "count": 20,
+          "chunkIds": [
+            "c0000084",
+            "c0000083",
+            "c0000086",
+            "c0000085",
+            "c0000005",
+            "c0000013",
+            "c0000114",
+            "c0000133",
+            "c0000132",
+            "c0000131",
+            "c0000134",
+            "c0000018",
+            "c0000149",
+            "c0000030",
+            "c0000031",
+            "c0000081",
+            "c0000080",
+            "c0000141",
+            "c0000142",
+            "c0000143"
+          ],
+          "provenance": [
+            "c0000084:RETRIEVED:",
+            "c0000083:LIST_MEMBER:c0000084",
+            "c0000086:RETRIEVED:",
+            "c0000085:RETRIEVED:",
+            "c0000005:RETRIEVED:",
+            "c0000013:RETRIEVED:",
+            "c0000114:RETRIEVED:",
+            "c0000133:RETRIEVED:",
+            "c0000132:LIST_MEMBER:c0000133",
+            "c0000131:LIST_MEMBER:c0000133",
+            "c0000134:LIST_MEMBER:c0000133",
+            "c0000018:RETRIEVED:",
+            "c0000149:RETRIEVED:",
+            "c0000030:RETRIEVED:",
+            "c0000031:CONTINUATION:c0000030",
+            "c0000081:RETRIEVED:",
+            "c0000080:LIST_MEMBER:c0000081",
+            "c0000141:RETRIEVED:",
+            "c0000142:LIST_MEMBER:c0000141",
+            "c0000143:LIST_MEMBER:c0000141"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000031",
+            "c0000132",
+            "c0000134",
+            "c0000083",
+            "c0000085",
+            "c0000030",
+            "c0000133",
+            "c0000084"
+          ],
+          "pages": [
+            7,
+            25,
+            26,
+            15,
+            16,
+            6
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000084",
+            "c0000085"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "No, food or drink should never be allowed inside the lab [Page 15]. Refrigerators storing hazardous materials must have a clearly visible label saying, “No food or drinks” [Page 16]."
+    },
+    {
+      "id": "safety-buddy-system",
+      "intent": "FACT",
+      "question": "Who counts as a laboratory buddy, and do friends reachable only by phone count?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 1232,
+      "prefillTokensPerSecond": 282.3138482138573,
+      "decodeTokensPerSecond": 9.504923200085202,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        16
+      ],
+      "modelTtftMs": 5467,
+      "visibleTtftMs": 5470,
+      "totalMs": 10172,
+      "tokensPerSecond": 9.504923200085202,
+      "backend": "GPU",
+      "retrievedChunks": 6,
+      "contextTokens": 1227,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000089",
+            "c0000084",
+            "c0000022",
+            "c0000114",
+            "c0000083",
+            "c0000087",
+            "c0000080",
+            "c0000081",
+            "c0000033",
+            "c0000088",
+            "c0000094",
+            "c0000021"
+          ],
+          "pages": [
+            16,
+            15,
+            6,
+            22,
+            14,
+            7,
+            17,
+            5
+          ]
+        },
+        "expandedCandidates": {
+          "count": 14,
+          "chunkIds": [
+            "c0000089",
+            "c0000084",
+            "c0000085",
+            "c0000022",
+            "c0000114",
+            "c0000083",
+            "c0000082",
+            "c0000087",
+            "c0000080",
+            "c0000081",
+            "c0000033",
+            "c0000088",
+            "c0000094",
+            "c0000021"
+          ],
+          "provenance": [
+            "c0000089:RETRIEVED:",
+            "c0000084:RETRIEVED:",
+            "c0000085:LIST_MEMBER:c0000084",
+            "c0000022:RETRIEVED:",
+            "c0000114:RETRIEVED:",
+            "c0000083:RETRIEVED:",
+            "c0000082:INTRODUCTION:c0000083",
+            "c0000087:RETRIEVED:",
+            "c0000080:RETRIEVED:",
+            "c0000081:RETRIEVED:",
+            "c0000033:RETRIEVED:",
+            "c0000088:RETRIEVED:",
+            "c0000094:RETRIEVED:",
+            "c0000021:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000082",
+            "c0000080",
+            "c0000085",
+            "c0000022",
+            "c0000084",
+            "c0000089"
+          ],
+          "pages": [
+            15,
+            14,
+            16,
+            6
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000089"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "A buddy is a fellow lab user who is working close enough to notice if you are in any distress [Page 16]. Friends on cell phones, in offices, or in hostels do not count as a buddy [Page 16]."
+    },
+    {
+      "id": "safety-housekeeping",
+      "intent": "LIST",
+      "question": "What does the housekeeping guidance say about spills and hallways?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 1707,
+      "prefillTokensPerSecond": 244.24313287599406,
+      "decodeTokensPerSecond": 9.452814820664639,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        17
+      ],
+      "modelTtftMs": 8071,
+      "visibleTtftMs": 8074,
+      "totalMs": 13965,
+      "tokensPerSecond": 9.452814820664639,
+      "backend": "GPU",
+      "retrievedChunks": 7,
+      "contextTokens": 1387,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000092",
+            "c0000090",
+            "c0000091",
+            "c0000225",
+            "c0000003",
+            "c0000224",
+            "c0000096",
+            "c0000008",
+            "c0000226",
+            "c0000085",
+            "c0000247",
+            "c0000227"
+          ],
+          "pages": [
+            17,
+            16,
+            44,
+            2,
+            3,
+            45,
+            49
+          ]
+        },
+        "expandedCandidates": {
+          "count": 20,
+          "chunkIds": [
+            "c0000092",
+            "c0000090",
+            "c0000091",
+            "c0000225",
+            "c0000003",
+            "c0000004",
+            "c0000002",
+            "c0000005",
+            "c0000006",
+            "c0000224",
+            "c0000096",
+            "c0000008",
+            "c0000009",
+            "c0000007",
+            "c0000226",
+            "c0000085",
+            "c0000084",
+            "c0000083",
+            "c0000247",
+            "c0000227"
+          ],
+          "provenance": [
+            "c0000092:RETRIEVED:",
+            "c0000090:RETRIEVED:",
+            "c0000091:RETRIEVED:",
+            "c0000225:RETRIEVED:",
+            "c0000003:RETRIEVED:",
+            "c0000004:LIST_MEMBER:c0000003",
+            "c0000002:STRUCTURAL:c0000003",
+            "c0000005:STRUCTURAL:c0000003",
+            "c0000006:STRUCTURAL:c0000003",
+            "c0000224:RETRIEVED:",
+            "c0000096:RETRIEVED:",
+            "c0000008:RETRIEVED:",
+            "c0000009:CONTINUATION:c0000008",
+            "c0000007:STRUCTURAL:c0000008",
+            "c0000226:RETRIEVED:",
+            "c0000085:RETRIEVED:",
+            "c0000084:LIST_MEMBER:c0000085",
+            "c0000083:LIST_MEMBER:c0000085",
+            "c0000247:RETRIEVED:",
+            "c0000227:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000084",
+            "c0000007",
+            "c0000009",
+            "c0000003",
+            "c0000225",
+            "c0000091",
+            "c0000092"
+          ],
+          "pages": [
+            15,
+            3,
+            4,
+            2,
+            44,
+            16,
+            17
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000092"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "* Spills must be attended to immediately and thoroughly [Page 17].\n* Hallways and stairways should not be used as storage areas [Page 17].\n* Workbenches and shelves should not be overloaded with unused equipment, chemicals, or other materials [Page 17]."
+    },
+    {
+      "id": "safety-long-hair-clothing",
+      "intent": "FACT",
+      "question": "Why must long hair and loose clothing be confined in a laboratory?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 1393,
+      "prefillTokensPerSecond": 270.11030832638346,
+      "decodeTokensPerSecond": 9.439014917836639,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        17
+      ],
+      "modelTtftMs": 6280,
+      "visibleTtftMs": 6284,
+      "totalMs": 8477,
+      "tokensPerSecond": 9.439014917836639,
+      "backend": "GPU",
+      "retrievedChunks": 7,
+      "contextTokens": 1397,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000094",
+            "c0000113",
+            "c0000096",
+            "c0000142",
+            "c0000110",
+            "c0000199",
+            "c0000235",
+            "c0000089",
+            "c0000122",
+            "c0000088",
+            "c0000123",
+            "c0000116"
+          ],
+          "pages": [
+            17,
+            21,
+            27,
+            39,
+            47,
+            16,
+            23,
+            22
+          ]
+        },
+        "expandedCandidates": {
+          "count": 16,
+          "chunkIds": [
+            "c0000094",
+            "c0000113",
+            "c0000096",
+            "c0000142",
+            "c0000143",
+            "c0000141",
+            "c0000110",
+            "c0000199",
+            "c0000235",
+            "c0000234",
+            "c0000089",
+            "c0000122",
+            "c0000124",
+            "c0000088",
+            "c0000123",
+            "c0000116"
+          ],
+          "provenance": [
+            "c0000094:RETRIEVED:",
+            "c0000113:RETRIEVED:",
+            "c0000096:RETRIEVED:",
+            "c0000142:RETRIEVED:",
+            "c0000143:LIST_MEMBER:c0000142",
+            "c0000141:LIST_MEMBER:c0000142",
+            "c0000110:RETRIEVED:",
+            "c0000199:RETRIEVED:",
+            "c0000235:RETRIEVED:",
+            "c0000234:INTRODUCTION:c0000235",
+            "c0000089:RETRIEVED:",
+            "c0000122:RETRIEVED:",
+            "c0000124:LIST_MEMBER:c0000122",
+            "c0000088:RETRIEVED:",
+            "c0000123:RETRIEVED:",
+            "c0000116:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000124",
+            "c0000234",
+            "c0000143",
+            "c0000141",
+            "c0000123",
+            "c0000142",
+            "c0000094"
+          ],
+          "pages": [
+            24,
+            47,
+            28,
+            27,
+            23,
+            17
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000094"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "Long hair and loose clothing must be confined in the laboratory to prevent them from catching fire [Page 17]."
+    },
+    {
+      "id": "safety-eye-protection-difference",
+      "intent": "FACT",
+      "question": "What is the difference between safety glasses and chemical splash goggles?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 1423,
+      "prefillTokensPerSecond": 259.76532765980255,
+      "decodeTokensPerSecond": 9.442994324900482,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        18
+      ],
+      "modelTtftMs": 6562,
+      "visibleTtftMs": 6565,
+      "totalMs": 9606,
+      "tokensPerSecond": 9.442994324900482,
+      "backend": "GPU",
+      "retrievedChunks": 8,
+      "contextTokens": 1264,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000098",
+            "c0000100",
+            "c0000102",
+            "c0000101",
+            "c0000099",
+            "c0000226",
+            "c0000246",
+            "c0000182",
+            "c0000188",
+            "c0000189",
+            "c0000185",
+            "c0000078"
+          ],
+          "pages": [
+            18,
+            19,
+            45,
+            49,
+            35,
+            37,
+            36,
+            14
+          ]
+        },
+        "expandedCandidates": {
+          "count": 17,
+          "chunkIds": [
+            "c0000098",
+            "c0000100",
+            "c0000102",
+            "c0000103",
+            "c0000104",
+            "c0000101",
+            "c0000099",
+            "c0000226",
+            "c0000225",
+            "c0000246",
+            "c0000245",
+            "c0000182",
+            "c0000188",
+            "c0000187",
+            "c0000189",
+            "c0000185",
+            "c0000078"
+          ],
+          "provenance": [
+            "c0000098:RETRIEVED:",
+            "c0000100:RETRIEVED:",
+            "c0000102:RETRIEVED:",
+            "c0000103:STRUCTURAL:c0000102",
+            "c0000104:STRUCTURAL:c0000102",
+            "c0000101:RETRIEVED:",
+            "c0000099:RETRIEVED:",
+            "c0000226:RETRIEVED:",
+            "c0000225:LIST_MEMBER:c0000226",
+            "c0000246:RETRIEVED:",
+            "c0000245:LIST_MEMBER:c0000246",
+            "c0000182:RETRIEVED:",
+            "c0000188:RETRIEVED:",
+            "c0000187:LIST_MEMBER:c0000188",
+            "c0000189:RETRIEVED:",
+            "c0000185:RETRIEVED:",
+            "c0000078:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000187",
+            "c0000245",
+            "c0000225",
+            "c0000104",
+            "c0000099",
+            "c0000101",
+            "c0000100",
+            "c0000098"
+          ],
+          "pages": [
+            36,
+            48,
+            44,
+            19,
+            18
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000098"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "Safety glasses are for mechanical hazards, chemical splash goggles are for liquid hazards, and face shields offer extra safety when handling bigger hazards [Page 18]."
+    },
+    {
+      "id": "safety-face-shield",
+      "intent": "FACT",
+      "question": "When does the manual recommend a face shield together with safety goggles?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 1345,
+      "prefillTokensPerSecond": 271.5259642302354,
+      "decodeTokensPerSecond": 9.51966957991391,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        18
+      ],
+      "modelTtftMs": 6145,
+      "visibleTtftMs": 6149,
+      "totalMs": 11473,
+      "tokensPerSecond": 9.51966957991391,
+      "backend": "GPU",
+      "retrievedChunks": 8,
+      "contextTokens": 1064,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000101",
+            "c0000098",
+            "c0000102",
+            "c0000078",
+            "c0000246",
+            "c0000226",
+            "c0000188",
+            "c0000099",
+            "c0000189",
+            "c0000132",
+            "c0000184",
+            "c0000207"
+          ],
+          "pages": [
+            19,
+            18,
+            14,
+            49,
+            45,
+            37,
+            25,
+            36,
+            41
+          ]
+        },
+        "expandedCandidates": {
+          "count": 25,
+          "chunkIds": [
+            "c0000101",
+            "c0000100",
+            "c0000098",
+            "c0000102",
+            "c0000103",
+            "c0000104",
+            "c0000078",
+            "c0000079",
+            "c0000246",
+            "c0000245",
+            "c0000247",
+            "c0000226",
+            "c0000225",
+            "c0000188",
+            "c0000187",
+            "c0000099",
+            "c0000189",
+            "c0000132",
+            "c0000133",
+            "c0000131",
+            "c0000134",
+            "c0000184",
+            "c0000183",
+            "c0000207",
+            "c0000206"
+          ],
+          "provenance": [
+            "c0000101:RETRIEVED:",
+            "c0000100:CONTINUATION:c0000101",
+            "c0000098:RETRIEVED:",
+            "c0000102:RETRIEVED:",
+            "c0000103:STRUCTURAL:c0000102",
+            "c0000104:STRUCTURAL:c0000102",
+            "c0000078:RETRIEVED:",
+            "c0000079:ADJACENT:c0000078",
+            "c0000246:RETRIEVED:",
+            "c0000245:LIST_MEMBER:c0000246",
+            "c0000247:ADJACENT:c0000246",
+            "c0000226:RETRIEVED:",
+            "c0000225:LIST_MEMBER:c0000226",
+            "c0000188:RETRIEVED:",
+            "c0000187:LIST_MEMBER:c0000188",
+            "c0000099:RETRIEVED:",
+            "c0000189:RETRIEVED:",
+            "c0000132:RETRIEVED:",
+            "c0000133:LIST_MEMBER:c0000132",
+            "c0000131:LIST_MEMBER:c0000132",
+            "c0000134:LIST_MEMBER:c0000132",
+            "c0000184:RETRIEVED:",
+            "c0000183:CONTINUATION:c0000184",
+            "c0000207:RETRIEVED:",
+            "c0000206:LIST_MEMBER:c0000207"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000103",
+            "c0000104",
+            "c0000100",
+            "c0000206",
+            "c0000246",
+            "c0000078",
+            "c0000098",
+            "c0000101"
+          ],
+          "pages": [
+            19,
+            18,
+            40,
+            49,
+            14
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000098"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "A face shield with safety goggles offers maximum protection when working with large amounts of chemicals (e.g., 4-liter bottles) or in the vicinity of explosive or explosive hazards (e.g., vacuum systems with glass jars) [Page 18]."
+    },
+    {
+      "id": "safety-ppe-table-eye-seal",
+      "intent": "TABLE",
+      "question": "Which eye-protection option in Table 1 seals around the eyes?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "TABLE_ROW_LEAD",
+      "groundingReasons": "",
+      "prefillTokens": 0,
+      "prefillTokensPerSecond": 0,
+      "decodeTokensPerSecond": 0,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        19
+      ],
+      "modelTtftMs": 0,
+      "visibleTtftMs": 811,
+      "totalMs": 808,
+      "tokensPerSecond": 0,
+      "backend": "GPU",
+      "retrievedChunks": 0,
+      "contextTokens": 0,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000102",
+            "c0000098",
+            "c0000099",
+            "c0000133",
+            "c0000097",
+            "c0000101",
+            "c0000182",
+            "c0000100",
+            "c0000184",
+            "c0000174",
+            "c0000078",
+            "c0000188"
+          ],
+          "pages": [
+            19,
+            18,
+            26,
+            35,
+            36,
+            33,
+            14,
+            37
+          ]
+        },
+        "expandedCandidates": {
+          "count": 15,
+          "chunkIds": [
+            "c0000102",
+            "c0000099",
+            "c0000101",
+            "c0000100",
+            "c0000102:row0",
+            "c0000102:row1",
+            "c0000102:row2",
+            "c0000102:row3",
+            "c0000102:row4",
+            "c0000102:row5",
+            "c0000102:row6",
+            "c0000102:row7",
+            "c0000102:row8",
+            "c0000102:row9",
+            "c0000102:row10"
+          ],
+          "provenance": [
+            "c0000102:RETRIEVED:",
+            "c0000099:RETRIEVED:",
+            "c0000101:RETRIEVED:",
+            "c0000100:RETRIEVED:",
+            "c0000102:row0:CANONICAL_CELL:c0000102",
+            "c0000102:row1:CANONICAL_CELL:c0000102",
+            "c0000102:row2:CANONICAL_CELL:c0000102",
+            "c0000102:row3:CANONICAL_CELL:c0000102",
+            "c0000102:row4:CANONICAL_CELL:c0000102",
+            "c0000102:row5:CANONICAL_CELL:c0000102",
+            "c0000102:row6:CANONICAL_CELL:c0000102",
+            "c0000102:row7:CANONICAL_CELL:c0000102",
+            "c0000102:row8:CANONICAL_CELL:c0000102",
+            "c0000102:row9:CANONICAL_CELL:c0000102",
+            "c0000102:row10:CANONICAL_CELL:c0000102"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000101",
+            "c0000102"
+          ],
+          "pages": [
+            19
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000101",
+            "c0000102"
+          ]
+        },
+        "answer": {
+          "route": "TABLE_ROW_LEAD",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "Splash Goggles — Seal around eyes: Yes [Page 19]"
+    },
+    {
+      "id": "safety-ppe-table-face-coverage",
+      "intent": "TABLE",
+      "question": "According to Table 1, what areas does a face shield cover?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 1291,
+      "prefillTokensPerSecond": 257.53083584212266,
+      "decodeTokensPerSecond": 9.480027960524817,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        19
+      ],
+      "modelTtftMs": 6162,
+      "visibleTtftMs": 6165,
+      "totalMs": 36408,
+      "tokensPerSecond": 9.480027960524817,
+      "backend": "GPU",
+      "retrievedChunks": 8,
+      "contextTokens": 807,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000102",
+            "c0000098",
+            "c0000064",
+            "c0000078",
+            "c0000101",
+            "c0000096",
+            "c0000246",
+            "c0000129",
+            "c0000091",
+            "c0000113",
+            "c0000052",
+            "c0000056"
+          ],
+          "pages": [
+            19,
+            18,
+            12,
+            14,
+            17,
+            49,
+            25,
+            16,
+            21,
+            10,
+            11
+          ]
+        },
+        "expandedCandidates": {
+          "count": 15,
+          "chunkIds": [
+            "c0000102",
+            "c0000099",
+            "c0000101",
+            "c0000100",
+            "c0000102:row0",
+            "c0000102:row1",
+            "c0000102:row2",
+            "c0000102:row3",
+            "c0000102:row4",
+            "c0000102:row5",
+            "c0000102:row6",
+            "c0000102:row7",
+            "c0000102:row8",
+            "c0000102:row9",
+            "c0000102:row10"
+          ],
+          "provenance": [
+            "c0000102:RETRIEVED:",
+            "c0000099:LIST_MEMBER:c0000098",
+            "c0000101:RETRIEVED:",
+            "c0000100:CONTINUATION:c0000101",
+            "c0000102:row0:CANONICAL_CELL:c0000102",
+            "c0000102:row1:CANONICAL_CELL:c0000102",
+            "c0000102:row2:CANONICAL_CELL:c0000102",
+            "c0000102:row3:CANONICAL_CELL:c0000102",
+            "c0000102:row4:CANONICAL_CELL:c0000102",
+            "c0000102:row5:CANONICAL_CELL:c0000102",
+            "c0000102:row6:CANONICAL_CELL:c0000102",
+            "c0000102:row7:CANONICAL_CELL:c0000102",
+            "c0000102:row8:CANONICAL_CELL:c0000102",
+            "c0000102:row9:CANONICAL_CELL:c0000102",
+            "c0000102:row10:CANONICAL_CELL:c0000102"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000099",
+            "c0000102",
+            "c0000102:row0",
+            "c0000102:row1",
+            "c0000102:row2",
+            "c0000102:row3",
+            "c0000102:row4",
+            "c0000101"
+          ],
+          "pages": [
+            18,
+            19
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000102:row4",
+            "c0000102:row0",
+            "c0000102",
+            "c0000102:row1"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "*   The table shows that the \"Seal around eyes\" for \"Eyes, face, nose, and mouth\" is \"No\" [Page 19].\n*   The table shows that the \"Seal around eyes\" for \"Eyes, orbital bones\" is \"Yes\" [Page 19].\n*   The table shows that the \"Protection\" against \"Splashes\" is listed for \"Eyes, face, nose, and mouth\" [Page 19].\n*   The table shows that the \"Protection\" against \"Splashes\" is listed for \"Eyes, orbital bones\" [Page 19].\n*   The table shows that the \"Protection\" against \"Flying debris\" is listed for \"Eyes, face, nose, and mouth\" [Page 19].\n*   The table shows that the \"Protection\" against \"Flying debris\" is listed for \"Eyes, orbital bones\" [Page 19].\n*   The table shows that the \"Protection\" against \"dust, and sparks\" is listed for \"Eyes, face, nose, and mouth\" [Page 19].\n*   The table shows that the \"Protection\" against \"splashes\" is listed for \"Eyes, face, nose, and mouth\" [Page 19].\n*   The table shows that the \"Protection\" against \"chemicals, dust\" is listed for \"Eyes, face, nose, and mouth\" [Page 19].\n*   "
+    },
+    {
+      "id": "safety-thin-nitrile",
+      "intent": "TABLE",
+      "question": "What are thin nitrile gloves used for, and what thickness does Table 2 give?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 632,
+      "prefillTokensPerSecond": 204.8957668746592,
+      "decodeTokensPerSecond": 9.445481886121835,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        20
+      ],
+      "modelTtftMs": 4027,
+      "visibleTtftMs": 4029,
+      "totalMs": 9399,
+      "tokensPerSecond": 9.445481886121835,
+      "backend": "GPU",
+      "retrievedChunks": 3,
+      "contextTokens": 312,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000107",
+            "c0000109",
+            "c0000104",
+            "c0000106",
+            "c0000105",
+            "c0000108",
+            "c0000226",
+            "c0000067",
+            "c0000110",
+            "c0000078",
+            "c0000094",
+            "c0000056"
+          ],
+          "pages": [
+            20,
+            19,
+            45,
+            13,
+            21,
+            14,
+            17,
+            11
+          ]
+        },
+        "expandedCandidates": {
+          "count": 5,
+          "chunkIds": [
+            "c0000107",
+            "c0000109",
+            "c0000106",
+            "c0000108",
+            "c0000110"
+          ],
+          "provenance": [
+            "c0000107:RETRIEVED:",
+            "c0000109:RETRIEVED:",
+            "c0000106:RETRIEVED:",
+            "c0000108:RETRIEVED:",
+            "c0000110:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000108",
+            "c0000109",
+            "c0000107"
+          ],
+          "pages": [
+            20
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000107"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "Thin Nitrile Gloves are used for laboratory work, medical examinations, and <2 mil light-duty tasks [Page 20]. ThickNitrile Gloves are used for mechanics, chemical handling, and heavy-duty 2-4 mil tasks [Page 20]."
+    },
+    {
+      "id": "safety-thick-nitrile",
+      "intent": "TABLE",
+      "question": "What use cases and thickness are listed for thick nitrile gloves?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 1367,
+      "prefillTokensPerSecond": 278.4099048870686,
+      "decodeTokensPerSecond": 9.375172565955387,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        20
+      ],
+      "modelTtftMs": 5929,
+      "visibleTtftMs": 5933,
+      "totalMs": 8775,
+      "tokensPerSecond": 9.375172565955387,
+      "backend": "GPU",
+      "retrievedChunks": 8,
+      "contextTokens": 1129,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000107",
+            "c0000104",
+            "c0000109",
+            "c0000105",
+            "c0000106",
+            "c0000108",
+            "c0000206",
+            "c0000188",
+            "c0000102",
+            "c0000026",
+            "c0000031",
+            "c0000119"
+          ],
+          "pages": [
+            20,
+            19,
+            40,
+            37,
+            6,
+            7,
+            22
+          ]
+        },
+        "expandedCandidates": {
+          "count": 17,
+          "chunkIds": [
+            "c0000107",
+            "c0000104",
+            "c0000109",
+            "c0000105",
+            "c0000106",
+            "c0000108",
+            "c0000206",
+            "c0000207",
+            "c0000188",
+            "c0000187",
+            "c0000102",
+            "c0000101",
+            "c0000103",
+            "c0000026",
+            "c0000031",
+            "c0000030",
+            "c0000119"
+          ],
+          "provenance": [
+            "c0000107:RETRIEVED:",
+            "c0000104:RETRIEVED:",
+            "c0000109:RETRIEVED:",
+            "c0000105:RETRIEVED:",
+            "c0000106:RETRIEVED:",
+            "c0000108:RETRIEVED:",
+            "c0000206:RETRIEVED:",
+            "c0000207:LIST_MEMBER:c0000206",
+            "c0000188:RETRIEVED:",
+            "c0000187:LIST_MEMBER:c0000188",
+            "c0000102:RETRIEVED:",
+            "c0000101:STRUCTURAL:c0000102",
+            "c0000103:STRUCTURAL:c0000102",
+            "c0000026:RETRIEVED:",
+            "c0000031:RETRIEVED:",
+            "c0000030:CONTINUATION:c0000031",
+            "c0000119:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000030",
+            "c0000101",
+            "c0000187",
+            "c0000207",
+            "c0000108",
+            "c0000109",
+            "c0000102",
+            "c0000107"
+          ],
+          "pages": [
+            6,
+            19,
+            36,
+            41,
+            20
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000107"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "ThickNitrile Gloves are used for mechanics, chemical handling, and heavy-duty 2-4 mil tasks [Page 20]."
+    },
+    {
+      "id": "safety-broken-glass",
+      "intent": "FACT",
+      "question": "How should broken glass be picked up and disposed of?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 1578,
+      "prefillTokensPerSecond": 227.1657126307041,
+      "decodeTokensPerSecond": 9.421281060530244,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        22
+      ],
+      "modelTtftMs": 7998,
+      "visibleTtftMs": 8001,
+      "totalMs": 13483,
+      "tokensPerSecond": 9.421281060530244,
+      "backend": "GPU",
+      "retrievedChunks": 7,
+      "contextTokens": 1679,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000119",
+            "c0000136",
+            "c0000137",
+            "c0000123",
+            "c0000138",
+            "c0000118",
+            "c0000133",
+            "c0000099",
+            "c0000117",
+            "c0000191",
+            "c0000022",
+            "c0000098"
+          ],
+          "pages": [
+            22,
+            26,
+            27,
+            23,
+            18,
+            37,
+            6
+          ]
+        },
+        "expandedCandidates": {
+          "count": 19,
+          "chunkIds": [
+            "c0000119",
+            "c0000136",
+            "c0000137",
+            "c0000139",
+            "c0000123",
+            "c0000124",
+            "c0000122",
+            "c0000138",
+            "c0000118",
+            "c0000133",
+            "c0000132",
+            "c0000131",
+            "c0000134",
+            "c0000099",
+            "c0000117",
+            "c0000191",
+            "c0000022",
+            "c0000021",
+            "c0000098"
+          ],
+          "provenance": [
+            "c0000119:RETRIEVED:",
+            "c0000136:RETRIEVED:",
+            "c0000137:RETRIEVED:",
+            "c0000139:ADJACENT:c0000137",
+            "c0000123:RETRIEVED:",
+            "c0000124:LIST_MEMBER:c0000123",
+            "c0000122:LIST_MEMBER:c0000123",
+            "c0000138:RETRIEVED:",
+            "c0000118:RETRIEVED:",
+            "c0000133:RETRIEVED:",
+            "c0000132:LIST_MEMBER:c0000133",
+            "c0000131:LIST_MEMBER:c0000133",
+            "c0000134:LIST_MEMBER:c0000133",
+            "c0000099:RETRIEVED:",
+            "c0000117:RETRIEVED:",
+            "c0000191:RETRIEVED:",
+            "c0000022:RETRIEVED:",
+            "c0000021:CONTINUATION:c0000022",
+            "c0000098:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000124",
+            "c0000132",
+            "c0000134",
+            "c0000133",
+            "c0000123",
+            "c0000119",
+            "c0000136"
+          ],
+          "pages": [
+            24,
+            25,
+            26,
+            23,
+            22
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000119"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "* When dealing with broken glass, wear hand protection when picking up the pieces [Page 22].\n* Use a broom to sweep small pieces into a dustpan [Page 22].\n* Store glass pieces in a designated bin for broken glass [Page 22]."
+    },
+    {
+      "id": "safety-msds-folder",
+      "intent": "FACT",
+      "question": "Where must the laboratory keep hard copies of chemical MSDSs?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 1546,
+      "prefillTokensPerSecond": 224.7218348793995,
+      "decodeTokensPerSecond": 9.467016134977072,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        23
+      ],
+      "modelTtftMs": 8077,
+      "visibleTtftMs": 8081,
+      "totalMs": 12477,
+      "tokensPerSecond": 9.467016134977072,
+      "backend": "GPU",
+      "retrievedChunks": 7,
+      "contextTokens": 1640,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000122",
+            "c0000113",
+            "c0000083",
+            "c0000123",
+            "c0000129",
+            "c0000080",
+            "c0000224",
+            "c0000131",
+            "c0000094",
+            "c0000143",
+            "c0000251",
+            "c0000132"
+          ],
+          "pages": [
+            23,
+            21,
+            15,
+            25,
+            14,
+            44,
+            17,
+            28,
+            50
+          ]
+        },
+        "expandedCandidates": {
+          "count": 22,
+          "chunkIds": [
+            "c0000122",
+            "c0000124",
+            "c0000113",
+            "c0000083",
+            "c0000082",
+            "c0000084",
+            "c0000085",
+            "c0000123",
+            "c0000129",
+            "c0000080",
+            "c0000081",
+            "c0000224",
+            "c0000131",
+            "c0000133",
+            "c0000134",
+            "c0000094",
+            "c0000143",
+            "c0000142",
+            "c0000141",
+            "c0000251",
+            "c0000250",
+            "c0000132"
+          ],
+          "provenance": [
+            "c0000122:RETRIEVED:",
+            "c0000124:LIST_MEMBER:c0000122",
+            "c0000113:RETRIEVED:",
+            "c0000083:RETRIEVED:",
+            "c0000082:INTRODUCTION:c0000083",
+            "c0000084:LIST_MEMBER:c0000083",
+            "c0000085:LIST_MEMBER:c0000083",
+            "c0000123:RETRIEVED:",
+            "c0000129:RETRIEVED:",
+            "c0000080:RETRIEVED:",
+            "c0000081:LIST_MEMBER:c0000080",
+            "c0000224:RETRIEVED:",
+            "c0000131:RETRIEVED:",
+            "c0000133:LIST_MEMBER:c0000131",
+            "c0000134:LIST_MEMBER:c0000131",
+            "c0000094:RETRIEVED:",
+            "c0000143:RETRIEVED:",
+            "c0000142:LIST_MEMBER:c0000143",
+            "c0000141:LIST_MEMBER:c0000143",
+            "c0000251:RETRIEVED:",
+            "c0000250:LIST_MEMBER:c0000251",
+            "c0000132:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000082",
+            "c0000142",
+            "c0000132",
+            "c0000084",
+            "c0000080",
+            "c0000123",
+            "c0000122"
+          ],
+          "pages": [
+            15,
+            27,
+            25,
+            14,
+            23
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000122"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "Hard copies of MSDSs of all the chemicals in the lab must be kept in a clearly labelled folder [Page 23]. This folder should be stored in a visible location, preferably near the door [Page 23]."
+    },
+    {
+      "id": "safety-acid-water-order",
+      "intent": "FACT",
+      "question": "Should water be added to acid, or acid to water?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "PAIRED_DIRECTIVE_LEAD",
+      "groundingReasons": "",
+      "prefillTokens": 0,
+      "prefillTokensPerSecond": 0,
+      "decodeTokensPerSecond": 0,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        24
+      ],
+      "modelTtftMs": 0,
+      "visibleTtftMs": 781,
+      "totalMs": 777,
+      "tokensPerSecond": 0,
+      "backend": "GPU",
+      "retrievedChunks": 0,
+      "contextTokens": 0,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000124",
+            "c0000132",
+            "c0000238",
+            "c0000131",
+            "c0000246",
+            "c0000225",
+            "c0000137",
+            "c0000133",
+            "c0000006",
+            "c0000249",
+            "c0000123",
+            "c0000141"
+          ],
+          "pages": [
+            24,
+            25,
+            47,
+            49,
+            44,
+            27,
+            26,
+            2,
+            23
+          ]
+        },
+        "expandedCandidates": {
+          "count": 22,
+          "chunkIds": [
+            "c0000124",
+            "c0000122",
+            "c0000125",
+            "c0000132",
+            "c0000134",
+            "c0000238",
+            "c0000239",
+            "c0000240",
+            "c0000131",
+            "c0000246",
+            "c0000245",
+            "c0000247",
+            "c0000225",
+            "c0000226",
+            "c0000137",
+            "c0000133",
+            "c0000006",
+            "c0000249",
+            "c0000123",
+            "c0000141",
+            "c0000142",
+            "c0000143"
+          ],
+          "provenance": [
+            "c0000124:RETRIEVED:",
+            "c0000122:LIST_MEMBER:c0000124",
+            "c0000125:ADJACENT:c0000124",
+            "c0000132:RETRIEVED:",
+            "c0000134:LIST_MEMBER:c0000132",
+            "c0000238:RETRIEVED:",
+            "c0000239:LIST_MEMBER:c0000238",
+            "c0000240:LIST_MEMBER:c0000238",
+            "c0000131:RETRIEVED:",
+            "c0000246:RETRIEVED:",
+            "c0000245:LIST_MEMBER:c0000246",
+            "c0000247:ADJACENT:c0000246",
+            "c0000225:RETRIEVED:",
+            "c0000226:LIST_MEMBER:c0000225",
+            "c0000137:RETRIEVED:",
+            "c0000133:RETRIEVED:",
+            "c0000006:RETRIEVED:",
+            "c0000249:RETRIEVED:",
+            "c0000123:RETRIEVED:",
+            "c0000141:RETRIEVED:",
+            "c0000142:LIST_MEMBER:c0000141",
+            "c0000143:LIST_MEMBER:c0000141"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000124"
+          ],
+          "pages": [
+            24
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000124"
+          ]
+        },
+        "answer": {
+          "route": "PAIRED_DIRECTIVE_LEAD",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "Never add water to acid. Always add acid to water. [Page 24]"
+    },
+    {
+      "id": "safety-fume-hood-summary",
+      "intent": "SECTION_SUMMARY",
+      "question": "Summarize section 3.3 Fume Hood Usage.",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "SECTION_SUMMARY",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 997,
+      "prefillTokensPerSecond": 305.37063326885936,
+      "decodeTokensPerSecond": 9.541342659829962,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        25
+      ],
+      "modelTtftMs": 3538,
+      "visibleTtftMs": 3540,
+      "totalMs": 15555,
+      "tokensPerSecond": 9.541342659829962,
+      "backend": "GPU",
+      "retrievedChunks": 4,
+      "contextTokens": 948,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 7,
+          "chunkIds": [
+            "c0000128",
+            "c0000129",
+            "c0000130",
+            "c0000131",
+            "c0000132",
+            "c0000133",
+            "c0000134"
+          ],
+          "pages": [
+            25,
+            26
+          ]
+        },
+        "expandedCandidates": {
+          "count": 7,
+          "chunkIds": [
+            "c0000128",
+            "c0000129",
+            "c0000130",
+            "c0000131",
+            "c0000132",
+            "c0000133",
+            "c0000134"
+          ],
+          "provenance": [
+            "c0000128:RETRIEVED:",
+            "c0000129:RETRIEVED:",
+            "c0000130:RETRIEVED:",
+            "c0000131:RETRIEVED:",
+            "c0000132:RETRIEVED:",
+            "c0000133:RETRIEVED:",
+            "c0000134:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000129",
+            "c0000130",
+            "c0000131",
+            "c0000133"
+          ],
+          "pages": [
+            25,
+            26
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000129"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "COMPLETE",
+        "evidenceComplete": true,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "198430234c24a938dfbce5ff",
+      "error": null,
+      "answer": "* Hoods use air-flow to reduce exposure to fumes, and users must check the anemometer for good air flow before use [Page 25].\n* Obstructing air-flow is prohibited, meaning do not store chemicals or cover vents [Page 25].\n* The sash of the hood should be kept as low as possible to prevent Vapor back-flow [Page 25].\n* Chemicals must be placed at least 6 inches inside the face of the hood [Page 25].\n* The user must remain outside the hood and never peer inside [Page 25]."
+    },
+    {
+      "id": "safety-bottle-shelf-height",
+      "intent": "FACT",
+      "question": "What is the maximum shelf height for large bottles and toxic, flammable, or corrosive liquids?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "QUANTIFIED_SENTENCE_LEAD",
+      "groundingReasons": "",
+      "prefillTokens": 0,
+      "prefillTokensPerSecond": 0,
+      "decodeTokensPerSecond": 0,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        26
+      ],
+      "modelTtftMs": 0,
+      "visibleTtftMs": 817,
+      "totalMs": 815,
+      "tokensPerSecond": 0,
+      "backend": "GPU",
+      "retrievedChunks": 0,
+      "contextTokens": 0,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000133",
+            "c0000098",
+            "c0000156",
+            "c0000225",
+            "c0000081",
+            "c0000141",
+            "c0000132",
+            "c0000131",
+            "c0000198",
+            "c0000123",
+            "c0000104",
+            "c0000126"
+          ],
+          "pages": [
+            26,
+            18,
+            30,
+            44,
+            15,
+            27,
+            25,
+            38,
+            23,
+            19,
+            24
+          ]
+        },
+        "expandedCandidates": {
+          "count": 23,
+          "chunkIds": [
+            "c0000133",
+            "c0000134",
+            "c0000098",
+            "c0000099",
+            "c0000156",
+            "c0000155",
+            "c0000154",
+            "c0000153",
+            "c0000225",
+            "c0000226",
+            "c0000081",
+            "c0000080",
+            "c0000141",
+            "c0000142",
+            "c0000143",
+            "c0000132",
+            "c0000131",
+            "c0000198",
+            "c0000123",
+            "c0000124",
+            "c0000122",
+            "c0000104",
+            "c0000126"
+          ],
+          "provenance": [
+            "c0000133:RETRIEVED:",
+            "c0000134:LIST_MEMBER:c0000133",
+            "c0000098:RETRIEVED:",
+            "c0000099:LIST_MEMBER:c0000098",
+            "c0000156:RETRIEVED:",
+            "c0000155:STRUCTURAL:c0000156",
+            "c0000154:STRUCTURAL:c0000156",
+            "c0000153:STRUCTURAL:c0000156",
+            "c0000225:RETRIEVED:",
+            "c0000226:LIST_MEMBER:c0000225",
+            "c0000081:RETRIEVED:",
+            "c0000080:LIST_MEMBER:c0000081",
+            "c0000141:RETRIEVED:",
+            "c0000142:LIST_MEMBER:c0000141",
+            "c0000143:LIST_MEMBER:c0000141",
+            "c0000132:RETRIEVED:",
+            "c0000131:RETRIEVED:",
+            "c0000198:RETRIEVED:",
+            "c0000123:RETRIEVED:",
+            "c0000124:LIST_MEMBER:c0000123",
+            "c0000122:LIST_MEMBER:c0000123",
+            "c0000104:RETRIEVED:",
+            "c0000126:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000133"
+          ],
+          "pages": [
+            26
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000133"
+          ]
+        },
+        "answer": {
+          "route": "QUANTIFIED_SENTENCE_LEAD",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "● Large bottles and bottles containing toxic, flammable, or corrosive liquids should be stored on shelves below eye level (maximum 5 feet). [Page 26]"
+    },
+    {
+      "id": "safety-peroxide-disposal",
+      "intent": "FACT",
+      "question": "How soon after opening should peroxide-forming materials such as diethyl ether be discarded?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 1336,
+      "prefillTokensPerSecond": 270.73847267391875,
+      "decodeTokensPerSecond": 9.423256099337998,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        26
+      ],
+      "modelTtftMs": 6120,
+      "visibleTtftMs": 6123,
+      "totalMs": 10543,
+      "tokensPerSecond": 9.423256099337998,
+      "backend": "GPU",
+      "retrievedChunks": 7,
+      "contextTokens": 1333,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000134",
+            "c0000131",
+            "c0000124",
+            "c0000141",
+            "c0000133",
+            "c0000136",
+            "c0000142",
+            "c0000084",
+            "c0000132",
+            "c0000123",
+            "c0000106",
+            "c0000091"
+          ],
+          "pages": [
+            26,
+            25,
+            24,
+            27,
+            15,
+            23,
+            20,
+            16
+          ]
+        },
+        "expandedCandidates": {
+          "count": 17,
+          "chunkIds": [
+            "c0000134",
+            "c0000131",
+            "c0000124",
+            "c0000122",
+            "c0000141",
+            "c0000143",
+            "c0000133",
+            "c0000136",
+            "c0000142",
+            "c0000084",
+            "c0000085",
+            "c0000083",
+            "c0000132",
+            "c0000123",
+            "c0000106",
+            "c0000091",
+            "c0000092"
+          ],
+          "provenance": [
+            "c0000134:RETRIEVED:",
+            "c0000131:RETRIEVED:",
+            "c0000124:RETRIEVED:",
+            "c0000122:LIST_MEMBER:c0000124",
+            "c0000141:RETRIEVED:",
+            "c0000143:LIST_MEMBER:c0000141",
+            "c0000133:RETRIEVED:",
+            "c0000136:RETRIEVED:",
+            "c0000142:RETRIEVED:",
+            "c0000084:RETRIEVED:",
+            "c0000085:LIST_MEMBER:c0000084",
+            "c0000083:LIST_MEMBER:c0000084",
+            "c0000132:RETRIEVED:",
+            "c0000123:RETRIEVED:",
+            "c0000106:RETRIEVED:",
+            "c0000091:RETRIEVED:",
+            "c0000092:LIST_MEMBER:c0000091"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000092",
+            "c0000143",
+            "c0000085",
+            "c0000084",
+            "c0000142",
+            "c0000133",
+            "c0000134"
+          ],
+          "pages": [
+            17,
+            28,
+            16,
+            15,
+            27,
+            26
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000134"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "Opened containers of materials that may form peroxides, such as diethyl ether, should be discarded within one year of opening [Page 26]. All such containers should be dated upon receipt and upon opening [Page 26]."
+    },
+    {
+      "id": "safety-waste-collection",
+      "intent": "FACT",
+      "question": "How often must lab in-charges bring accumulated waste to the collection point, and what waste will be accepted?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 1624,
+      "prefillTokensPerSecond": 211.22691458340148,
+      "decodeTokensPerSecond": 9.475284811595527,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        27
+      ],
+      "modelTtftMs": 9106,
+      "visibleTtftMs": 9110,
+      "totalMs": 12993,
+      "tokensPerSecond": 9.475284811595527,
+      "backend": "GPU",
+      "retrievedChunks": 8,
+      "contextTokens": 1708,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000138",
+            "c0000136",
+            "c0000123",
+            "c0000222",
+            "c0000089",
+            "c0000088",
+            "c0000230",
+            "c0000224",
+            "c0000216",
+            "c0000083",
+            "c0000131",
+            "c0000122"
+          ],
+          "pages": [
+            27,
+            26,
+            23,
+            44,
+            16,
+            46,
+            43,
+            15,
+            25
+          ]
+        },
+        "expandedCandidates": {
+          "count": 22,
+          "chunkIds": [
+            "c0000138",
+            "c0000139",
+            "c0000136",
+            "c0000123",
+            "c0000124",
+            "c0000222",
+            "c0000089",
+            "c0000088",
+            "c0000230",
+            "c0000229",
+            "c0000224",
+            "c0000216",
+            "c0000217",
+            "c0000083",
+            "c0000082",
+            "c0000084",
+            "c0000085",
+            "c0000131",
+            "c0000132",
+            "c0000133",
+            "c0000134",
+            "c0000122"
+          ],
+          "provenance": [
+            "c0000138:RETRIEVED:",
+            "c0000139:ADJACENT:c0000138",
+            "c0000136:RETRIEVED:",
+            "c0000123:RETRIEVED:",
+            "c0000124:LIST_MEMBER:c0000123",
+            "c0000222:RETRIEVED:",
+            "c0000089:RETRIEVED:",
+            "c0000088:RETRIEVED:",
+            "c0000230:RETRIEVED:",
+            "c0000229:LIST_MEMBER:c0000230",
+            "c0000224:RETRIEVED:",
+            "c0000216:RETRIEVED:",
+            "c0000217:LIST_MEMBER:c0000216",
+            "c0000083:RETRIEVED:",
+            "c0000082:INTRODUCTION:c0000083",
+            "c0000084:LIST_MEMBER:c0000083",
+            "c0000085:LIST_MEMBER:c0000083",
+            "c0000131:RETRIEVED:",
+            "c0000132:LIST_MEMBER:c0000131",
+            "c0000133:LIST_MEMBER:c0000131",
+            "c0000134:LIST_MEMBER:c0000131",
+            "c0000122:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000132",
+            "c0000084",
+            "c0000139",
+            "c0000133",
+            "c0000229",
+            "c0000230",
+            "c0000123",
+            "c0000138"
+          ],
+          "pages": [
+            25,
+            15,
+            27,
+            26,
+            45,
+            46,
+            23
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000138"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "Lab in-charges are required to collect all waste once a month and bring it to the waste collection point [Page 27]. Only labelled and segregated waste will be collected [Page 27]."
+    },
+    {
+      "id": "safety-fire-walking-space",
+      "intent": "FACT",
+      "question": "What minimum walking space must be maintained for fire safety?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "QUANTIFIED_SENTENCE_LEAD",
+      "groundingReasons": "",
+      "prefillTokens": 0,
+      "prefillTokensPerSecond": 0,
+      "decodeTokensPerSecond": 0,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        27
+      ],
+      "modelTtftMs": 0,
+      "visibleTtftMs": 857,
+      "totalMs": 854,
+      "tokensPerSecond": 0,
+      "backend": "GPU",
+      "retrievedChunks": 0,
+      "contextTokens": 0,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000141",
+            "c0000161",
+            "c0000216",
+            "c0000200",
+            "c0000150",
+            "c0000092",
+            "c0000145",
+            "c0000132",
+            "c0000146",
+            "c0000089",
+            "c0000142",
+            "c0000122"
+          ],
+          "pages": [
+            27,
+            31,
+            43,
+            39,
+            29,
+            17,
+            28,
+            25,
+            16,
+            23
+          ]
+        },
+        "expandedCandidates": {
+          "count": 24,
+          "chunkIds": [
+            "c0000141",
+            "c0000143",
+            "c0000139",
+            "c0000138",
+            "c0000161",
+            "c0000162",
+            "c0000160",
+            "c0000216",
+            "c0000217",
+            "c0000200",
+            "c0000150",
+            "c0000092",
+            "c0000091",
+            "c0000145",
+            "c0000132",
+            "c0000133",
+            "c0000131",
+            "c0000134",
+            "c0000146",
+            "c0000089",
+            "c0000142",
+            "c0000122",
+            "c0000123",
+            "c0000124"
+          ],
+          "provenance": [
+            "c0000141:RETRIEVED:",
+            "c0000143:LIST_MEMBER:c0000141",
+            "c0000139:ADJACENT:c0000141",
+            "c0000138:ADJACENT:c0000141",
+            "c0000161:RETRIEVED:",
+            "c0000162:LIST_MEMBER:c0000161",
+            "c0000160:INTRODUCTION:c0000161",
+            "c0000216:RETRIEVED:",
+            "c0000217:LIST_MEMBER:c0000216",
+            "c0000200:RETRIEVED:",
+            "c0000150:RETRIEVED:",
+            "c0000092:RETRIEVED:",
+            "c0000091:LIST_MEMBER:c0000092",
+            "c0000145:RETRIEVED:",
+            "c0000132:RETRIEVED:",
+            "c0000133:LIST_MEMBER:c0000132",
+            "c0000131:LIST_MEMBER:c0000132",
+            "c0000134:LIST_MEMBER:c0000132",
+            "c0000146:RETRIEVED:",
+            "c0000089:RETRIEVED:",
+            "c0000142:RETRIEVED:",
+            "c0000122:RETRIEVED:",
+            "c0000123:LIST_MEMBER:c0000122",
+            "c0000124:LIST_MEMBER:c0000122"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000141"
+          ],
+          "pages": [
+            27
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000141"
+          ]
+        },
+        "answer": {
+          "route": "QUANTIFIED_SENTENCE_LEAD",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "● Maintain adequate walking space in the laboratory, minimum of 2 feet, and unobstructed access to exits. [Page 27]"
+    },
+    {
+      "id": "safety-electrical-overload",
+      "intent": "FACT",
+      "question": "What example does the manual give of overloading an electrical outlet?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 1492,
+      "prefillTokensPerSecond": 256.72419580300385,
+      "decodeTokensPerSecond": 9.397279440567369,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        28
+      ],
+      "modelTtftMs": 6941,
+      "visibleTtftMs": 6943,
+      "totalMs": 10955,
+      "tokensPerSecond": 9.397279440567369,
+      "backend": "GPU",
+      "retrievedChunks": 8,
+      "contextTokens": 1506,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000146",
+            "c0000145",
+            "c0000141",
+            "c0000147",
+            "c0000195",
+            "c0000157",
+            "c0000144",
+            "c0000149",
+            "c0000235",
+            "c0000150",
+            "c0000198",
+            "c0000092"
+          ],
+          "pages": [
+            28,
+            27,
+            29,
+            38,
+            31,
+            47,
+            17
+          ]
+        },
+        "expandedCandidates": {
+          "count": 16,
+          "chunkIds": [
+            "c0000146",
+            "c0000145",
+            "c0000141",
+            "c0000142",
+            "c0000143",
+            "c0000147",
+            "c0000195",
+            "c0000157",
+            "c0000144",
+            "c0000149",
+            "c0000235",
+            "c0000234",
+            "c0000150",
+            "c0000198",
+            "c0000092",
+            "c0000091"
+          ],
+          "provenance": [
+            "c0000146:RETRIEVED:",
+            "c0000145:RETRIEVED:",
+            "c0000141:RETRIEVED:",
+            "c0000142:LIST_MEMBER:c0000141",
+            "c0000143:LIST_MEMBER:c0000141",
+            "c0000147:RETRIEVED:",
+            "c0000195:RETRIEVED:",
+            "c0000157:RETRIEVED:",
+            "c0000144:RETRIEVED:",
+            "c0000149:RETRIEVED:",
+            "c0000235:RETRIEVED:",
+            "c0000234:INTRODUCTION:c0000235",
+            "c0000150:RETRIEVED:",
+            "c0000198:RETRIEVED:",
+            "c0000092:RETRIEVED:",
+            "c0000091:LIST_MEMBER:c0000092"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000091",
+            "c0000234",
+            "c0000143",
+            "c0000157",
+            "c0000142",
+            "c0000141",
+            "c0000145",
+            "c0000146"
+          ],
+          "pages": [
+            16,
+            47,
+            28,
+            31,
+            27
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000146"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "Overloading an electrical outlet can lead to fire in that circuit [Page 28]. For example, do not connect a 15A device to a 5A socket [Page 28]."
+    },
+    {
+      "id": "safety-electrical-fire",
+      "intent": "FACT",
+      "question": "May water be used on an electrical fire?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 1515,
+      "prefillTokensPerSecond": 266.984790869859,
+      "decodeTokensPerSecond": 9.486598118824794,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        28
+      ],
+      "modelTtftMs": 6784,
+      "visibleTtftMs": 6788,
+      "totalMs": 11382,
+      "tokensPerSecond": 9.486598118824794,
+      "backend": "GPU",
+      "retrievedChunks": 8,
+      "contextTokens": 1465,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000146",
+            "c0000238",
+            "c0000145",
+            "c0000155",
+            "c0000157",
+            "c0000239",
+            "c0000149",
+            "c0000141",
+            "c0000161",
+            "c0000240",
+            "c0000124",
+            "c0000147"
+          ],
+          "pages": [
+            28,
+            47,
+            30,
+            31,
+            48,
+            29,
+            27,
+            24
+          ]
+        },
+        "expandedCandidates": {
+          "count": 21,
+          "chunkIds": [
+            "c0000146",
+            "c0000238",
+            "c0000145",
+            "c0000155",
+            "c0000154",
+            "c0000156",
+            "c0000157",
+            "c0000158",
+            "c0000239",
+            "c0000149",
+            "c0000141",
+            "c0000142",
+            "c0000143",
+            "c0000161",
+            "c0000162",
+            "c0000160",
+            "c0000240",
+            "c0000124",
+            "c0000123",
+            "c0000122",
+            "c0000147"
+          ],
+          "provenance": [
+            "c0000146:RETRIEVED:",
+            "c0000238:RETRIEVED:",
+            "c0000145:RETRIEVED:",
+            "c0000155:RETRIEVED:",
+            "c0000154:ADJACENT:c0000155",
+            "c0000156:ADJACENT:c0000155",
+            "c0000157:RETRIEVED:",
+            "c0000158:ADJACENT:c0000157",
+            "c0000239:RETRIEVED:",
+            "c0000149:RETRIEVED:",
+            "c0000141:RETRIEVED:",
+            "c0000142:LIST_MEMBER:c0000141",
+            "c0000143:LIST_MEMBER:c0000141",
+            "c0000161:RETRIEVED:",
+            "c0000162:LIST_MEMBER:c0000161",
+            "c0000160:INTRODUCTION:c0000161",
+            "c0000240:RETRIEVED:",
+            "c0000124:RETRIEVED:",
+            "c0000123:LIST_MEMBER:c0000124",
+            "c0000122:LIST_MEMBER:c0000124",
+            "c0000147:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000158",
+            "c0000154",
+            "c0000160",
+            "c0000156",
+            "c0000238",
+            "c0000239",
+            "c0000145",
+            "c0000146"
+          ],
+          "pages": [
+            31,
+            30,
+            47,
+            48,
+            28
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000146"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "No, you should not try to extinguish an electrical fire with water because it can result in electric shock if the burning wires are still alive [Page 28]. Use only the proper fire extinguisher for electrical fires [Page 28]."
+    },
+    {
+      "id": "safety-heated-oil-bath",
+      "intent": "FACT",
+      "question": "Where must an oil bath be operated, and what solvents must be kept away from a heated bath?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 1560,
+      "prefillTokensPerSecond": 227.63511893305173,
+      "decodeTokensPerSecond": 9.48039630731495,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        29
+      ],
+      "modelTtftMs": 8144,
+      "visibleTtftMs": 8148,
+      "totalMs": 12115,
+      "tokensPerSecond": 9.48039630731495,
+      "backend": "GPU",
+      "retrievedChunks": 8,
+      "contextTokens": 1671,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000150",
+            "c0000149",
+            "c0000156",
+            "c0000132",
+            "c0000133",
+            "c0000206",
+            "c0000141",
+            "c0000124",
+            "c0000091",
+            "c0000142",
+            "c0000148",
+            "c0000089"
+          ],
+          "pages": [
+            29,
+            30,
+            25,
+            26,
+            40,
+            27,
+            24,
+            16
+          ]
+        },
+        "expandedCandidates": {
+          "count": 22,
+          "chunkIds": [
+            "c0000150",
+            "c0000149",
+            "c0000156",
+            "c0000155",
+            "c0000154",
+            "c0000153",
+            "c0000132",
+            "c0000131",
+            "c0000134",
+            "c0000133",
+            "c0000206",
+            "c0000207",
+            "c0000141",
+            "c0000143",
+            "c0000124",
+            "c0000123",
+            "c0000122",
+            "c0000091",
+            "c0000092",
+            "c0000142",
+            "c0000148",
+            "c0000089"
+          ],
+          "provenance": [
+            "c0000150:RETRIEVED:",
+            "c0000149:RETRIEVED:",
+            "c0000156:RETRIEVED:",
+            "c0000155:STRUCTURAL:c0000156",
+            "c0000154:STRUCTURAL:c0000156",
+            "c0000153:STRUCTURAL:c0000156",
+            "c0000132:RETRIEVED:",
+            "c0000131:LIST_MEMBER:c0000132",
+            "c0000134:LIST_MEMBER:c0000132",
+            "c0000133:RETRIEVED:",
+            "c0000206:RETRIEVED:",
+            "c0000207:LIST_MEMBER:c0000206",
+            "c0000141:RETRIEVED:",
+            "c0000143:LIST_MEMBER:c0000141",
+            "c0000124:RETRIEVED:",
+            "c0000123:LIST_MEMBER:c0000124",
+            "c0000122:LIST_MEMBER:c0000124",
+            "c0000091:RETRIEVED:",
+            "c0000092:LIST_MEMBER:c0000091",
+            "c0000142:RETRIEVED:",
+            "c0000148:RETRIEVED:",
+            "c0000089:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000134",
+            "c0000155",
+            "c0000123",
+            "c0000207",
+            "c0000133",
+            "c0000132",
+            "c0000149",
+            "c0000150"
+          ],
+          "pages": [
+            26,
+            30,
+            23,
+            41,
+            25,
+            29
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000150"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "An oil bath must always be housed in a chemical fume hood [Page 29]. Flammable or combustible solvents should not be used in a heated bath or placed near the bath [Page 29]."
+    },
+    {
+      "id": "safety-fire-class-d",
+      "intent": "TABLE",
+      "question": "In the fire-extinguisher table, what class covers metal fires and how should they be extinguished?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "TABLE_ROW_LEAD",
+      "groundingReasons": "",
+      "prefillTokens": 0,
+      "prefillTokensPerSecond": 0,
+      "decodeTokensPerSecond": 0,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        30
+      ],
+      "modelTtftMs": 0,
+      "visibleTtftMs": 885,
+      "totalMs": 883,
+      "tokensPerSecond": 0,
+      "backend": "GPU",
+      "retrievedChunks": 0,
+      "contextTokens": 0,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000157",
+            "c0000155",
+            "c0000143",
+            "c0000156",
+            "c0000210",
+            "c0000239",
+            "c0000170",
+            "c0000152",
+            "c0000154",
+            "c0000174",
+            "c0000177",
+            "c0000153"
+          ],
+          "pages": [
+            31,
+            30,
+            28,
+            41,
+            48,
+            32,
+            29,
+            33,
+            34
+          ]
+        },
+        "expandedCandidates": {
+          "count": 31,
+          "chunkIds": [
+            "c0000157",
+            "c0000158",
+            "c0000155",
+            "c0000143",
+            "c0000142",
+            "c0000141",
+            "c0000156",
+            "c0000210",
+            "c0000209",
+            "c0000211",
+            "c0000208",
+            "c0000239",
+            "c0000238",
+            "c0000240",
+            "c0000241",
+            "c0000170",
+            "c0000171",
+            "c0000169",
+            "c0000168",
+            "c0000167",
+            "c0000152",
+            "c0000154",
+            "c0000174",
+            "c0000173",
+            "c0000172",
+            "c0000177",
+            "c0000176",
+            "c0000178",
+            "c0000175",
+            "c0000179",
+            "c0000153"
+          ],
+          "provenance": [
+            "c0000157:RETRIEVED:",
+            "c0000158:ADJACENT:c0000157",
+            "c0000155:RETRIEVED:",
+            "c0000143:RETRIEVED:",
+            "c0000142:LIST_MEMBER:c0000143",
+            "c0000141:LIST_MEMBER:c0000143",
+            "c0000156:RETRIEVED:",
+            "c0000210:RETRIEVED:",
+            "c0000209:ADJACENT:c0000210",
+            "c0000211:ADJACENT:c0000210",
+            "c0000208:ADJACENT:c0000210",
+            "c0000239:RETRIEVED:",
+            "c0000238:LIST_MEMBER:c0000239",
+            "c0000240:LIST_MEMBER:c0000239",
+            "c0000241:ADJACENT:c0000239",
+            "c0000170:RETRIEVED:",
+            "c0000171:CONTINUATION:c0000170",
+            "c0000169:STRUCTURAL:c0000170",
+            "c0000168:STRUCTURAL:c0000170",
+            "c0000167:STRUCTURAL:c0000170",
+            "c0000152:RETRIEVED:",
+            "c0000154:RETRIEVED:",
+            "c0000174:RETRIEVED:",
+            "c0000173:STRUCTURAL:c0000174",
+            "c0000172:STRUCTURAL:c0000174",
+            "c0000177:RETRIEVED:",
+            "c0000176:STRUCTURAL:c0000177",
+            "c0000178:STRUCTURAL:c0000177",
+            "c0000175:STRUCTURAL:c0000177",
+            "c0000179:STRUCTURAL:c0000177",
+            "c0000153:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000156"
+          ],
+          "pages": [
+            30
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000156"
+          ]
+        },
+        "answer": {
+          "route": "TABLE_ROW_LEAD",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "Class D. Metal — Magnesium, Aluminum, Sodium, Potassium, Zirconium, Titanium, etc. — D — Special metal extinguishers. Do not use ordinary extinguishers found in the building, or else a violent reaction may result. [Page 30]"
+    },
+    {
+      "id": "safety-fire-class-b",
+      "intent": "TABLE",
+      "question": "Which extinguisher methods are listed for Class B flammable-liquid fires?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 1142,
+      "prefillTokensPerSecond": 291.5594978076066,
+      "decodeTokensPerSecond": 9.464105735313865,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        30
+      ],
+      "modelTtftMs": 5408,
+      "visibleTtftMs": 5410,
+      "totalMs": 9181,
+      "tokensPerSecond": 9.464105735313865,
+      "backend": "GPU",
+      "retrievedChunks": 8,
+      "contextTokens": 1061,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000155",
+            "c0000157",
+            "c0000156",
+            "c0000132",
+            "c0000081",
+            "c0000141",
+            "c0000210",
+            "c0000143",
+            "c0000009",
+            "c0000177",
+            "c0000170",
+            "c0000174"
+          ],
+          "pages": [
+            30,
+            31,
+            25,
+            15,
+            27,
+            41,
+            28,
+            4,
+            34,
+            32,
+            33
+          ]
+        },
+        "expandedCandidates": {
+          "count": 34,
+          "chunkIds": [
+            "c0000155",
+            "c0000154",
+            "c0000157",
+            "c0000158",
+            "c0000156",
+            "c0000153",
+            "c0000132",
+            "c0000133",
+            "c0000131",
+            "c0000134",
+            "c0000081",
+            "c0000080",
+            "c0000082",
+            "c0000141",
+            "c0000142",
+            "c0000210",
+            "c0000143",
+            "c0000009",
+            "c0000008",
+            "c0000010",
+            "c0000011",
+            "c0000177",
+            "c0000176",
+            "c0000178",
+            "c0000175",
+            "c0000179",
+            "c0000170",
+            "c0000171",
+            "c0000169",
+            "c0000168",
+            "c0000167",
+            "c0000174",
+            "c0000173",
+            "c0000172"
+          ],
+          "provenance": [
+            "c0000155:RETRIEVED:",
+            "c0000154:ADJACENT:c0000155",
+            "c0000157:RETRIEVED:",
+            "c0000158:ADJACENT:c0000157",
+            "c0000156:RETRIEVED:",
+            "c0000153:STRUCTURAL:c0000156",
+            "c0000132:RETRIEVED:",
+            "c0000133:LIST_MEMBER:c0000132",
+            "c0000131:LIST_MEMBER:c0000132",
+            "c0000134:LIST_MEMBER:c0000132",
+            "c0000081:RETRIEVED:",
+            "c0000080:LIST_MEMBER:c0000081",
+            "c0000082:ADJACENT:c0000081",
+            "c0000141:RETRIEVED:",
+            "c0000142:LIST_MEMBER:c0000141",
+            "c0000210:RETRIEVED:",
+            "c0000143:RETRIEVED:",
+            "c0000009:RETRIEVED:",
+            "c0000008:CONTINUATION:c0000009",
+            "c0000010:STRUCTURAL:c0000009",
+            "c0000011:STRUCTURAL:c0000009",
+            "c0000177:RETRIEVED:",
+            "c0000176:STRUCTURAL:c0000177",
+            "c0000178:STRUCTURAL:c0000177",
+            "c0000175:STRUCTURAL:c0000177",
+            "c0000179:STRUCTURAL:c0000177",
+            "c0000170:RETRIEVED:",
+            "c0000171:CONTINUATION:c0000170",
+            "c0000169:STRUCTURAL:c0000170",
+            "c0000168:STRUCTURAL:c0000170",
+            "c0000167:STRUCTURAL:c0000170",
+            "c0000174:RETRIEVED:",
+            "c0000173:STRUCTURAL:c0000174",
+            "c0000172:STRUCTURAL:c0000174"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000133",
+            "c0000153",
+            "c0000158",
+            "c0000154",
+            "c0000156",
+            "c0000157",
+            "c0000155",
+            "c0000081"
+          ],
+          "pages": [
+            26,
+            30,
+            31,
+            15
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000156"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "For Flammable Liquids, Oils, solvents, grease, paint, etc., the listed methods to extinguish are B, Foam spray, ABC powder, and carbon dioxide [Page 30]."
+    },
+    {
+      "id": "safety-fire-class-e",
+      "intent": "TABLE",
+      "question": "What class and extinguisher types does Table 3 specify for electrical fires?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "TABLE_ROW_LEAD",
+      "groundingReasons": "",
+      "prefillTokens": 0,
+      "prefillTokensPerSecond": 0,
+      "decodeTokensPerSecond": 0,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        31
+      ],
+      "modelTtftMs": 0,
+      "visibleTtftMs": 853,
+      "totalMs": 851,
+      "tokensPerSecond": 0,
+      "backend": "GPU",
+      "retrievedChunks": 0,
+      "contextTokens": 0,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000157",
+            "c0000155",
+            "c0000146",
+            "c0000177",
+            "c0000174",
+            "c0000009",
+            "c0000170",
+            "c0000154",
+            "c0000141",
+            "c0000210",
+            "c0000176",
+            "c0000058"
+          ],
+          "pages": [
+            31,
+            30,
+            28,
+            34,
+            33,
+            4,
+            32,
+            27,
+            41,
+            11
+          ]
+        },
+        "expandedCandidates": {
+          "count": 5,
+          "chunkIds": [
+            "c0000157",
+            "c0000158",
+            "c0000155",
+            "c0000156",
+            "c0000154"
+          ],
+          "provenance": [
+            "c0000157:RETRIEVED:",
+            "c0000158:ADJACENT:c0000157",
+            "c0000155:RETRIEVED:",
+            "c0000156:ADJACENT:c0000155",
+            "c0000154:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000157"
+          ],
+          "pages": [
+            31
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000157"
+          ]
+        },
+        "answer": {
+          "route": "TABLE_ROW_LEAD",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "Electrical fires — Class E — Powder type; Carbon dioxide [Page 31]"
+    },
+    {
+      "id": "safety-laser-class-3b",
+      "intent": "TABLE",
+      "question": "For a Class 3B laser, what energy range and procedural requirements appear in Table 4?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "TABLE_ROW_LEAD",
+      "groundingReasons": "",
+      "prefillTokens": 0,
+      "prefillTokensPerSecond": 0,
+      "decodeTokensPerSecond": 0,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        33
+      ],
+      "modelTtftMs": 0,
+      "visibleTtftMs": 811,
+      "totalMs": 809,
+      "tokensPerSecond": 0,
+      "backend": "GPU",
+      "retrievedChunks": 0,
+      "contextTokens": 0,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000172",
+            "c0000177",
+            "c0000170",
+            "c0000174",
+            "c0000168",
+            "c0000167",
+            "c0000176",
+            "c0000182",
+            "c0000157",
+            "c0000173",
+            "c0000175",
+            "c0000009"
+          ],
+          "pages": [
+            33,
+            34,
+            32,
+            35,
+            31,
+            4
+          ]
+        },
+        "expandedCandidates": {
+          "count": 8,
+          "chunkIds": [
+            "c0000174",
+            "c0000171",
+            "c0000175",
+            "c0000172",
+            "c0000177",
+            "c0000176",
+            "c0000173",
+            "c0000174:row0"
+          ],
+          "provenance": [
+            "c0000174:RETRIEVED:",
+            "c0000171:STRUCTURAL:c0000174",
+            "c0000175:RETRIEVED:",
+            "c0000172:RETRIEVED:",
+            "c0000177:RETRIEVED:",
+            "c0000176:RETRIEVED:",
+            "c0000173:RETRIEVED:",
+            "c0000174:row0:CANONICAL_CELL:c0000174"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000174"
+          ],
+          "pages": [
+            33
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000174"
+          ]
+        },
+        "answer": {
+          "route": "TABLE_ROW_LEAD",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "3B — Required — Required — Suggested — 5-500 mW — serious injury from diffuse reflection to the eye or to the skin. [Page 33]"
+    },
+    {
+      "id": "safety-laser-class-four",
+      "intent": "TABLE",
+      "question": "According to Table 4, what energy and hazards characterize a Class 4 laser?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "TABLE_ROW_LEAD",
+      "groundingReasons": "",
+      "prefillTokens": 0,
+      "prefillTokensPerSecond": 0,
+      "decodeTokensPerSecond": 0,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        33
+      ],
+      "modelTtftMs": 0,
+      "visibleTtftMs": 816,
+      "totalMs": 814,
+      "tokensPerSecond": 0,
+      "backend": "GPU",
+      "retrievedChunks": 0,
+      "contextTokens": 0,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000170",
+            "c0000172",
+            "c0000177",
+            "c0000174",
+            "c0000176",
+            "c0000168",
+            "c0000167",
+            "c0000173",
+            "c0000182",
+            "c0000064",
+            "c0000157",
+            "c0000175"
+          ],
+          "pages": [
+            32,
+            33,
+            34,
+            35,
+            12,
+            31
+          ]
+        },
+        "expandedCandidates": {
+          "count": 8,
+          "chunkIds": [
+            "c0000174",
+            "c0000171",
+            "c0000175",
+            "c0000172",
+            "c0000177",
+            "c0000176",
+            "c0000173",
+            "c0000174:row0"
+          ],
+          "provenance": [
+            "c0000174:RETRIEVED:",
+            "c0000171:STRUCTURAL:c0000174",
+            "c0000175:RETRIEVED:",
+            "c0000172:RETRIEVED:",
+            "c0000177:RETRIEVED:",
+            "c0000176:RETRIEVED:",
+            "c0000173:RETRIEVED:",
+            "c0000174:row0:CANONICAL_CELL:c0000174"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000174"
+          ],
+          "pages": [
+            33
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000174"
+          ]
+        },
+        "answer": {
+          "route": "TABLE_ROW_LEAD",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "4 — Required — 5-500mW — Suggested — > 500 mW — Hazard to the eye and skin from direct, specular, or diffuse reflection. Fire hazard. [Page 33]"
+    },
+    {
+      "id": "safety-laser-distance-class-two",
+      "intent": "TABLE",
+      "question": "For the 0.99 mW Class 2 laser in Table 5, what are the flash-blindness and eye-hazard distances?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "TABLE_ROW_LEAD",
+      "groundingReasons": "",
+      "prefillTokens": 0,
+      "prefillTokensPerSecond": 0,
+      "decodeTokensPerSecond": 0,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        34
+      ],
+      "modelTtftMs": 0,
+      "visibleTtftMs": 808,
+      "totalMs": 805,
+      "tokensPerSecond": 0,
+      "backend": "GPU",
+      "retrievedChunks": 0,
+      "contextTokens": 0,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000177",
+            "c0000176",
+            "c0000174",
+            "c0000170",
+            "c0000175",
+            "c0000164",
+            "c0000172",
+            "c0000173",
+            "c0000182",
+            "c0000167",
+            "c0000168",
+            "c0000179"
+          ],
+          "pages": [
+            34,
+            33,
+            32,
+            35
+          ]
+        },
+        "expandedCandidates": {
+          "count": 7,
+          "chunkIds": [
+            "c0000177",
+            "c0000176",
+            "c0000174",
+            "c0000175",
+            "c0000177:row0",
+            "c0000177:row1",
+            "c0000177:row2"
+          ],
+          "provenance": [
+            "c0000177:RETRIEVED:",
+            "c0000176:RETRIEVED:",
+            "c0000174:RETRIEVED:",
+            "c0000175:RETRIEVED:",
+            "c0000177:row0:CANONICAL_CELL:c0000177",
+            "c0000177:row1:CANONICAL_CELL:c0000177",
+            "c0000177:row2:CANONICAL_CELL:c0000177"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000177"
+          ],
+          "pages": [
+            34
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000177"
+          ]
+        },
+        "answer": {
+          "route": "TABLE_ROW_LEAD",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "Class 2 0.99 mW, 532 nm — 0.6 — 0.9 — 67 m — 14 m [Page 34]"
+    },
+    {
+      "id": "safety-cylinder-restraint",
+      "intent": "FACT",
+      "question": "At what heights must a gas cylinder be chained to the wall?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 1094,
+      "prefillTokensPerSecond": 272.4185351239555,
+      "decodeTokensPerSecond": 9.495722899774687,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        38
+      ],
+      "modelTtftMs": 5121,
+      "visibleTtftMs": 5124,
+      "totalMs": 9724,
+      "tokensPerSecond": 9.495722899774687,
+      "backend": "GPU",
+      "retrievedChunks": 7,
+      "contextTokens": 1013,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000198",
+            "c0000202",
+            "c0000199",
+            "c0000200",
+            "c0000207",
+            "c0000206",
+            "c0000210",
+            "c0000194",
+            "c0000161",
+            "c0000116",
+            "c0000201",
+            "c0000203"
+          ],
+          "pages": [
+            38,
+            40,
+            39,
+            41,
+            31,
+            22
+          ]
+        },
+        "expandedCandidates": {
+          "count": 15,
+          "chunkIds": [
+            "c0000198",
+            "c0000202",
+            "c0000199",
+            "c0000200",
+            "c0000207",
+            "c0000206",
+            "c0000210",
+            "c0000194",
+            "c0000193",
+            "c0000161",
+            "c0000162",
+            "c0000160",
+            "c0000116",
+            "c0000201",
+            "c0000203"
+          ],
+          "provenance": [
+            "c0000198:RETRIEVED:",
+            "c0000202:RETRIEVED:",
+            "c0000199:RETRIEVED:",
+            "c0000200:RETRIEVED:",
+            "c0000207:RETRIEVED:",
+            "c0000206:RETRIEVED:",
+            "c0000210:RETRIEVED:",
+            "c0000194:RETRIEVED:",
+            "c0000193:CONTINUATION:c0000194",
+            "c0000161:RETRIEVED:",
+            "c0000162:LIST_MEMBER:c0000161",
+            "c0000160:INTRODUCTION:c0000161",
+            "c0000116:RETRIEVED:",
+            "c0000201:RETRIEVED:",
+            "c0000203:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000160",
+            "c0000162",
+            "c0000193",
+            "c0000206",
+            "c0000207",
+            "c0000202",
+            "c0000198"
+          ],
+          "pages": [
+            31,
+            32,
+            37,
+            40,
+            41,
+            38
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000198"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "Gas cylinders must be chained to the wall at either half height or two chains at 1\/3 and 2\/3 height [Page 38]. This ensures the cylinder stays vertical if the valve fails [Page 38]."
+    },
+    {
+      "id": "safety-ert-all-clear",
+      "intent": "FACT",
+      "question": "Who may issue the all-clear after evacuation, and may anyone re-enter before it is issued?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 1489,
+      "prefillTokensPerSecond": 264.65967392711343,
+      "decodeTokensPerSecond": 9.53207814852017,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        44
+      ],
+      "modelTtftMs": 6913,
+      "visibleTtftMs": 6918,
+      "totalMs": 12543,
+      "tokensPerSecond": 9.53207814852017,
+      "backend": "GPU",
+      "retrievedChunks": 8,
+      "contextTokens": 1513,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000222",
+            "c0000230",
+            "c0000217",
+            "c0000221",
+            "c0000214",
+            "c0000216",
+            "c0000219",
+            "c0000033",
+            "c0000080",
+            "c0000161",
+            "c0000087",
+            "c0000030"
+          ],
+          "pages": [
+            44,
+            46,
+            43,
+            42,
+            7,
+            14,
+            31,
+            16,
+            6
+          ]
+        },
+        "expandedCandidates": {
+          "count": 19,
+          "chunkIds": [
+            "c0000222",
+            "c0000230",
+            "c0000229",
+            "c0000217",
+            "c0000221",
+            "c0000214",
+            "c0000213",
+            "c0000212",
+            "c0000216",
+            "c0000219",
+            "c0000033",
+            "c0000080",
+            "c0000081",
+            "c0000161",
+            "c0000162",
+            "c0000160",
+            "c0000087",
+            "c0000030",
+            "c0000031"
+          ],
+          "provenance": [
+            "c0000222:RETRIEVED:",
+            "c0000230:RETRIEVED:",
+            "c0000229:LIST_MEMBER:c0000230",
+            "c0000217:RETRIEVED:",
+            "c0000221:RETRIEVED:",
+            "c0000214:RETRIEVED:",
+            "c0000213:STRUCTURAL:c0000214",
+            "c0000212:STRUCTURAL:c0000214",
+            "c0000216:RETRIEVED:",
+            "c0000219:RETRIEVED:",
+            "c0000033:RETRIEVED:",
+            "c0000080:RETRIEVED:",
+            "c0000081:LIST_MEMBER:c0000080",
+            "c0000161:RETRIEVED:",
+            "c0000162:LIST_MEMBER:c0000161",
+            "c0000160:INTRODUCTION:c0000161",
+            "c0000087:RETRIEVED:",
+            "c0000030:RETRIEVED:",
+            "c0000031:CONTINUATION:c0000030"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000229",
+            "c0000081",
+            "c0000212",
+            "c0000160",
+            "c0000030",
+            "c0000080",
+            "c0000230",
+            "c0000222"
+          ],
+          "pages": [
+            45,
+            15,
+            42,
+            31,
+            6,
+            14,
+            46,
+            44
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000222"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "The emergency response team (ERT) is the only one who can issue an “all-clear” after an evacuation in consultation with the lab in charge [Page 44]. No one can enter the building until the ERT has issued the all-clear [Page 44]."
+    },
+    {
+      "id": "safety-missing-occupancy",
+      "intent": "NEGATIVE",
+      "question": "What is the maximum number of people permitted in each laboratory?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 1540,
+      "prefillTokensPerSecond": 225.02378960636176,
+      "decodeTokensPerSecond": 9.345661141640388,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [],
+      "modelTtftMs": 8165,
+      "visibleTtftMs": 8168,
+      "totalMs": 9953,
+      "tokensPerSecond": 9.345661141640388,
+      "backend": "GPU",
+      "retrievedChunks": 8,
+      "contextTokens": 1543,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000084",
+            "c0000089",
+            "c0000016",
+            "c0000123",
+            "c0000098",
+            "c0000133",
+            "c0000225",
+            "c0000099",
+            "c0000002",
+            "c0000076",
+            "c0000018",
+            "c0000007"
+          ],
+          "pages": [
+            15,
+            16,
+            5,
+            23,
+            18,
+            26,
+            44,
+            2,
+            14,
+            3
+          ]
+        },
+        "expandedCandidates": {
+          "count": 28,
+          "chunkIds": [
+            "c0000084",
+            "c0000085",
+            "c0000083",
+            "c0000082",
+            "c0000081",
+            "c0000089",
+            "c0000087",
+            "c0000086",
+            "c0000016",
+            "c0000015",
+            "c0000123",
+            "c0000124",
+            "c0000122",
+            "c0000121",
+            "c0000098",
+            "c0000133",
+            "c0000132",
+            "c0000131",
+            "c0000134",
+            "c0000225",
+            "c0000226",
+            "c0000099",
+            "c0000002",
+            "c0000076",
+            "c0000075",
+            "c0000018",
+            "c0000007",
+            "c0000008"
+          ],
+          "provenance": [
+            "c0000084:RETRIEVED:",
+            "c0000085:LIST_MEMBER:c0000084",
+            "c0000083:LIST_MEMBER:c0000084",
+            "c0000082:ADJACENT:c0000084",
+            "c0000081:ADJACENT:c0000084",
+            "c0000089:RETRIEVED:",
+            "c0000087:ADJACENT:c0000089",
+            "c0000086:ADJACENT:c0000089",
+            "c0000016:RETRIEVED:",
+            "c0000015:ADJACENT:c0000016",
+            "c0000123:RETRIEVED:",
+            "c0000124:LIST_MEMBER:c0000123",
+            "c0000122:LIST_MEMBER:c0000123",
+            "c0000121:ADJACENT:c0000123",
+            "c0000098:RETRIEVED:",
+            "c0000133:RETRIEVED:",
+            "c0000132:LIST_MEMBER:c0000133",
+            "c0000131:LIST_MEMBER:c0000133",
+            "c0000134:LIST_MEMBER:c0000133",
+            "c0000225:RETRIEVED:",
+            "c0000226:LIST_MEMBER:c0000225",
+            "c0000099:RETRIEVED:",
+            "c0000002:RETRIEVED:",
+            "c0000076:RETRIEVED:",
+            "c0000075:INTRODUCTION:c0000076",
+            "c0000018:RETRIEVED:",
+            "c0000007:RETRIEVED:",
+            "c0000008:STRUCTURAL:c0000007"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000226",
+            "c0000082",
+            "c0000085",
+            "c0000133",
+            "c0000098",
+            "c0000016",
+            "c0000083",
+            "c0000084"
+          ],
+          "pages": [
+            45,
+            15,
+            16,
+            26,
+            18,
+            5
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": []
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "The document does not contain information about the maximum number of people permitted in each laboratory."
+    },
+    {
+      "id": "safety-missing-health-phone",
+      "intent": "NEGATIVE",
+      "question": "What exact telephone number should I call for the IITH health centre?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 1462,
+      "prefillTokensPerSecond": 262.91960895746445,
+      "decodeTokensPerSecond": 9.520792629445635,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        16
+      ],
+      "modelTtftMs": 6747,
+      "visibleTtftMs": 6749,
+      "totalMs": 11351,
+      "tokensPerSecond": 9.520792629445635,
+      "backend": "GPU",
+      "retrievedChunks": 8,
+      "contextTokens": 1428,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000089",
+            "c0000229",
+            "c0000123",
+            "c0000136",
+            "c0000033",
+            "c0000120",
+            "c0000005",
+            "c0000251",
+            "c0000030",
+            "c0000246",
+            "c0000002",
+            "c0000232"
+          ],
+          "pages": [
+            16,
+            45,
+            23,
+            26,
+            7,
+            2,
+            50,
+            6,
+            49,
+            46
+          ]
+        },
+        "expandedCandidates": {
+          "count": 18,
+          "chunkIds": [
+            "c0000089",
+            "c0000229",
+            "c0000230",
+            "c0000123",
+            "c0000124",
+            "c0000122",
+            "c0000136",
+            "c0000033",
+            "c0000120",
+            "c0000005",
+            "c0000251",
+            "c0000250",
+            "c0000030",
+            "c0000031",
+            "c0000246",
+            "c0000245",
+            "c0000002",
+            "c0000232"
+          ],
+          "provenance": [
+            "c0000089:RETRIEVED:",
+            "c0000229:RETRIEVED:",
+            "c0000230:LIST_MEMBER:c0000229",
+            "c0000123:RETRIEVED:",
+            "c0000124:LIST_MEMBER:c0000123",
+            "c0000122:LIST_MEMBER:c0000123",
+            "c0000136:RETRIEVED:",
+            "c0000033:RETRIEVED:",
+            "c0000120:RETRIEVED:",
+            "c0000005:RETRIEVED:",
+            "c0000251:RETRIEVED:",
+            "c0000250:LIST_MEMBER:c0000251",
+            "c0000030:RETRIEVED:",
+            "c0000031:CONTINUATION:c0000030",
+            "c0000246:RETRIEVED:",
+            "c0000245:LIST_MEMBER:c0000246",
+            "c0000002:RETRIEVED:",
+            "c0000232:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000031",
+            "c0000124",
+            "c0000250",
+            "c0000230",
+            "c0000251",
+            "c0000229",
+            "c0000123",
+            "c0000089"
+          ],
+          "pages": [
+            7,
+            24,
+            49,
+            46,
+            50,
+            45,
+            23,
+            16
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000089"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "The document does not contain the exact telephone number for the IITH health centre. It lists the numbers for the IITH health centre as one of the emergency contact numbers that should be posted near the phone [Page 16]."
+    }
+  ]
+}

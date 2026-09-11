@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.pdfgemmarag.core.model.ModelInstallerTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-09-11T13:25:02.612Z" hostname="redacted-local-host" time="0.069">
+  <properties/>
+  <testcase name="size mismatch is rejected before copying" classname="com.example.pdfgemmarag.core.model.ModelInstallerTest" time="0.012"/>
+  <testcase name="verification failure preserves an existing installed model and removes stale partial" classname="com.example.pdfgemmarag.core.model.ModelInstallerTest" time="0.012"/>
+  <testcase name="hash mismatch leaves no target and keeps source" classname="com.example.pdfgemmarag.core.model.ModelInstallerTest" time="0.003"/>
+  <testcase name="verifies hash copies and deletes source" classname="com.example.pdfgemmarag.core.model.ModelInstallerTest" time="0.042"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.pdfgemmarag.inference.pdf.TableGridTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-09-11T13:25:03.912Z" hostname="redacted-local-host" time="0.003">
+  <properties/>
+  <testcase name="an uppercase table caption is not a heading and stays attached to the grid" classname="com.example.pdfgemmarag.inference.pdf.TableGridTest" time="0.0"/>
+  <testcase name="caption survives a three-line compound header before the detected grid" classname="com.example.pdfgemmarag.inference.pdf.TableGridTest" time="0.0"/>
+  <testcase name="a caption line after the grid is attached and removed from prose" classname="com.example.pdfgemmarag.inference.pdf.TableGridTest" time="0.0"/>
+  <testcase name="prose after a grid is not absorbed as a wrapped cell" classname="com.example.pdfgemmarag.inference.pdf.TableGridTest" time="0.0"/>
+  <testcase name="header qualified row facts render column names with values" classname="com.example.pdfgemmarag.inference.pdf.TableGridTest" time="0.0"/>
+  <testcase name="matrix cell lookup resolves row label times column header" classname="com.example.pdfgemmarag.inference.pdf.TableGridTest" time="0.001"/>
+  <testcase name="wrapped description cells stay in their row and the control column is not interleaved" classname="com.example.pdfgemmarag.inference.pdf.TableGridTest" time="0.0"/>
+  <testcase name="parenthesized table number is attached even when a score line sits between caption and grid" classname="com.example.pdfgemmarag.inference.pdf.TableGridTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

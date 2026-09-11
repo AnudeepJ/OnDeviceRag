@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.pdfgemmarag.inference.chat.QueryPlannerTest" tests="13" skipped="0" failures="0" errors="0" timestamp="2026-09-11T13:25:02.800Z" hostname="redacted-local-host" time="0.002">
+  <properties/>
+  <testcase name="missing printed subsection scopes a fact to its unique parent" classname="com.example.pdfgemmarag.inference.chat.QueryPlannerTest" time="0.0"/>
+  <testcase name="bare dotted id resolves when the manifest proves it is a section" classname="com.example.pdfgemmarag.inference.chat.QueryPlannerTest" time="0.0"/>
+  <testcase name="explicit specification number is not treated as document overview" classname="com.example.pdfgemmarag.inference.chat.QueryPlannerTest" time="0.0"/>
+  <testcase name="unknown explicit specification remains an intentional search filter" classname="com.example.pdfgemmarag.inference.chat.QueryPlannerTest" time="0.001"/>
+  <testcase name="combined specification and section resolve uniquely" classname="com.example.pdfgemmarag.inference.chat.QueryPlannerTest" time="0.0"/>
+  <testcase name="document summary is classified as structural overview" classname="com.example.pdfgemmarag.inference.chat.QueryPlannerTest" time="0.0"/>
+  <testcase name="bounded distance has no third party dependency behavior" classname="com.example.pdfgemmarag.inference.chat.QueryPlannerTest" time="0.0"/>
+  <testcase name="fact question naming a specification does not pin to a one-word title" classname="com.example.pdfgemmarag.inference.chat.QueryPlannerTest" time="0.0"/>
+  <testcase name="summarize still resolves a unique title after a specification is stripped" classname="com.example.pdfgemmarag.inference.chat.QueryPlannerTest" time="0.0"/>
+  <testcase name="table number that is not a document specification is not used as a spec filter" classname="com.example.pdfgemmarag.inference.chat.QueryPlannerTest" time="0.001"/>
+  <testcase name="generic fact does not pretend a section was resolved" classname="com.example.pdfgemmarag.inference.chat.QueryPlannerTest" time="0.0"/>
+  <testcase name="duplicate exact titles ask for deterministic clarification" classname="com.example.pdfgemmarag.inference.chat.QueryPlannerTest" time="0.0"/>
+  <testcase name="dotted table number stays searchable when it is not a document section" classname="com.example.pdfgemmarag.inference.chat.QueryPlannerTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

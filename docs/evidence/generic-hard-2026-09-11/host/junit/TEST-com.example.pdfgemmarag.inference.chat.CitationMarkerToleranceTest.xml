@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.pdfgemmarag.inference.chat.CitationMarkerToleranceTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-09-11T13:25:02.737Z" hostname="redacted-local-host" time="0.003">
+  <properties/>
+  <testcase name="invented member of a combined citation marks grounding failure" classname="com.example.pdfgemmarag.inference.chat.CitationMarkerToleranceTest" time="0.003"/>
+  <testcase name="excerpt id with a list letter suffix resolves to the excerpt" classname="com.example.pdfgemmarag.inference.chat.CitationMarkerToleranceTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.pdfgemmarag.inference.pdf.OutlineKindsTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-09-11T13:25:03.894Z" hostname="redacted-local-host" time="0.003">
+  <properties/>
+  <testcase name="bare chapter label adopts the title on the next line even across a blank line" classname="com.example.pdfgemmarag.inference.pdf.OutlineKindsTest" time="0.001"/>
+  <testcase name="roman numeral and glyph bullets are list items" classname="com.example.pdfgemmarag.inference.pdf.OutlineKindsTest" time="0.0"/>
+  <testcase name="prose beginning with a chapter reference is not a boundary" classname="com.example.pdfgemmarag.inference.pdf.OutlineKindsTest" time="0.0"/>
+  <testcase name="roman chapter and appendix labels normalise their printed numbers" classname="com.example.pdfgemmarag.inference.pdf.OutlineKindsTest" time="0.001"/>
+  <testcase name="arabic conversion covers digits roman and letters" classname="com.example.pdfgemmarag.inference.pdf.OutlineKindsTest" time="0.0"/>
+  <testcase name="contents page with chapter rows produces no chapter headings" classname="com.example.pdfgemmarag.inference.pdf.OutlineKindsTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

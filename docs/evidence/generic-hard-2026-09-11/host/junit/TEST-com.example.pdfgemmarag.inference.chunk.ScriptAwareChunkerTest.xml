@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.pdfgemmarag.inference.chunk.ScriptAwareChunkerTest" tests="13" skipped="0" failures="0" errors="0" timestamp="2026-09-11T13:25:02.820Z" hostname="redacted-local-host" time="0.011">
+  <properties/>
+  <testcase name="page continuation identity survives later same-page token fragments" classname="com.example.pdfgemmarag.inference.chunk.ScriptAwareChunkerTest" time="0.001"/>
+  <testcase name="chunks carry page numbers and never cross pages" classname="com.example.pdfgemmarag.inference.chunk.ScriptAwareChunkerTest" time="0.004"/>
+  <testcase name="oversized table is split under actual token window and repeats header" classname="com.example.pdfgemmarag.inference.chunk.ScriptAwareChunkerTest" time="0.001"/>
+  <testcase name="lowercase short line after heading is retained as its continuation" classname="com.example.pdfgemmarag.inference.chunk.ScriptAwareChunkerTest" time="0.001"/>
+  <testcase name="european text stays within max and overlaps" classname="com.example.pdfgemmarag.inference.chunk.ScriptAwareChunkerTest" time="0.001"/>
+  <testcase name="table chunks repeat the header" classname="com.example.pdfgemmarag.inference.chunk.ScriptAwareChunkerTest" time="0.001"/>
+  <testcase name="cjk text uses the smaller window" classname="com.example.pdfgemmarag.inference.chunk.ScriptAwareChunkerTest" time="0.001"/>
+  <testcase name="inline labelled items contribute their true logical count" classname="com.example.pdfgemmarag.inference.chunk.ScriptAwareChunkerTest" time="0.0"/>
+  <testcase name="bullet led list does not count trailing subsection label as an item" classname="com.example.pdfgemmarag.inference.chunk.ScriptAwareChunkerTest" time="0.0"/>
+  <testcase name="token splitting preserves list item offsets and only final completion" classname="com.example.pdfgemmarag.inference.chunk.ScriptAwareChunkerTest" time="0.001"/>
+  <testcase name="tiny same-page fragments merge and labels are dropped" classname="com.example.pdfgemmarag.inference.chunk.ScriptAwareChunkerTest" time="0.0"/>
+  <testcase name="short paragraph is a single chunk" classname="com.example.pdfgemmarag.inference.chunk.ScriptAwareChunkerTest" time="0.0"/>
+  <testcase name="adjacent page list blocks share logical identity and global item offsets" classname="com.example.pdfgemmarag.inference.chunk.ScriptAwareChunkerTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

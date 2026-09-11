@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.pdfgemmarag.inference.llm.ContextAssemblerTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-09-11T13:25:02.848Z" hostname="redacted-local-host" time="0.002">
+  <properties/>
+  <testcase name="short exact match is retained without overriding store rank" classname="com.example.pdfgemmarag.inference.llm.ContextAssemblerTest" time="0.0"/>
+  <testcase name="adjacent overlapping chunks are deduped" classname="com.example.pdfgemmarag.inference.llm.ContextAssemblerTest" time="0.0"/>
+  <testcase name="token estimate scales by script" classname="com.example.pdfgemmarag.inference.llm.ContextAssemblerTest" time="0.001"/>
+  <testcase name="weak distractors are excluded relative to best hit" classname="com.example.pdfgemmarag.inference.llm.ContextAssemblerTest" time="0.0"/>
+  <testcase name="prompt numbers excerpts with pages and ends with the question" classname="com.example.pdfgemmarag.inference.llm.ContextAssemblerTest" time="0.0"/>
+  <testcase name="budget drops lowest ranked chunks first" classname="com.example.pdfgemmarag.inference.llm.ContextAssemblerTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.pdfgemmarag.inference.chat.StructuredListLeadTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-09-11T13:25:02.809Z" hostname="redacted-local-host" time="0.002">
+  <properties/>
+  <testcase name="a table reference is not mistaken for a requested item count" classname="com.example.pdfgemmarag.inference.chat.StructuredListLeadTest" time="0.0"/>
+  <testcase name="list continuing onto the next page is followed through the continuation edge" classname="com.example.pdfgemmarag.inference.chat.StructuredListLeadTest" time="0.0"/>
+  <testcase name="implicit enumeration follows a prominent retrieved source into its adjacent list" classname="com.example.pdfgemmarag.inference.chat.StructuredListLeadTest" time="0.001"/>
+  <testcase name="fewer items than the requested count is not a decisive answer" classname="com.example.pdfgemmarag.inference.chat.StructuredListLeadTest" time="0.0"/>
+  <testcase name="numbered subprocedure copies all bullets until the next numbered subject" classname="com.example.pdfgemmarag.inference.chat.StructuredListLeadTest" time="0.0"/>
+  <testcase name="of subject selects the matching five item list when a nearby five step list competes" classname="com.example.pdfgemmarag.inference.chat.StructuredListLeadTest" time="0.0"/>
+  <testcase name="generic first aid list cannot answer a specific amputation procedure" classname="com.example.pdfgemmarag.inference.chat.StructuredListLeadTest" time="0.0"/>
+  <testcase name="structured list missing same-page tail is not decisive" classname="com.example.pdfgemmarag.inference.chat.StructuredListLeadTest" time="0.0"/>
+  <testcase name="control hierarchy selects the source I through V sequence" classname="com.example.pdfgemmarag.inference.chat.StructuredListLeadTest" time="0.0"/>
+  <testcase name="roman numbered list with a plain colon introduction returns every requested item" classname="com.example.pdfgemmarag.inference.chat.StructuredListLeadTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

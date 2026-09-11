@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.pdfgemmarag.inference.chat.AnchorRerankTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-09-11T13:25:02.694Z" hostname="redacted-local-host" time="0.01">
+  <properties/>
+  <testcase name="acronym anchors outweigh two generic shared words" classname="com.example.pdfgemmarag.inference.chat.AnchorRerankTest" time="0.01"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

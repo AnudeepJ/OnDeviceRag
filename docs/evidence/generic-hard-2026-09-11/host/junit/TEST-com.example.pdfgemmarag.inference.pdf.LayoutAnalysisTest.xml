@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.pdfgemmarag.inference.pdf.LayoutAnalysisTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-09-11T13:25:03.876Z" hostname="redacted-local-host" time="0.012">
+  <properties/>
+  <testcase name="plain prose lines merge into one paragraph and large gaps split" classname="com.example.pdfgemmarag.inference.pdf.LayoutAnalysisTest" time="0.006"/>
+  <testcase name="unique first lines are kept" classname="com.example.pdfgemmarag.inference.pdf.LayoutAnalysisTest" time="0.002"/>
+  <testcase name="cjk lines join without spaces" classname="com.example.pdfgemmarag.inference.pdf.LayoutAnalysisTest" time="0.0"/>
+  <testcase name="repeated headers footers and page numbers are stripped" classname="com.example.pdfgemmarag.inference.pdf.LayoutAnalysisTest" time="0.002"/>
+  <testcase name="table rows with aligned columns become a markdown table" classname="com.example.pdfgemmarag.inference.pdf.LayoutAnalysisTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

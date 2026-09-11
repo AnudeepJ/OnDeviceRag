@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.pdfgemmarag.inference.chat.DeterministicAnswerSafetyTest" tests="19" skipped="0" failures="0" errors="0" timestamp="2026-09-11T13:25:02.747Z" hostname="redacted-local-host" time="0.005">
+  <properties/>
+  <testcase name="general trench depth selects the explicit protective system threshold" classname="com.example.pdfgemmarag.inference.chat.DeterministicAnswerSafetyTest" time="0.001"/>
+  <testcase name="multi class voltage comparison declines single sentence answer" classname="com.example.pdfgemmarag.inference.chat.DeterministicAnswerSafetyTest" time="0.0"/>
+  <testcase name="unique measured mesh sentence preserves area and side limits" classname="com.example.pdfgemmarag.inference.chat.DeterministicAnswerSafetyTest" time="0.0"/>
+  <testcase name="coverage rate recognizes gallons per square feet over a nearby day value" classname="com.example.pdfgemmarag.inference.chat.DeterministicAnswerSafetyTest" time="0.0"/>
+  <testcase name="known missing list continuation prevents decisive partial answer" classname="com.example.pdfgemmarag.inference.chat.DeterministicAnswerSafetyTest" time="0.001"/>
+  <testcase name="unitless water cement ratio beats nearby drying days" classname="com.example.pdfgemmarag.inference.chat.DeterministicAnswerSafetyTest" time="0.0"/>
+  <testcase name="mixed solids and color question declines numeric-only sentence" classname="com.example.pdfgemmarag.inference.chat.DeterministicAnswerSafetyTest" time="0.0"/>
+  <testcase name="unique measured speed sentence preserves both conditioned limits" classname="com.example.pdfgemmarag.inference.chat.DeterministicAnswerSafetyTest" time="0.0"/>
+  <testcase name="tied measured sentences decline deterministic answer" classname="com.example.pdfgemmarag.inference.chat.DeterministicAnswerSafetyTest" time="0.0"/>
+  <testcase name="definition keeps decimal value and unit" classname="com.example.pdfgemmarag.inference.chat.DeterministicAnswerSafetyTest" time="0.0"/>
+  <testcase name="curing day question preserves temperature and duration" classname="com.example.pdfgemmarag.inference.chat.DeterministicAnswerSafetyTest" time="0.001"/>
+  <testcase name="conditional answer must cover the requested property" classname="com.example.pdfgemmarag.inference.chat.DeterministicAnswerSafetyTest" time="0.0"/>
+  <testcase name="table number does not resolve to a longer prefix" classname="com.example.pdfgemmarag.inference.chat.DeterministicAnswerSafetyTest" time="0.001"/>
+  <testcase name="compressive strength percentage outranks nearby removal days" classname="com.example.pdfgemmarag.inference.chat.DeterministicAnswerSafetyTest" time="0.0"/>
+  <testcase name="resolved table with missing rows does not use another table" classname="com.example.pdfgemmarag.inference.chat.DeterministicAnswerSafetyTest" time="0.0"/>
+  <testcase name="numeric citation suffix is rejected rather than repaired" classname="com.example.pdfgemmarag.inference.chat.DeterministicAnswerSafetyTest" time="0.001"/>
+  <testcase name="short conditional property question matches an inflected source term" classname="com.example.pdfgemmarag.inference.chat.DeterministicAnswerSafetyTest" time="0.0"/>
+  <testcase name="white pigmented condition declines numeric only solids sentence" classname="com.example.pdfgemmarag.inference.chat.DeterministicAnswerSafetyTest" time="0.0"/>
+  <testcase name="short wrong property does not trigger conditional answer" classname="com.example.pdfgemmarag.inference.chat.DeterministicAnswerSafetyTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

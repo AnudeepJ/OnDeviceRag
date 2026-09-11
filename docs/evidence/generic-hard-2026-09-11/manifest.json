@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 1,
+  "capturedDate": "2026-09-11",
+  "branch": "generic_hard",
+  "notes": "Raw reports copied byte-for-byte from ignored build output. Validate with SHA256SUMS.",
+  "artifacts": [
+    {
+      "path": "accepted/nothing-v29/construction-safety-qa.json",
+      "source": "build/nothing-live-results/v29/single_pdf_baseline-construction_safety_qa.json",
+      "classification": "accepted",
+      "description": "Nothing v29 construction safety QA: 12/12 retrieval and answer checks."
+    },
+    {
+      "path": "accepted/nothing-v29/safety-pdf-qa.json",
+      "source": "build/nothing-live-results/v29/single_pdf_baseline-safety_pdf_qa.json",
+      "classification": "accepted",
+      "description": "Nothing v29 safety PDF QA: 23/23 retrieval and answer checks."
+    },
+    {
+      "path": "accepted/nothing-v29/safety-manual-qa.json",
+      "source": "build/nothing-live-results/v29/single_pdf_baseline-safety_manual_qa.json",
+      "classification": "accepted",
+      "description": "Nothing v29 SafetyManual QA: 50/50 retrieval and answer checks."
+    },
+    {
+      "path": "accepted/pixel-v28/focused-baseline.json",
+      "source": "build/pixel-live-results/v28/single_pdf_baseline-focused.json",
+      "classification": "accepted",
+      "description": "Pixel 10 v28 focused baseline: 19/19 retrieval and answer checks."
+    },
+    {
+      "path": "accepted/pixel-v28/generated-live-qa.json",
+      "source": "build/pixel-live-results/v28/single_pdf_baseline-generated_live_qa.json",
+      "classification": "accepted",
+      "description": "Pixel 10 v28 generated live QA: 21/21 retrieval and answer checks."
+    },
+    {
+      "path": "multilingual/retrieval-strategy-comparison.json",
+      "source": "build/nothing-live-results/v28/retrieval_strategy_comparison.json",
+      "classification": "accepted",
+      "description": "Corrected isolated-strategy benchmark with real embeddings over acme-210-v1."
+    },
+    {
+      "path": "embedding/tensor-contract.json",
+      "source": "build/nothing-live-results/v27/embedding_tensor_contract.json",
+      "classification": "diagnostic",
+      "description": "Embedding model output tensor shape and requested-dimension contract."
+    },
+    {
+      "path": "embedding/nothing-v27-pre-fix-backend-comparison.json",
+      "source": "build/nothing-live-results/v27/embedding_backend_comparison.json",
+      "classification": "diagnostic",
+      "description": "Nothing pre-fix evidence that GPU produced zero vectors while CPU produced usable vectors."
+    },
+    {
+      "path": "embedding/nothing-v28-post-fix-backend-comparison.json",
+      "source": "build/nothing-live-results/v28-embedding_backend_comparison.json",
+      "classification": "diagnostic",
+      "description": "Nothing post-fix evidence that preferred GPU safely falls back to CPU."
+    },
+    {
+      "path": "embedding/pixel-v28-post-fix-backend-comparison.json",
+      "source": "build/pixel-live-results/v28-embedding_backend_comparison.json",
+      "classification": "diagnostic",
+      "description": "Pixel post-fix evidence that preferred GPU safely falls back to CPU."
+    },
+    {
+      "path": "host/gradle-verification.json",
+      "source": "derived from app/build/test-results/testDebugUnitTest/",
+      "classification": "accepted-summary",
+      "description": "Aggregate host result: 292 tests, zero failures/errors, and three skipped tests; also records observed build artifacts."
+    },
+    {
+      "path": "host/junit/",
+      "source": "app/build/test-results/testDebugUnitTest/TEST-*.xml",
+      "classification": "accepted-redacted",
+      "description": "The 37 JUnit XML reports used to derive the host summary; only the machine-local hostname attribute is redacted."
+    },
+    {
+      "path": "regressions/nothing-v28-safety-manual-retention-failure.json",
+      "source": "build/nothing-live-results/v28/single_pdf_baseline-safety_manual_qa-49of50.json",
+      "classification": "superseded-failure",
+      "description": "Pre-v29 report exposing retained-PDF chunk loss: 49/50 retrieval and 48/50 answer checks."
+    },
+    {
+      "path": "regressions/nothing-v28-safety-pdf-hira-failure.json",
+      "source": "build/nothing-live-results/v28/single_pdf_baseline-safety_pdf_qa-22of23.json",
+      "classification": "superseded-failure",
+      "description": "Pre-fix HIRA answer-routing regression: 23/23 retrieval and 22/23 answer checks."
+    },
+    {
+      "path": "regressions/pixel-v28-generated-plywood-failure.json",
+      "source": "build/pixel-live-results/v28/single_pdf_baseline-generated_live_qa-20of21.json",
+      "classification": "superseded-failure",
+      "description": "Pre-fix plywood query-routing regression: 20/21 retrieval and answer checks."
+    },
+    {
+      "path": "invalid/retrieval-strategy-comparison-mixed-modes.json",
+      "source": "build/nothing-live-results/v27/retrieval_strategy_comparison-invalid-mixed-modes.json",
+      "classification": "invalid",
+      "description": "Superseded benchmark whose candidate generation did not isolate dense and lexical modes."
+    },
+    {
+      "path": "invalid/corpus-mismatch-home-pdf-vs-division-fixture.json",
+      "source": "build/nothing-live-results/home_pdf_against_division_fixture.json",
+      "classification": "invalid",
+      "description": "Deliberate wrong-fixture run retained as evidence for strict corpus identity validation."
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.pdfgemmarag.inference.chat.StructuralPlanningTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-09-11T13:25:02.804Z" hostname="redacted-local-host" time="0.004">
+  <properties/>
+  <testcase name="fact inside a chapter stays unscoped so children are searchable" classname="com.example.pdfgemmarag.inference.chat.StructuralPlanningTest" time="0.0"/>
+  <testcase name="roman chapter reference resolves like the arabic one" classname="com.example.pdfgemmarag.inference.chat.StructuralPlanningTest" time="0.001"/>
+  <testcase name="descendants include the chapter and its clauses in order" classname="com.example.pdfgemmarag.inference.chat.StructuralPlanningTest" time="0.0"/>
+  <testcase name="manifest whose top level nodes sit only in the last quartile is degraded" classname="com.example.pdfgemmarag.inference.chat.StructuralPlanningTest" time="0.0"/>
+  <testcase name="answer shapes are detected from wording alone" classname="com.example.pdfgemmarag.inference.chat.StructuralPlanningTest" time="0.0"/>
+  <testcase name="top level sections are the chapters and health is good when quartiles are covered" classname="com.example.pdfgemmarag.inference.chat.StructuralPlanningTest" time="0.0"/>
+  <testcase name="explicit chapter number resolves to the chapter subtree for a summary" classname="com.example.pdfgemmarag.inference.chat.StructuralPlanningTest" time="0.001"/>
+  <testcase name="titled chapter request resolves against chapter titles only" classname="com.example.pdfgemmarag.inference.chat.StructuralPlanningTest" time="0.0"/>
+  <testcase name="unknown chapter number falls through instead of refusing" classname="com.example.pdfgemmarag.inference.chat.StructuralPlanningTest" time="0.0"/>
+  <testcase name="overview sampling reserves slots per quartile instead of the final appendix" classname="com.example.pdfgemmarag.inference.chat.StructuralPlanningTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

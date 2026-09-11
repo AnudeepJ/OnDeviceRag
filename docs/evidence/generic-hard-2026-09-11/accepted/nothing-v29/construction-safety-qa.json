@@ -1,0 +1,1760 @@
+{
+  "document": "safety.pdf",
+  "docHash": "6630f344c15e8c7588c40da4369d34b5",
+  "indexVersion": 29,
+  "indexNamespace": "6630f344c15e8c7588c40da4369d34b5:v29:mtwxk48w",
+  "device": "A001",
+  "androidRelease": "16",
+  "appVersion": "1.0",
+  "appVersionCode": 1,
+  "appLastUpdateTime": 1789129300583,
+  "debugBuild": true,
+  "embeddingSignature": "embeddinggemma-300m-seq512-512d-v2.2-validated-backend",
+  "sourcePageCount": 209,
+  "pageRecords": 209,
+  "structureSections": 204,
+  "structureTables": 10,
+  "structureLists": 347,
+  "canonicalTableCells": 171,
+  "thermalStatusStart": 1,
+  "thermalStatusEnd": 1,
+  "thermalOverride": false,
+  "speculativeDecodingOverride": false,
+  "pipelineStages": {
+    "extraction": {
+      "sourcePages": 209,
+      "pageRecords": 209,
+      "script": "LATIN"
+    },
+    "structure": {
+      "sections": 204,
+      "tables": 10,
+      "lists": 347,
+      "canonicalTableCells": 171
+    }
+  },
+  "total": 12,
+  "retrievalPassed": 12,
+  "answerPassed": 12,
+  "byStage": {
+    "PASS": 12
+  },
+  "generatedTurns": 4,
+  "medianModelTtftMs": 6444,
+  "medianDecodeTokensPerSecond": 9.505923175280893,
+  "medianPrefillTokensPerSecond": 267.1257639472537,
+  "cases": [
+    {
+      "id": "cs-explosives-speed",
+      "intent": "FACT",
+      "question": "What is the maximum speed limit for vehicles transporting explosives on rough roads and elsewhere?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "QUANTIFIED_SENTENCE_LEAD",
+      "groundingReasons": "",
+      "prefillTokens": 0,
+      "prefillTokensPerSecond": 0,
+      "decodeTokensPerSecond": 0,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        110
+      ],
+      "modelTtftMs": 0,
+      "visibleTtftMs": 3044,
+      "totalMs": 3015,
+      "tokensPerSecond": 0,
+      "backend": "GPU",
+      "retrievedChunks": 0,
+      "contextTokens": 0,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000749",
+            "c0000802",
+            "c0000746",
+            "c0000743",
+            "c0000745",
+            "c0000803",
+            "c0000748",
+            "c0000739",
+            "c0000744",
+            "c0000426",
+            "c0000806",
+            "c0000805"
+          ],
+          "pages": [
+            110,
+            117,
+            109,
+            108,
+            63,
+            118
+          ]
+        },
+        "expandedCandidates": {
+          "count": 14,
+          "chunkIds": [
+            "c0000749",
+            "c0000802",
+            "c0000746",
+            "c0000743",
+            "c0000742",
+            "c0000745",
+            "c0000747",
+            "c0000803",
+            "c0000748",
+            "c0000739",
+            "c0000744",
+            "c0000426",
+            "c0000806",
+            "c0000805"
+          ],
+          "provenance": [
+            "c0000749:RETRIEVED:",
+            "c0000802:RETRIEVED:",
+            "c0000746:RETRIEVED:",
+            "c0000743:RETRIEVED:",
+            "c0000742:LIST_MEMBER:c0000743",
+            "c0000745:RETRIEVED:",
+            "c0000747:STRUCTURAL:c0000745",
+            "c0000803:RETRIEVED:",
+            "c0000748:RETRIEVED:",
+            "c0000739:RETRIEVED:",
+            "c0000744:RETRIEVED:",
+            "c0000426:RETRIEVED:",
+            "c0000806:RETRIEVED:",
+            "c0000805:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000749"
+          ],
+          "pages": [
+            110
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000749"
+          ]
+        },
+        "answer": {
+          "route": "QUANTIFIED_SENTENCE_LEAD",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": " The speed of the vehicle shall not exceed 25 km\/h on rough roads and 40 km\/h elsewhere. [Page 110]"
+    },
+    {
+      "id": "cs-excavator-clearance",
+      "intent": "FACT",
+      "question": "What minimum clearance must an excavator maintain from any fixed object while performing a swinging motion?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "QUANTIFIED_SENTENCE_LEAD",
+      "groundingReasons": "",
+      "prefillTokens": 0,
+      "prefillTokensPerSecond": 0,
+      "decodeTokensPerSecond": 0,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        137
+      ],
+      "modelTtftMs": 0,
+      "visibleTtftMs": 1224,
+      "totalMs": 1223,
+      "tokensPerSecond": 0,
+      "backend": "GPU",
+      "retrievedChunks": 0,
+      "contextTokens": 0,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000924",
+            "c0000884",
+            "c0000385",
+            "c0000786",
+            "c0000925",
+            "c0000877",
+            "c0000374",
+            "c0000400",
+            "c0000603",
+            "c0000574",
+            "c0000900",
+            "c0000367"
+          ],
+          "pages": [
+            137,
+            129,
+            55,
+            115,
+            128,
+            54,
+            59,
+            92,
+            86,
+            132,
+            53
+          ]
+        },
+        "expandedCandidates": {
+          "count": 25,
+          "chunkIds": [
+            "c0000924",
+            "c0000926",
+            "c0000927",
+            "c0000928",
+            "c0000884",
+            "c0000385",
+            "c0000786",
+            "c0000785",
+            "c0000787",
+            "c0000925",
+            "c0000877",
+            "c0000878",
+            "c0000879",
+            "c0000374",
+            "c0000400",
+            "c0000603",
+            "c0000604",
+            "c0000574",
+            "c0000573",
+            "c0000575",
+            "c0000576",
+            "c0000577",
+            "c0000900",
+            "c0000899",
+            "c0000367"
+          ],
+          "provenance": [
+            "c0000924:RETRIEVED:",
+            "c0000926:LIST_MEMBER:c0000924",
+            "c0000927:LIST_MEMBER:c0000924",
+            "c0000928:LIST_MEMBER:c0000924",
+            "c0000884:RETRIEVED:",
+            "c0000385:RETRIEVED:",
+            "c0000786:RETRIEVED:",
+            "c0000785:INTRODUCTION:c0000786",
+            "c0000787:LIST_MEMBER:c0000786",
+            "c0000925:RETRIEVED:",
+            "c0000877:RETRIEVED:",
+            "c0000878:LIST_MEMBER:c0000877",
+            "c0000879:LIST_MEMBER:c0000877",
+            "c0000374:RETRIEVED:",
+            "c0000400:RETRIEVED:",
+            "c0000603:RETRIEVED:",
+            "c0000604:LIST_MEMBER:c0000603",
+            "c0000574:RETRIEVED:",
+            "c0000573:LIST_MEMBER:c0000574",
+            "c0000575:LIST_MEMBER:c0000574",
+            "c0000576:LIST_MEMBER:c0000574",
+            "c0000577:LIST_MEMBER:c0000574",
+            "c0000900:RETRIEVED:",
+            "c0000899:INTRODUCTION:c0000900",
+            "c0000367:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000924"
+          ],
+          "pages": [
+            137
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000924"
+          ]
+        },
+        "answer": {
+          "route": "QUANTIFIED_SENTENCE_LEAD",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": " Excavators shall maintain a clearance of at least 0.6 m (2 ft) from any fixed object while performing a swinging motion. [Page 137]"
+    },
+    {
+      "id": "cs-safetynet-mesh",
+      "intent": "FACT",
+      "question": "What are the maximum allowable mesh opening dimensions and length for safety nets?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "QUANTIFIED_SENTENCE_LEAD",
+      "groundingReasons": "",
+      "prefillTokens": 0,
+      "prefillTokensPerSecond": 0,
+      "decodeTokensPerSecond": 0,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        77
+      ],
+      "modelTtftMs": 0,
+      "visibleTtftMs": 1229,
+      "totalMs": 1228,
+      "tokensPerSecond": 0,
+      "backend": "GPU",
+      "retrievedChunks": 0,
+      "contextTokens": 0,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000722",
+            "c0000720",
+            "c0000520",
+            "c0000724",
+            "c0000550",
+            "c0000519",
+            "c0000615",
+            "c0000946",
+            "c0000834",
+            "c0000816",
+            "c0000533",
+            "c0001138"
+          ],
+          "pages": [
+            105,
+            104,
+            77,
+            82,
+            76,
+            94,
+            142,
+            121,
+            119,
+            79,
+            169
+          ]
+        },
+        "expandedCandidates": {
+          "count": 29,
+          "chunkIds": [
+            "c0000722",
+            "c0000723",
+            "c0000725",
+            "c0000720",
+            "c0000718",
+            "c0000717",
+            "c0000520",
+            "c0000724",
+            "c0000550",
+            "c0000519",
+            "c0000615",
+            "c0000946",
+            "c0000947",
+            "c0000948",
+            "c0000949",
+            "c0000950",
+            "c0000951",
+            "c0000952",
+            "c0000953",
+            "c0000954",
+            "c0000955",
+            "c0000956",
+            "c0000957",
+            "c0000834",
+            "c0000835",
+            "c0000816",
+            "c0000533",
+            "c0001138",
+            "c0001137"
+          ],
+          "provenance": [
+            "c0000722:RETRIEVED:",
+            "c0000723:ADJACENT:c0000722",
+            "c0000725:ADJACENT:c0000722",
+            "c0000720:RETRIEVED:",
+            "c0000718:ADJACENT:c0000720",
+            "c0000717:ADJACENT:c0000720",
+            "c0000520:RETRIEVED:",
+            "c0000724:RETRIEVED:",
+            "c0000550:RETRIEVED:",
+            "c0000519:RETRIEVED:",
+            "c0000615:RETRIEVED:",
+            "c0000946:RETRIEVED:",
+            "c0000947:LIST_MEMBER:c0000946",
+            "c0000948:LIST_MEMBER:c0000946",
+            "c0000949:LIST_MEMBER:c0000946",
+            "c0000950:LIST_MEMBER:c0000946",
+            "c0000951:LIST_MEMBER:c0000946",
+            "c0000952:LIST_MEMBER:c0000946",
+            "c0000953:LIST_MEMBER:c0000946",
+            "c0000954:LIST_MEMBER:c0000946",
+            "c0000955:LIST_MEMBER:c0000946",
+            "c0000956:LIST_MEMBER:c0000946",
+            "c0000957:LIST_MEMBER:c0000946",
+            "c0000834:RETRIEVED:",
+            "c0000835:LIST_MEMBER:c0000834",
+            "c0000816:RETRIEVED:",
+            "c0000533:RETRIEVED:",
+            "c0001138:RETRIEVED:",
+            "c0001137:INTRODUCTION:c0001138"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000520"
+          ],
+          "pages": [
+            77
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000520"
+          ]
+        },
+        "answer": {
+          "route": "QUANTIFIED_SENTENCE_LEAD",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "Mesh openings must not exceed 36 square inches, and must not be longer than 6 inches on any side. [Page 77]"
+    },
+    {
+      "id": "cs-trench-exit",
+      "intent": "FACT",
+      "question": "What is the maximum distance allowed for a means of exit from any worker inside a trench?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "QUANTIFIED_SENTENCE_LEAD",
+      "groundingReasons": "",
+      "prefillTokens": 0,
+      "prefillTokensPerSecond": 0,
+      "decodeTokensPerSecond": 0,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        103
+      ],
+      "modelTtftMs": 0,
+      "visibleTtftMs": 1215,
+      "totalMs": 1214,
+      "tokensPerSecond": 0,
+      "backend": "GPU",
+      "retrievedChunks": 0,
+      "contextTokens": 0,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000707",
+            "c0000733",
+            "c0000752",
+            "c0000696",
+            "c0000937",
+            "c0000669",
+            "c0000720",
+            "c0000722",
+            "c0000954",
+            "c0000947",
+            "c0000943",
+            "c0000658"
+          ],
+          "pages": [
+            103,
+            107,
+            110,
+            102,
+            140,
+            100,
+            104,
+            105,
+            144,
+            142,
+            141,
+            99
+          ]
+        },
+        "expandedCandidates": {
+          "count": 46,
+          "chunkIds": [
+            "c0000707",
+            "c0000706",
+            "c0000705",
+            "c0000708",
+            "c0000709",
+            "c0000710",
+            "c0000733",
+            "c0000734",
+            "c0000752",
+            "c0000753",
+            "c0000751",
+            "c0000750",
+            "c0000696",
+            "c0000697",
+            "c0000695",
+            "c0000694",
+            "c0000698",
+            "c0000693",
+            "c0000699",
+            "c0000937",
+            "c0000936",
+            "c0000938",
+            "c0000669",
+            "c0000668",
+            "c0000670",
+            "c0000720",
+            "c0000722",
+            "c0000954",
+            "c0000955",
+            "c0000953",
+            "c0000946",
+            "c0000948",
+            "c0000949",
+            "c0000950",
+            "c0000951",
+            "c0000952",
+            "c0000956",
+            "c0000957",
+            "c0000947",
+            "c0000943",
+            "c0000942",
+            "c0000940",
+            "c0000941",
+            "c0000944",
+            "c0000658",
+            "c0000657"
+          ],
+          "provenance": [
+            "c0000707:RETRIEVED:",
+            "c0000706:LIST_MEMBER:c0000707",
+            "c0000705:LIST_MEMBER:c0000707",
+            "c0000708:ADJACENT:c0000707",
+            "c0000709:ADJACENT:c0000707",
+            "c0000710:ADJACENT:c0000707",
+            "c0000733:RETRIEVED:",
+            "c0000734:LIST_MEMBER:c0000733",
+            "c0000752:RETRIEVED:",
+            "c0000753:LIST_MEMBER:c0000752",
+            "c0000751:LIST_MEMBER:c0000752",
+            "c0000750:ADJACENT:c0000752",
+            "c0000696:RETRIEVED:",
+            "c0000697:LIST_MEMBER:c0000696",
+            "c0000695:STRUCTURAL:c0000696",
+            "c0000694:STRUCTURAL:c0000696",
+            "c0000698:STRUCTURAL:c0000696",
+            "c0000693:STRUCTURAL:c0000696",
+            "c0000699:STRUCTURAL:c0000696",
+            "c0000937:RETRIEVED:",
+            "c0000936:LIST_MEMBER:c0000937",
+            "c0000938:LIST_MEMBER:c0000937",
+            "c0000669:RETRIEVED:",
+            "c0000668:LIST_MEMBER:c0000669",
+            "c0000670:ADJACENT:c0000669",
+            "c0000720:RETRIEVED:",
+            "c0000722:RETRIEVED:",
+            "c0000954:RETRIEVED:",
+            "c0000955:LIST_MEMBER:c0000954",
+            "c0000953:LIST_MEMBER:c0000954",
+            "c0000946:LIST_MEMBER:c0000954",
+            "c0000948:LIST_MEMBER:c0000954",
+            "c0000949:LIST_MEMBER:c0000954",
+            "c0000950:LIST_MEMBER:c0000954",
+            "c0000951:LIST_MEMBER:c0000954",
+            "c0000952:LIST_MEMBER:c0000954",
+            "c0000956:LIST_MEMBER:c0000954",
+            "c0000957:LIST_MEMBER:c0000954",
+            "c0000947:RETRIEVED:",
+            "c0000943:RETRIEVED:",
+            "c0000942:LIST_MEMBER:c0000943",
+            "c0000940:LIST_MEMBER:c0000943",
+            "c0000941:LIST_MEMBER:c0000943",
+            "c0000944:LIST_MEMBER:c0000943",
+            "c0000658:RETRIEVED:",
+            "c0000657:LIST_MEMBER:c0000658"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000707"
+          ],
+          "pages": [
+            103
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000707"
+          ]
+        },
+        "answer": {
+          "route": "QUANTIFIED_SENTENCE_LEAD",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "• Have a means of exit provided from the inside of the trench, usually no more than 8m (25 ft) away than any worker in the trench. [Page 103]"
+    },
+    {
+      "id": "cs-cylinder-colors",
+      "intent": "TABLE",
+      "question": "According to IS 4379, what are the ground colour and band colour for Carbon dioxide and Nitrogen gas cylinders?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 682,
+      "prefillTokensPerSecond": 143.38185593704745,
+      "decodeTokensPerSecond": 8.63626497447854,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        153
+      ],
+      "modelTtftMs": 6583,
+      "visibleTtftMs": 6584,
+      "totalMs": 11520,
+      "tokensPerSecond": 8.63626497447854,
+      "backend": "GPU",
+      "retrievedChunks": 3,
+      "contextTokens": 404,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0001015",
+            "c0001016",
+            "c0001011",
+            "c0001013",
+            "c0001035",
+            "c0001014",
+            "c0001018",
+            "c0000957",
+            "c0001010",
+            "c0001028",
+            "c0000952",
+            "c0001019"
+          ],
+          "pages": [
+            153,
+            152,
+            155,
+            145,
+            154,
+            144
+          ]
+        },
+        "expandedCandidates": {
+          "count": 25,
+          "chunkIds": [
+            "c0001015",
+            "c0001016",
+            "c0001017",
+            "c0001011",
+            "c0001012",
+            "c0001013",
+            "c0001035",
+            "c0001036",
+            "c0001014",
+            "c0001018",
+            "c0000957",
+            "c0000956",
+            "c0000946",
+            "c0000947",
+            "c0000948",
+            "c0000949",
+            "c0000950",
+            "c0000951",
+            "c0000953",
+            "c0000954",
+            "c0000955",
+            "c0001010",
+            "c0001028",
+            "c0000952",
+            "c0001019"
+          ],
+          "provenance": [
+            "c0001015:RETRIEVED:",
+            "c0001016:RETRIEVED:",
+            "c0001017:STRUCTURAL:c0001016",
+            "c0001011:RETRIEVED:",
+            "c0001012:ADJACENT:c0001011",
+            "c0001013:RETRIEVED:",
+            "c0001035:RETRIEVED:",
+            "c0001036:LIST_MEMBER:c0001035",
+            "c0001014:RETRIEVED:",
+            "c0001018:RETRIEVED:",
+            "c0000957:RETRIEVED:",
+            "c0000956:LIST_MEMBER:c0000957",
+            "c0000946:LIST_MEMBER:c0000957",
+            "c0000947:LIST_MEMBER:c0000957",
+            "c0000948:LIST_MEMBER:c0000957",
+            "c0000949:LIST_MEMBER:c0000957",
+            "c0000950:LIST_MEMBER:c0000957",
+            "c0000951:LIST_MEMBER:c0000957",
+            "c0000953:LIST_MEMBER:c0000957",
+            "c0000954:LIST_MEMBER:c0000957",
+            "c0000955:LIST_MEMBER:c0000957",
+            "c0001010:RETRIEVED:",
+            "c0001028:RETRIEVED:",
+            "c0000952:RETRIEVED:",
+            "c0001019:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0001014",
+            "c0001015",
+            "c0001016"
+          ],
+          "pages": [
+            153
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0001016"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": true
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "*   Carbon dioxide cylinders have a ground colour of Black and a colour band of White or Aluminium paint [Page 153].\n*   Nitrogen cylinders have a ground colour of French grey and a colour band of Black [Page 153]."
+    },
+    {
+      "id": "cs-risk-matrix-level",
+      "intent": "TABLE",
+      "question": "In the risk assessment matrix, what is the description and control level for a relative risk rating between 21 and 25?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "TABLE_ROW_LEAD",
+      "groundingReasons": "",
+      "prefillTokens": 0,
+      "prefillTokensPerSecond": 0,
+      "decodeTokensPerSecond": 0,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        29
+      ],
+      "modelTtftMs": 0,
+      "visibleTtftMs": 1075,
+      "totalMs": 1074,
+      "tokensPerSecond": 0,
+      "backend": "GPU",
+      "retrievedChunks": 0,
+      "contextTokens": 0,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000193",
+            "c0000200",
+            "c0000201",
+            "c0000187",
+            "c0000198",
+            "c0000192",
+            "c0000190",
+            "c0000202",
+            "c0000209",
+            "c0000189",
+            "c0000188",
+            "c0000196"
+          ],
+          "pages": [
+            28,
+            29,
+            27,
+            30
+          ]
+        },
+        "expandedCandidates": {
+          "count": 18,
+          "chunkIds": [
+            "c0000193",
+            "c0000194",
+            "c0000200",
+            "c0000201",
+            "c0000203",
+            "c0000204",
+            "c0000187",
+            "c0000186",
+            "c0000198",
+            "c0000197",
+            "c0000199",
+            "c0000192",
+            "c0000190",
+            "c0000202",
+            "c0000209",
+            "c0000189",
+            "c0000188",
+            "c0000196"
+          ],
+          "provenance": [
+            "c0000193:RETRIEVED:",
+            "c0000194:ADJACENT:c0000193",
+            "c0000200:RETRIEVED:",
+            "c0000201:RETRIEVED:",
+            "c0000203:STRUCTURAL:c0000201",
+            "c0000204:STRUCTURAL:c0000201",
+            "c0000187:RETRIEVED:",
+            "c0000186:ADJACENT:c0000187",
+            "c0000198:RETRIEVED:",
+            "c0000197:ADJACENT:c0000198",
+            "c0000199:ADJACENT:c0000198",
+            "c0000192:RETRIEVED:",
+            "c0000190:RETRIEVED:",
+            "c0000202:RETRIEVED:",
+            "c0000209:RETRIEVED:",
+            "c0000189:RETRIEVED:",
+            "c0000188:RETRIEVED:",
+            "c0000196:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000201"
+          ],
+          "pages": [
+            29
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000201"
+          ]
+        },
+        "answer": {
+          "route": "TABLE_ROW_LEAD",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "21-25 — Risk requires an immediate attention; action must be documented and completion time limit may be decided. — Very high [Page 29]"
+    },
+    {
+      "id": "cs-firstaid-amputation",
+      "intent": "PROCEDURE",
+      "question": "What are the first aid procedures for handling an amputated body part?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "SCOPED_PROCEDURE_LEAD",
+      "groundingReasons": "",
+      "prefillTokens": 0,
+      "prefillTokensPerSecond": 0,
+      "decodeTokensPerSecond": 0,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        185
+      ],
+      "modelTtftMs": 0,
+      "visibleTtftMs": 1078,
+      "totalMs": 1076,
+      "tokensPerSecond": 0,
+      "backend": "GPU",
+      "retrievedChunks": 0,
+      "contextTokens": 0,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0001224",
+            "c0001223",
+            "c0000689",
+            "c0001234",
+            "c0001228",
+            "c0000028",
+            "c0000690",
+            "c0001227",
+            "c0000370",
+            "c0001242",
+            "c0000367",
+            "c0001221"
+          ],
+          "pages": [
+            185,
+            101,
+            189,
+            187,
+            6,
+            186,
+            53,
+            192
+          ]
+        },
+        "expandedCandidates": {
+          "count": 26,
+          "chunkIds": [
+            "c0001224",
+            "c0001225",
+            "c0001226",
+            "c0001229",
+            "c0001230",
+            "c0001231",
+            "c0001232",
+            "c0001233",
+            "c0001235",
+            "c0001222",
+            "c0001223",
+            "c0000689",
+            "c0001234",
+            "c0001228",
+            "c0000028",
+            "c0000690",
+            "c0001227",
+            "c0000370",
+            "c0000371",
+            "c0000369",
+            "c0001242",
+            "c0001241",
+            "c0001239",
+            "c0001240",
+            "c0000367",
+            "c0001221"
+          ],
+          "provenance": [
+            "c0001224:RETRIEVED:",
+            "c0001225:LIST_MEMBER:c0001224",
+            "c0001226:LIST_MEMBER:c0001224",
+            "c0001229:LIST_MEMBER:c0001224",
+            "c0001230:LIST_MEMBER:c0001224",
+            "c0001231:LIST_MEMBER:c0001224",
+            "c0001232:LIST_MEMBER:c0001224",
+            "c0001233:LIST_MEMBER:c0001224",
+            "c0001235:LIST_MEMBER:c0001224",
+            "c0001222:ADJACENT:c0001224",
+            "c0001223:RETRIEVED:",
+            "c0000689:RETRIEVED:",
+            "c0001234:RETRIEVED:",
+            "c0001228:RETRIEVED:",
+            "c0000028:RETRIEVED:",
+            "c0000690:RETRIEVED:",
+            "c0001227:RETRIEVED:",
+            "c0000370:RETRIEVED:",
+            "c0000371:LIST_MEMBER:c0000370",
+            "c0000369:INTRODUCTION:c0000370",
+            "c0001242:RETRIEVED:",
+            "c0001241:LIST_MEMBER:c0001242",
+            "c0001239:LIST_MEMBER:c0001242",
+            "c0001240:LIST_MEMBER:c0001242",
+            "c0000367:RETRIEVED:",
+            "c0001221:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0001223",
+            "c0001224"
+          ],
+          "pages": [
+            185
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0001223",
+            "c0001224"
+          ]
+        },
+        "answer": {
+          "route": "SCOPED_PROCEDURE_LEAD",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "COMPLETE",
+        "evidenceComplete": true,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": " Don't panic, stay calm and call for help [Page 185]\n Call ambulance help line number like 102 in India or any other medical helpline number [Page 185]\n Apply direct pressure on the wound to control bleeding [Page 185]\n Cover wound with sterile gauge piece or clean cloth and apply pressure bandage [Page 185]\n Place the amputated part in a clean plastic bag [Page 185]\n Place the plastic bag containing amputated part in another container with ice and mark with date and time of packaging with victim details [Page 185]\n Get to the hospital immediately with victim and amputated part [Page 185]\n Do not put any antiseptics or liquids or home remedies on the amputated area and part [Page 185]\n Ice shall not be come in direct contact with the amputated part [Page 185]\n If not sure don't do anything, just call for help and assist to get in hospital at earliest [Page 185]"
+    },
+    {
+      "id": "cs-earplug-technique",
+      "intent": "PROCEDURE",
+      "question": "Explain the Roll-Pull-Hold-Check technique for wearing earplugs.",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "SECTION_SUMMARY",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 1031,
+      "prefillTokensPerSecond": 206.64205823784548,
+      "decodeTokensPerSecond": 9.442061619327676,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        173
+      ],
+      "modelTtftMs": 6444,
+      "visibleTtftMs": 6447,
+      "totalMs": 8857,
+      "tokensPerSecond": 9.442061619327676,
+      "backend": "GPU",
+      "retrievedChunks": 6,
+      "contextTokens": 1014,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0001156",
+            "c0001157",
+            "c0001152",
+            "c0001162",
+            "c0001153",
+            "c0000684",
+            "c0001154",
+            "c0001164",
+            "c0001151",
+            "c0000022",
+            "c0000927",
+            "c0001117"
+          ],
+          "pages": [
+            173,
+            172,
+            174,
+            101,
+            4,
+            138,
+            166
+          ]
+        },
+        "expandedCandidates": {
+          "count": 21,
+          "chunkIds": [
+            "c0001156",
+            "c0001155",
+            "c0001157",
+            "c0001152",
+            "c0001162",
+            "c0001153",
+            "c0000684",
+            "c0000683",
+            "c0001154",
+            "c0001164",
+            "c0001151",
+            "c0001150",
+            "c0000022",
+            "c0000023",
+            "c0000927",
+            "c0000926",
+            "c0000924",
+            "c0000925",
+            "c0000928",
+            "c0001117",
+            "c0001116"
+          ],
+          "provenance": [
+            "c0001156:RETRIEVED:",
+            "c0001155:STRUCTURAL:c0001156",
+            "c0001157:RETRIEVED:",
+            "c0001152:RETRIEVED:",
+            "c0001162:RETRIEVED:",
+            "c0001153:RETRIEVED:",
+            "c0000684:RETRIEVED:",
+            "c0000683:INTRODUCTION:c0000684",
+            "c0001154:RETRIEVED:",
+            "c0001164:RETRIEVED:",
+            "c0001151:RETRIEVED:",
+            "c0001150:CONTINUATION:c0001151",
+            "c0000022:RETRIEVED:",
+            "c0000023:CONTINUATION:c0000022",
+            "c0000927:RETRIEVED:",
+            "c0000926:LIST_MEMBER:c0000927",
+            "c0000924:LIST_MEMBER:c0000927",
+            "c0000925:LIST_MEMBER:c0000927",
+            "c0000928:LIST_MEMBER:c0000927",
+            "c0001117:RETRIEVED:",
+            "c0001116:INTRODUCTION:c0001117"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0001156",
+            "c0000023",
+            "c0001150",
+            "c0001117",
+            "c0001162",
+            "c0001151"
+          ],
+          "pages": [
+            173,
+            5,
+            171,
+            166,
+            174,
+            172
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0001156"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "* The correct method for using an earplug involves the Roll-Pull-Hold-Check Technique [Page 173]."
+    },
+    {
+      "id": "cs-hardhat-classes",
+      "intent": "FACT",
+      "question": "What are the voltage protection levels and differences between Class A, Class B, and Class C hard hats?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 1207,
+      "prefillTokensPerSecond": 270.6952710591342,
+      "decodeTokensPerSecond": 9.543979669879118,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        166
+      ],
+      "modelTtftMs": 5983,
+      "visibleTtftMs": 5985,
+      "totalMs": 15692,
+      "tokensPerSecond": 9.543979669879118,
+      "backend": "GPU",
+      "retrievedChunks": 8,
+      "contextTokens": 1038,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0001119",
+            "c0001120",
+            "c0001121",
+            "c0001122",
+            "c0001155",
+            "c0001123",
+            "c0001116",
+            "c0001115",
+            "c0001113",
+            "c0000490",
+            "c0001094",
+            "c0000513"
+          ],
+          "pages": [
+            166,
+            167,
+            173,
+            72,
+            162,
+            75
+          ]
+        },
+        "expandedCandidates": {
+          "count": 22,
+          "chunkIds": [
+            "c0001119",
+            "c0001118",
+            "c0001120",
+            "c0001121",
+            "c0001122",
+            "c0001155",
+            "c0001154",
+            "c0001152",
+            "c0001153",
+            "c0001123",
+            "c0001124",
+            "c0001125",
+            "c0001116",
+            "c0001117",
+            "c0001114",
+            "c0001115",
+            "c0001113",
+            "c0001112",
+            "c0000490",
+            "c0000489",
+            "c0001094",
+            "c0000513"
+          ],
+          "provenance": [
+            "c0001119:RETRIEVED:",
+            "c0001118:ADJACENT:c0001119",
+            "c0001120:RETRIEVED:",
+            "c0001121:RETRIEVED:",
+            "c0001122:RETRIEVED:",
+            "c0001155:RETRIEVED:",
+            "c0001154:LIST_MEMBER:c0001155",
+            "c0001152:LIST_MEMBER:c0001155",
+            "c0001153:LIST_MEMBER:c0001155",
+            "c0001123:RETRIEVED:",
+            "c0001124:LIST_MEMBER:c0001123",
+            "c0001125:STRUCTURAL:c0001123",
+            "c0001116:RETRIEVED:",
+            "c0001117:LIST_MEMBER:c0001116",
+            "c0001114:STRUCTURAL:c0001116",
+            "c0001115:RETRIEVED:",
+            "c0001113:RETRIEVED:",
+            "c0001112:CONTINUATION:c0001113",
+            "c0000490:RETRIEVED:",
+            "c0000489:LIST_MEMBER:c0000490",
+            "c0001094:RETRIEVED:",
+            "c0000513:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0001112",
+            "c0001154",
+            "c0001118",
+            "c0001125",
+            "c0001122",
+            "c0001121",
+            "c0001120",
+            "c0001119"
+          ],
+          "pages": [
+            165,
+            172,
+            166,
+            167
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0001119",
+            "c0001120",
+            "c0001121"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "*   Class A hard hats provide limited voltage protection up to 2200 volts [Page 166].\n*   Class B hard hats offer the highest level of protection against electrical hazards, including high-voltage shock and burn protection up to 20000 volts, as well as protection from impact and penetration hazards [Page 166].\n*   Class C hard hats provide impact protection but offer no protection from electrical hazards [Page 166]."
+    },
+    {
+      "id": "cs-accident-inquiry",
+      "intent": "FACT",
+      "question": "Under Rule 210 of the DBOCW Rules, what must the authority do if an accident causes the death of five or more persons?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 1044,
+      "prefillTokensPerSecond": 267.1257639472537,
+      "decodeTokensPerSecond": 9.505923175280893,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        203
+      ],
+      "modelTtftMs": 5427,
+      "visibleTtftMs": 5430,
+      "totalMs": 10756,
+      "tokensPerSecond": 9.505923175280893,
+      "backend": "GPU",
+      "retrievedChunks": 7,
+      "contextTokens": 917,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0001328",
+            "c0001327",
+            "c0000126",
+            "c0001330",
+            "c0001331",
+            "c0001043",
+            "c0000110",
+            "c0001148",
+            "c0000010",
+            "c0000307",
+            "c0001319",
+            "c0000107"
+          ],
+          "pages": [
+            203,
+            20,
+            204,
+            156,
+            18,
+            171,
+            3,
+            45,
+            202,
+            17
+          ]
+        },
+        "expandedCandidates": {
+          "count": 21,
+          "chunkIds": [
+            "c0001328",
+            "c0001326",
+            "c0001327",
+            "c0001325",
+            "c0000126",
+            "c0000127",
+            "c0000125",
+            "c0000124",
+            "c0000128",
+            "c0000123",
+            "c0000129",
+            "c0001330",
+            "c0001331",
+            "c0001043",
+            "c0000110",
+            "c0001148",
+            "c0000010",
+            "c0000307",
+            "c0001319",
+            "c0000107",
+            "c0000106"
+          ],
+          "provenance": [
+            "c0001328:RETRIEVED:",
+            "c0001326:ADJACENT:c0001328",
+            "c0001327:RETRIEVED:",
+            "c0001325:ADJACENT:c0001327",
+            "c0000126:RETRIEVED:",
+            "c0000127:LIST_MEMBER:c0000126",
+            "c0000125:STRUCTURAL:c0000126",
+            "c0000124:STRUCTURAL:c0000126",
+            "c0000128:STRUCTURAL:c0000126",
+            "c0000123:STRUCTURAL:c0000126",
+            "c0000129:STRUCTURAL:c0000126",
+            "c0001330:RETRIEVED:",
+            "c0001331:RETRIEVED:",
+            "c0001043:RETRIEVED:",
+            "c0000110:RETRIEVED:",
+            "c0001148:RETRIEVED:",
+            "c0000010:RETRIEVED:",
+            "c0000307:RETRIEVED:",
+            "c0001319:RETRIEVED:",
+            "c0000107:RETRIEVED:",
+            "c0000106:INTRODUCTION:c0000107"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0001326",
+            "c0000128",
+            "c0000106",
+            "c0000124",
+            "c0001327",
+            "c0000126",
+            "c0001328"
+          ],
+          "pages": [
+            203,
+            20,
+            17
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0001328"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "* A notice given under sub-section (1) relating to an accident causing death of five or more persons requires the authority to whom the notice is sent to make an inquiry into the occurrence within one month of the receipt of the notice [Page 203]."
+    },
+    {
+      "id": "cs-hierarchy-controls",
+      "intent": "LIST",
+      "question": "What is the priority order of the hierarchy of risk control measures?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "HIERARCHY_LEAD",
+      "groundingReasons": "",
+      "prefillTokens": 0,
+      "prefillTokensPerSecond": 0,
+      "decodeTokensPerSecond": 0,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        31
+      ],
+      "modelTtftMs": 0,
+      "visibleTtftMs": 1040,
+      "totalMs": 1037,
+      "tokensPerSecond": 0,
+      "backend": "GPU",
+      "retrievedChunks": 0,
+      "contextTokens": 0,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000073",
+            "c0000205",
+            "c0000214",
+            "c0000547",
+            "c0000200",
+            "c0000075",
+            "c0000211",
+            "c0001208",
+            "c0000204",
+            "c0000074",
+            "c0000553",
+            "c0000152"
+          ],
+          "pages": [
+            13,
+            30,
+            81,
+            29,
+            14,
+            182,
+            82,
+            23
+          ]
+        },
+        "expandedCandidates": {
+          "count": 39,
+          "chunkIds": [
+            "c0000073",
+            "c0000072",
+            "c0000071",
+            "c0000070",
+            "c0000205",
+            "c0000206",
+            "c0000208",
+            "c0000215",
+            "c0000220",
+            "c0000221",
+            "c0000207",
+            "c0000214",
+            "c0000213",
+            "c0000212",
+            "c0000547",
+            "c0000548",
+            "c0000549",
+            "c0000544",
+            "c0000546",
+            "c0000552",
+            "c0000545",
+            "c0000200",
+            "c0000201",
+            "c0000202",
+            "c0000075",
+            "c0000076",
+            "c0000077",
+            "c0000211",
+            "c0000210",
+            "c0001208",
+            "c0001209",
+            "c0001207",
+            "c0001206",
+            "c0001210",
+            "c0001211",
+            "c0000204",
+            "c0000074",
+            "c0000553",
+            "c0000152"
+          ],
+          "provenance": [
+            "c0000073:RETRIEVED:",
+            "c0000072:STRUCTURAL:c0000073",
+            "c0000071:STRUCTURAL:c0000073",
+            "c0000070:STRUCTURAL:c0000073",
+            "c0000205:RETRIEVED:",
+            "c0000206:LIST_MEMBER:c0000205",
+            "c0000208:LIST_MEMBER:c0000205",
+            "c0000215:LIST_MEMBER:c0000205",
+            "c0000220:LIST_MEMBER:c0000205",
+            "c0000221:LIST_MEMBER:c0000205",
+            "c0000207:STRUCTURAL:c0000205",
+            "c0000214:RETRIEVED:",
+            "c0000213:ADJACENT:c0000214",
+            "c0000212:ADJACENT:c0000214",
+            "c0000547:RETRIEVED:",
+            "c0000548:LIST_MEMBER:c0000547",
+            "c0000549:LIST_MEMBER:c0000547",
+            "c0000544:LIST_MEMBER:c0000547",
+            "c0000546:LIST_MEMBER:c0000547",
+            "c0000552:LIST_MEMBER:c0000547",
+            "c0000545:STRUCTURAL:c0000547",
+            "c0000200:RETRIEVED:",
+            "c0000201:ADJACENT:c0000200",
+            "c0000202:ADJACENT:c0000200",
+            "c0000075:RETRIEVED:",
+            "c0000076:ADJACENT:c0000075",
+            "c0000077:ADJACENT:c0000075",
+            "c0000211:RETRIEVED:",
+            "c0000210:INTRODUCTION:c0000211",
+            "c0001208:RETRIEVED:",
+            "c0001209:LIST_MEMBER:c0001208",
+            "c0001207:STRUCTURAL:c0001208",
+            "c0001206:STRUCTURAL:c0001208",
+            "c0001210:STRUCTURAL:c0001208",
+            "c0001211:STRUCTURAL:c0001208",
+            "c0000204:RETRIEVED:",
+            "c0000074:RETRIEVED:",
+            "c0000553:RETRIEVED:",
+            "c0000152:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000215",
+            "c0000220",
+            "c0000221"
+          ],
+          "pages": [
+            31
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000215",
+            "c0000220",
+            "c0000221"
+          ]
+        },
+        "answer": {
+          "route": "HIERARCHY_LEAD",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "COMPLETE",
+        "evidenceComplete": true,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "I. Elimination [Page 31]\nII. Substitution [Page 31]\nIII. Engineering control [Page 31]\nIV. Administrative controls [Page 31]\nV. Personal Protective Equipment [Page 31]"
+    },
+    {
+      "id": "cs-training-duration",
+      "intent": "FACT",
+      "question": "What is the recommended minimum duration for construction workers' safety and health training?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "QUANTIFIED_SENTENCE_LEAD",
+      "groundingReasons": "",
+      "prefillTokens": 0,
+      "prefillTokensPerSecond": 0,
+      "decodeTokensPerSecond": 0,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        45
+      ],
+      "modelTtftMs": 0,
+      "visibleTtftMs": 1087,
+      "totalMs": 1085,
+      "tokensPerSecond": 0,
+      "backend": "GPU",
+      "retrievedChunks": 0,
+      "contextTokens": 0,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000303",
+            "c0001143",
+            "c0000912",
+            "c0000296",
+            "c0000070",
+            "c0000299",
+            "c0000846",
+            "c0000033",
+            "c0001082",
+            "c0000350",
+            "c0000302",
+            "c0000295"
+          ],
+          "pages": [
+            45,
+            170,
+            134,
+            44,
+            13,
+            123,
+            7,
+            161,
+            50
+          ]
+        },
+        "expandedCandidates": {
+          "count": 34,
+          "chunkIds": [
+            "c0000303",
+            "c0000304",
+            "c0000305",
+            "c0000306",
+            "c0001143",
+            "c0001142",
+            "c0001144",
+            "c0001141",
+            "c0001145",
+            "c0001140",
+            "c0001146",
+            "c0000912",
+            "c0000913",
+            "c0000909",
+            "c0000296",
+            "c0000297",
+            "c0000294",
+            "c0000070",
+            "c0000071",
+            "c0000068",
+            "c0000072",
+            "c0000073",
+            "c0000299",
+            "c0000298",
+            "c0000300",
+            "c0000301",
+            "c0000846",
+            "c0000033",
+            "c0000034",
+            "c0001082",
+            "c0000350",
+            "c0000351",
+            "c0000302",
+            "c0000295"
+          ],
+          "provenance": [
+            "c0000303:RETRIEVED:",
+            "c0000304:ADJACENT:c0000303",
+            "c0000305:ADJACENT:c0000303",
+            "c0000306:ADJACENT:c0000303",
+            "c0001143:RETRIEVED:",
+            "c0001142:ADJACENT:c0001143",
+            "c0001144:ADJACENT:c0001143",
+            "c0001141:ADJACENT:c0001143",
+            "c0001145:ADJACENT:c0001143",
+            "c0001140:ADJACENT:c0001143",
+            "c0001146:ADJACENT:c0001143",
+            "c0000912:RETRIEVED:",
+            "c0000913:LIST_MEMBER:c0000912",
+            "c0000909:ADJACENT:c0000912",
+            "c0000296:RETRIEVED:",
+            "c0000297:ADJACENT:c0000296",
+            "c0000294:ADJACENT:c0000296",
+            "c0000070:RETRIEVED:",
+            "c0000071:STRUCTURAL:c0000070",
+            "c0000068:STRUCTURAL:c0000070",
+            "c0000072:STRUCTURAL:c0000070",
+            "c0000073:STRUCTURAL:c0000070",
+            "c0000299:RETRIEVED:",
+            "c0000298:ADJACENT:c0000299",
+            "c0000300:ADJACENT:c0000299",
+            "c0000301:ADJACENT:c0000299",
+            "c0000846:RETRIEVED:",
+            "c0000033:RETRIEVED:",
+            "c0000034:LIST_MEMBER:c0000033",
+            "c0001082:RETRIEVED:",
+            "c0000350:RETRIEVED:",
+            "c0000351:CONTINUATION:c0000350",
+            "c0000302:RETRIEVED:",
+            "c0000295:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000303"
+          ],
+          "pages": [
+            45
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000303"
+          ]
+        },
+        "answer": {
+          "route": "QUANTIFIED_SENTENCE_LEAD",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "The training should be appropriate to the work and the duration shall be so decided that it gives the worker enough time to acquire necessary skill and knowledge, to enable him\/her to perform his work safely, preferably not less 48 hours. [Page 45]"
+    }
+  ]
+}

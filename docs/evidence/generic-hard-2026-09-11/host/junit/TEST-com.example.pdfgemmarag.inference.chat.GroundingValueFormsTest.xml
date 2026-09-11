@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.pdfgemmarag.inference.chat.GroundingValueFormsTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-09-11T13:25:02.765Z" hostname="redacted-local-host" time="0.032">
+  <properties/>
+  <testcase name="compact millimetres and mixed case tonnes survive" classname="com.example.pdfgemmarag.inference.chat.GroundingValueFormsTest" time="0.007"/>
+  <testcase name="compact metre survives when evidence is compact" classname="com.example.pdfgemmarag.inference.chat.GroundingValueFormsTest" time="0.002"/>
+  <testcase name="value with the wrong unit is blocked when evidence distinguishes units" classname="com.example.pdfgemmarag.inference.chat.GroundingValueFormsTest" time="0.0"/>
+  <testcase name="unsupported compact value is still blocked with a stage reason" classname="com.example.pdfgemmarag.inference.chat.GroundingValueFormsTest" time="0.0"/>
+  <testcase name="compact and spaced forms are interchangeable" classname="com.example.pdfgemmarag.inference.chat.GroundingValueFormsTest" time="0.004"/>
+  <testcase name="standard identifier with year survives" classname="com.example.pdfgemmarag.inference.chat.GroundingValueFormsTest" time="0.005"/>
+  <testcase name="identifier suffix letter is not treated as a unit" classname="com.example.pdfgemmarag.inference.chat.GroundingValueFormsTest" time="0.002"/>
+  <testcase name="ranges ratios and unicode fractions survive in restated forms" classname="com.example.pdfgemmarag.inference.chat.GroundingValueFormsTest" time="0.01"/>
+  <testcase name="identifier from the question alone is blocked with identifier reason" classname="com.example.pdfgemmarag.inference.chat.GroundingValueFormsTest" time="0.0"/>
+  <testcase name="heading identifier with hyphen grounds the spaced generated form" classname="com.example.pdfgemmarag.inference.chat.GroundingValueFormsTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

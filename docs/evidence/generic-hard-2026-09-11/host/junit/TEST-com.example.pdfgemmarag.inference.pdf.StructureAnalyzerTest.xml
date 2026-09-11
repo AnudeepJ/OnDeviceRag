@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.pdfgemmarag.inference.pdf.StructureAnalyzerTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-09-11T13:25:03.909Z" hostname="redacted-local-host" time="0.002">
+  <properties/>
+  <testcase name="aggregates a wrapped heading before updating hierarchy" classname="com.example.pdfgemmarag.inference.pdf.StructureAnalyzerTest" time="0.0"/>
+  <testcase name="section cross reference does not become a specification boundary" classname="com.example.pdfgemmarag.inference.pdf.StructureAnalyzerTest" time="0.0"/>
+  <testcase name="parenthesized score cells are not list items" classname="com.example.pdfgemmarag.inference.pdf.StructureAnalyzerTest" time="0.001"/>
+  <testcase name="same-indent lower-case wrapped lines remain attached to list items" classname="com.example.pdfgemmarag.inference.pdf.StructureAnalyzerTest" time="0.0"/>
+  <testcase name="unstyled section heading with part one sequence becomes a specification boundary" classname="com.example.pdfgemmarag.inference.pdf.StructureAnalyzerTest" time="0.0"/>
+  <testcase name="enumerated clauses remain logical list items" classname="com.example.pdfgemmarag.inference.pdf.StructureAnalyzerTest" time="0.0"/>
+  <testcase name="unstyled section heading near page start becomes a specification boundary" classname="com.example.pdfgemmarag.inference.pdf.StructureAnalyzerTest" time="0.0"/>
+  <testcase name="uppercase standards ending with punctuation are not headings" classname="com.example.pdfgemmarag.inference.pdf.StructureAnalyzerTest" time="0.0"/>
+  <testcase name="styled title case section heading becomes a specification boundary" classname="com.example.pdfgemmarag.inference.pdf.StructureAnalyzerTest" time="0.0"/>
+  <testcase name="contents rows are never made into section headings" classname="com.example.pdfgemmarag.inference.pdf.StructureAnalyzerTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

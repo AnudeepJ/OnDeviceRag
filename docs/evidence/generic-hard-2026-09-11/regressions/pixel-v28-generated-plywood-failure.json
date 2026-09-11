@@ -1,0 +1,2493 @@
+{
+  "document": "Technical Specifications Division 03 (PDF) (1).pdf",
+  "docHash": "086248dad810dc9368e844d3bcb1cab5",
+  "indexVersion": 28,
+  "indexNamespace": "086248dad810dc9368e844d3bcb1cab5:v28:mtwo4xuh",
+  "device": "Pixel 10",
+  "androidRelease": "17",
+  "appVersion": "1.0",
+  "appVersionCode": 1,
+  "appLastUpdateTime": 1789113657027,
+  "debugBuild": true,
+  "embeddingSignature": "embeddinggemma-300m-seq512-512d-v2.2-validated-backend",
+  "sourcePageCount": 79,
+  "pageRecords": 79,
+  "structureSections": 158,
+  "structureTables": 17,
+  "structureLists": 129,
+  "canonicalTableCells": 199,
+  "thermalStatusStart": 1,
+  "thermalStatusEnd": 1,
+  "thermalOverride": false,
+  "speculativeDecodingOverride": false,
+  "pipelineStages": {
+    "extraction": {
+      "sourcePages": 79,
+      "pageRecords": 79,
+      "script": "LATIN"
+    },
+    "structure": {
+      "sections": 158,
+      "tables": 17,
+      "lists": 129,
+      "canonicalTableCells": 199
+    }
+  },
+  "total": 21,
+  "retrievalPassed": 20,
+  "answerPassed": 20,
+  "byStage": {
+    "PASS": 20,
+    "RETRIEVAL": 1
+  },
+  "generatedTurns": 11,
+  "medianModelTtftMs": 7759,
+  "medianDecodeTokensPerSecond": 4.982058178951921,
+  "medianPrefillTokensPerSecond": 267.6748983575252,
+  "cases": [
+    {
+      "id": "live-formwork-pay",
+      "intent": "FACT",
+      "question": "Is formwork paid separately under the Concrete Formwork section?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 1670,
+      "prefillTokensPerSecond": 195.41397144262461,
+      "decodeTokensPerSecond": 5.747645264534338,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        2
+      ],
+      "modelTtftMs": 14500,
+      "visibleTtftMs": 14766,
+      "totalMs": 20137,
+      "tokensPerSecond": 5.747645264534338,
+      "backend": "GPU",
+      "retrievedChunks": 8,
+      "contextTokens": 1648,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000012",
+            "c0000441",
+            "c0000383",
+            "c0000384",
+            "c0000371",
+            "c0000508",
+            "c0000114",
+            "c0000010",
+            "c0000096",
+            "c0000025",
+            "c0000039",
+            "c0000307"
+          ],
+          "pages": [
+            2,
+            65,
+            56,
+            53,
+            74,
+            16,
+            13,
+            4,
+            6,
+            43
+          ]
+        },
+        "expandedCandidates": {
+          "count": 20,
+          "chunkIds": [
+            "c0000012",
+            "c0000441",
+            "c0000440",
+            "c0000442",
+            "c0000383",
+            "c0000382",
+            "c0000384",
+            "c0000385",
+            "c0000371",
+            "c0000508",
+            "c0000114",
+            "c0000010",
+            "c0000096",
+            "c0000097",
+            "c0000025",
+            "c0000024",
+            "c0000039",
+            "c0000040",
+            "c0000307",
+            "c0000308"
+          ],
+          "provenance": [
+            "c0000012:RETRIEVED:",
+            "c0000441:RETRIEVED:",
+            "c0000440:ADJACENT:c0000441",
+            "c0000442:ADJACENT:c0000441",
+            "c0000383:RETRIEVED:",
+            "c0000382:CONTINUATION:c0000383",
+            "c0000384:RETRIEVED:",
+            "c0000385:ADJACENT:c0000384",
+            "c0000371:RETRIEVED:",
+            "c0000508:RETRIEVED:",
+            "c0000114:RETRIEVED:",
+            "c0000010:RETRIEVED:",
+            "c0000096:RETRIEVED:",
+            "c0000097:LIST_MEMBER:c0000096",
+            "c0000025:RETRIEVED:",
+            "c0000024:LIST_MEMBER:c0000025",
+            "c0000039:RETRIEVED:",
+            "c0000040:LIST_MEMBER:c0000039",
+            "c0000307:RETRIEVED:",
+            "c0000308:LIST_MEMBER:c0000307"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000385",
+            "c0000382",
+            "c0000442",
+            "c0000024",
+            "c0000307",
+            "c0000025",
+            "c0000384",
+            "c0000012"
+          ],
+          "pages": [
+            56,
+            55,
+            65,
+            4,
+            43,
+            2
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000012"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "No separate payment will be made for concrete formwork under this Section [Page 2]. Payment for concrete formwork is included in the unit price for structural concrete [Page 2]."
+    },
+    {
+      "id": "live-freeze-form-coat",
+      "intent": "FACT",
+      "question": "When temperatures may freeze, may unexposed forms be wetted instead of coated before placing concrete?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 1343,
+      "prefillTokensPerSecond": 280.6638745044375,
+      "decodeTokensPerSecond": 6.16475560950067,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        29,
+        8
+      ],
+      "modelTtftMs": 7786,
+      "visibleTtftMs": 7804,
+      "totalMs": 17276,
+      "tokensPerSecond": 6.16475560950067,
+      "backend": "GPU",
+      "retrievedChunks": 8,
+      "contextTokens": 1066,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000051",
+            "c0000210",
+            "c0000050",
+            "c0000209",
+            "c0000241",
+            "c0000480",
+            "c0000319",
+            "c0000444",
+            "c0000321",
+            "c0000131",
+            "c0000468",
+            "c0000181"
+          ],
+          "pages": [
+            8,
+            29,
+            35,
+            70,
+            45,
+            66,
+            18,
+            68,
+            25
+          ]
+        },
+        "expandedCandidates": {
+          "count": 16,
+          "chunkIds": [
+            "c0000051",
+            "c0000052",
+            "c0000210",
+            "c0000050",
+            "c0000209",
+            "c0000241",
+            "c0000480",
+            "c0000481",
+            "c0000319",
+            "c0000444",
+            "c0000321",
+            "c0000131",
+            "c0000130",
+            "c0000468",
+            "c0000469",
+            "c0000181"
+          ],
+          "provenance": [
+            "c0000051:RETRIEVED:",
+            "c0000052:ADJACENT:c0000051",
+            "c0000210:RETRIEVED:",
+            "c0000050:RETRIEVED:",
+            "c0000209:RETRIEVED:",
+            "c0000241:RETRIEVED:",
+            "c0000480:RETRIEVED:",
+            "c0000481:CONTINUATION:c0000480",
+            "c0000319:RETRIEVED:",
+            "c0000444:RETRIEVED:",
+            "c0000321:RETRIEVED:",
+            "c0000131:RETRIEVED:",
+            "c0000130:LIST_MEMBER:c0000131",
+            "c0000468:RETRIEVED:",
+            "c0000469:CONTINUATION:c0000468",
+            "c0000181:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000469",
+            "c0000130",
+            "c0000481",
+            "c0000052",
+            "c0000480",
+            "c0000241",
+            "c0000210",
+            "c0000051"
+          ],
+          "pages": [
+            69,
+            17,
+            71,
+            8,
+            70,
+            35,
+            29
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000210",
+            "c0000051"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "Forms for unexposed surfaces, other than retained-in-place metal forms, may be wet with water immediately before concrete placement in lieu of coating [Page 29][Page 8]. However, the use of coating is mandatory when there is a possibility of freezing temperatures [Page 29][Page 8]."
+    },
+    {
+      "id": "live-sewage-cement",
+      "intent": "FACT",
+      "question": "What cement type is required for concrete in contact with sewage in specification 03300 section 2.05?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 1157,
+      "prefillTokensPerSecond": 230.59097139239702,
+      "decodeTokensPerSecond": 6.055668542205198,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        17
+      ],
+      "modelTtftMs": 7759,
+      "visibleTtftMs": 7787,
+      "totalMs": 11434,
+      "tokensPerSecond": 6.055668542205198,
+      "backend": "GPU",
+      "retrievedChunks": 6,
+      "contextTokens": 848,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 2,
+          "chunkIds": [
+            "c0000127",
+            "c0000126"
+          ],
+          "pages": [
+            17
+          ]
+        },
+        "expandedCandidates": {
+          "count": 6,
+          "chunkIds": [
+            "c0000127",
+            "c0000128",
+            "c0000125",
+            "c0000129",
+            "c0000130",
+            "c0000126"
+          ],
+          "provenance": [
+            "c0000127:RETRIEVED:",
+            "c0000128:STRUCTURAL:c0000127",
+            "c0000125:STRUCTURAL:c0000127",
+            "c0000129:STRUCTURAL:c0000127",
+            "c0000130:STRUCTURAL:c0000127",
+            "c0000126:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000126",
+            "c0000125",
+            "c0000128",
+            "c0000129",
+            "c0000130",
+            "c0000127"
+          ],
+          "pages": [
+            17
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000127"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": true
+      },
+      "sourceSectionId": "829f0fe81a6fd88ad94cbd7f",
+      "error": null,
+      "answer": "For concrete in contact with sewage use Portland Type II, ASTM - C150, Cement [Page 17]."
+    },
+    {
+      "id": "live-air-03300",
+      "intent": "FACT",
+      "question": "In specification 03300 section 2.05, what air content is required for trowel finished surfaces versus other concrete?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 1160,
+      "prefillTokensPerSecond": 292.70986999732963,
+      "decodeTokensPerSecond": 5.792063431757298,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        17
+      ],
+      "modelTtftMs": 6876,
+      "visibleTtftMs": 7040,
+      "totalMs": 13749,
+      "tokensPerSecond": 5.792063431757298,
+      "backend": "GPU",
+      "retrievedChunks": 6,
+      "contextTokens": 852,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 2,
+          "chunkIds": [
+            "c0000127",
+            "c0000126"
+          ],
+          "pages": [
+            17
+          ]
+        },
+        "expandedCandidates": {
+          "count": 6,
+          "chunkIds": [
+            "c0000127",
+            "c0000128",
+            "c0000125",
+            "c0000129",
+            "c0000130",
+            "c0000126"
+          ],
+          "provenance": [
+            "c0000127:RETRIEVED:",
+            "c0000128:STRUCTURAL:c0000127",
+            "c0000125:STRUCTURAL:c0000127",
+            "c0000129:STRUCTURAL:c0000127",
+            "c0000130:STRUCTURAL:c0000127",
+            "c0000126:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000126",
+            "c0000125",
+            "c0000128",
+            "c0000130",
+            "c0000129",
+            "c0000127"
+          ],
+          "pages": [
+            17
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000127"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": true
+      },
+      "sourceSectionId": "829f0fe81a6fd88ad94cbd7f",
+      "error": null,
+      "answer": "*   Air content shall be 3 percent maximum for concrete with trowel finished surfaces [Page 17].\n*   Air content shall be 3-5 percent maximum for other concrete [Page 17]."
+    },
+    {
+      "id": "live-epoxy-hole",
+      "intent": "FACT",
+      "question": "When anchoring reinforcing to existing concrete with epoxy grout, how much larger than the bar may the drilled hole be?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 1756,
+      "prefillTokensPerSecond": 227.83943643962107,
+      "decodeTokensPerSecond": 4.691815944172247,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        31
+      ],
+      "modelTtftMs": 12091,
+      "visibleTtftMs": 12118,
+      "totalMs": 18696,
+      "tokensPerSecond": 4.691815944172247,
+      "backend": "GPU",
+      "retrievedChunks": 8,
+      "contextTokens": 1590,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000223",
+            "c0000148",
+            "c0000175",
+            "c0000107",
+            "c0000146",
+            "c0000221",
+            "c0000150",
+            "c0000407",
+            "c0000145",
+            "c0000222",
+            "c0000421",
+            "c0000422"
+          ],
+          "pages": [
+            31,
+            21,
+            25,
+            15,
+            20,
+            59,
+            62
+          ]
+        },
+        "expandedCandidates": {
+          "count": 18,
+          "chunkIds": [
+            "c0000223",
+            "c0000148",
+            "c0000147",
+            "c0000175",
+            "c0000107",
+            "c0000146",
+            "c0000221",
+            "c0000150",
+            "c0000407",
+            "c0000408",
+            "c0000145",
+            "c0000222",
+            "c0000421",
+            "c0000420",
+            "c0000419",
+            "c0000423",
+            "c0000418",
+            "c0000422"
+          ],
+          "provenance": [
+            "c0000223:RETRIEVED:",
+            "c0000148:RETRIEVED:",
+            "c0000147:LIST_MEMBER:c0000148",
+            "c0000175:RETRIEVED:",
+            "c0000107:RETRIEVED:",
+            "c0000146:RETRIEVED:",
+            "c0000221:RETRIEVED:",
+            "c0000150:RETRIEVED:",
+            "c0000407:RETRIEVED:",
+            "c0000408:LIST_MEMBER:c0000407",
+            "c0000145:RETRIEVED:",
+            "c0000222:RETRIEVED:",
+            "c0000421:RETRIEVED:",
+            "c0000420:STRUCTURAL:c0000421",
+            "c0000419:STRUCTURAL:c0000421",
+            "c0000423:STRUCTURAL:c0000421",
+            "c0000418:STRUCTURAL:c0000421",
+            "c0000422:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000420",
+            "c0000418",
+            "c0000408",
+            "c0000147",
+            "c0000146",
+            "c0000107",
+            "c0000148",
+            "c0000223"
+          ],
+          "pages": [
+            62,
+            60,
+            21,
+            20,
+            15,
+            31
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000223"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "The drilled hole should not be more than 1\/4 inch larger than the steel bar diameter, including the height of deformations for deformed bars [Page 31]."
+    },
+    {
+      "id": "live-curing-day",
+      "intent": "FACT",
+      "question": "In specification 03300 section 3.26, what temperature and duration make a calendar day count as a curing day?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "QUANTIFIED_SENTENCE_LEAD",
+      "groundingReasons": "",
+      "prefillTokens": 0,
+      "prefillTokensPerSecond": 0,
+      "decodeTokensPerSecond": 0,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        44
+      ],
+      "modelTtftMs": 0,
+      "visibleTtftMs": 2195,
+      "totalMs": 2183,
+      "tokensPerSecond": 0,
+      "backend": "GPU",
+      "retrievedChunks": 0,
+      "contextTokens": 0,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 7,
+          "chunkIds": [
+            "c0000314",
+            "c0000316",
+            "c0000315",
+            "c0000313",
+            "c0000317",
+            "c0000319",
+            "c0000318"
+          ],
+          "pages": [
+            44,
+            45
+          ]
+        },
+        "expandedCandidates": {
+          "count": 9,
+          "chunkIds": [
+            "c0000314",
+            "c0000312",
+            "c0000311",
+            "c0000316",
+            "c0000315",
+            "c0000313",
+            "c0000317",
+            "c0000319",
+            "c0000318"
+          ],
+          "provenance": [
+            "c0000314:RETRIEVED:",
+            "c0000312:STRUCTURAL:c0000314",
+            "c0000311:STRUCTURAL:c0000314",
+            "c0000316:RETRIEVED:",
+            "c0000315:RETRIEVED:",
+            "c0000313:RETRIEVED:",
+            "c0000317:RETRIEVED:",
+            "c0000319:RETRIEVED:",
+            "c0000318:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000314"
+          ],
+          "pages": [
+            44
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000314"
+          ]
+        },
+        "answer": {
+          "route": "QUANTIFIED_SENTENCE_LEAD",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "c82056cf06356625a6d9f186",
+      "error": null,
+      "answer": "A curing day is any calendar day in which the temperature is above 50 degrees F for at least 19 hours. [Page 44]"
+    },
+    {
+      "id": "live-curing-coverage",
+      "intent": "FACT",
+      "question": "What minimum coverage rate applies when spraying curing compound on unformed surfaces in specification 03300 section 3.26?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "QUANTIFIED_SENTENCE_LEAD",
+      "groundingReasons": "",
+      "prefillTokens": 0,
+      "prefillTokensPerSecond": 0,
+      "decodeTokensPerSecond": 0,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        45
+      ],
+      "modelTtftMs": 0,
+      "visibleTtftMs": 2026,
+      "totalMs": 2015,
+      "tokensPerSecond": 0,
+      "backend": "GPU",
+      "retrievedChunks": 0,
+      "contextTokens": 0,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 7,
+          "chunkIds": [
+            "c0000317",
+            "c0000318",
+            "c0000319",
+            "c0000316",
+            "c0000315",
+            "c0000314",
+            "c0000313"
+          ],
+          "pages": [
+            45,
+            44
+          ]
+        },
+        "expandedCandidates": {
+          "count": 11,
+          "chunkIds": [
+            "c0000317",
+            "c0000320",
+            "c0000318",
+            "c0000321",
+            "c0000319",
+            "c0000316",
+            "c0000315",
+            "c0000314",
+            "c0000312",
+            "c0000311",
+            "c0000313"
+          ],
+          "provenance": [
+            "c0000317:RETRIEVED:",
+            "c0000320:ADJACENT:c0000317",
+            "c0000318:RETRIEVED:",
+            "c0000321:ADJACENT:c0000318",
+            "c0000319:RETRIEVED:",
+            "c0000316:RETRIEVED:",
+            "c0000315:RETRIEVED:",
+            "c0000314:RETRIEVED:",
+            "c0000312:STRUCTURAL:c0000314",
+            "c0000311:STRUCTURAL:c0000314",
+            "c0000313:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000317"
+          ],
+          "pages": [
+            45
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000317"
+          ]
+        },
+        "answer": {
+          "route": "QUANTIFIED_SENTENCE_LEAD",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "c82056cf06356625a6d9f186",
+      "error": null,
+      "answer": "Do not apply less than 1 gallon per 180 square feet of area. [Page 45]"
+    },
+    {
+      "id": "live-03310-liquid-ratio",
+      "intent": "FACT",
+      "question": "In specification 03310, what is the maximum water-cement ratio for concrete for liquid-containing structures?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "QUANTIFIED_SENTENCE_LEAD",
+      "groundingReasons": "",
+      "prefillTokens": 0,
+      "prefillTokensPerSecond": 0,
+      "decodeTokensPerSecond": 0,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        62
+      ],
+      "modelTtftMs": 0,
+      "visibleTtftMs": 2615,
+      "totalMs": 2610,
+      "tokensPerSecond": 0,
+      "backend": "GPU",
+      "retrievedChunks": 0,
+      "contextTokens": 0,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000417",
+            "c0000402",
+            "c0000434",
+            "c0000416",
+            "c0000425",
+            "c0000370",
+            "c0000432",
+            "c0000362",
+            "c0000423",
+            "c0000452",
+            "c0000356",
+            "c0000364"
+          ],
+          "pages": [
+            62,
+            58,
+            64,
+            61,
+            63,
+            53,
+            52,
+            67,
+            51
+          ]
+        },
+        "expandedCandidates": {
+          "count": 30,
+          "chunkIds": [
+            "c0000417",
+            "c0000418",
+            "c0000419",
+            "c0000420",
+            "c0000402",
+            "c0000403",
+            "c0000400",
+            "c0000399",
+            "c0000434",
+            "c0000435",
+            "c0000436",
+            "c0000416",
+            "c0000414",
+            "c0000413",
+            "c0000425",
+            "c0000424",
+            "c0000426",
+            "c0000427",
+            "c0000428",
+            "c0000370",
+            "c0000432",
+            "c0000433",
+            "c0000362",
+            "c0000363",
+            "c0000365",
+            "c0000423",
+            "c0000452",
+            "c0000356",
+            "c0000364",
+            "c0000361"
+          ],
+          "provenance": [
+            "c0000417:RETRIEVED:",
+            "c0000418:ADJACENT:c0000417",
+            "c0000419:ADJACENT:c0000417",
+            "c0000420:ADJACENT:c0000417",
+            "c0000402:RETRIEVED:",
+            "c0000403:ADJACENT:c0000402",
+            "c0000400:ADJACENT:c0000402",
+            "c0000399:ADJACENT:c0000402",
+            "c0000434:RETRIEVED:",
+            "c0000435:ADJACENT:c0000434",
+            "c0000436:ADJACENT:c0000434",
+            "c0000416:RETRIEVED:",
+            "c0000414:STRUCTURAL:c0000416",
+            "c0000413:STRUCTURAL:c0000416",
+            "c0000425:RETRIEVED:",
+            "c0000424:STRUCTURAL:c0000425",
+            "c0000426:STRUCTURAL:c0000425",
+            "c0000427:STRUCTURAL:c0000425",
+            "c0000428:STRUCTURAL:c0000425",
+            "c0000370:RETRIEVED:",
+            "c0000432:RETRIEVED:",
+            "c0000433:CONTINUATION:c0000432",
+            "c0000362:RETRIEVED:",
+            "c0000363:STRUCTURAL:c0000362",
+            "c0000365:STRUCTURAL:c0000362",
+            "c0000423:RETRIEVED:",
+            "c0000452:RETRIEVED:",
+            "c0000356:RETRIEVED:",
+            "c0000364:RETRIEVED:",
+            "c0000361:STRUCTURAL:c0000364"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000417"
+          ],
+          "pages": [
+            62
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000417"
+          ]
+        },
+        "answer": {
+          "route": "QUANTIFIED_SENTENCE_LEAD",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "Concrete for liquid-containing structures: 0.45. [Page 62]"
+    },
+    {
+      "id": "live-03310-air-shafts",
+      "intent": "FACT",
+      "question": "Which concrete is not air-entrained in specification 03310, and what total air content is required for the rest?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 1695,
+      "prefillTokensPerSecond": 191.70824873719107,
+      "decodeTokensPerSecond": 4.935303299172491,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        62
+      ],
+      "modelTtftMs": 11860,
+      "visibleTtftMs": 12313,
+      "totalMs": 20353,
+      "tokensPerSecond": 4.935303299172491,
+      "backend": "GPU",
+      "retrievedChunks": 8,
+      "contextTokens": 1542,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000419",
+            "c0000364",
+            "c0000362",
+            "c0000447",
+            "c0000370",
+            "c0000403",
+            "c0000376",
+            "c0000432",
+            "c0000371",
+            "c0000452",
+            "c0000449",
+            "c0000414"
+          ],
+          "pages": [
+            62,
+            52,
+            66,
+            53,
+            58,
+            54,
+            63,
+            67,
+            61
+          ]
+        },
+        "expandedCandidates": {
+          "count": 24,
+          "chunkIds": [
+            "c0000419",
+            "c0000420",
+            "c0000417",
+            "c0000421",
+            "c0000422",
+            "c0000364",
+            "c0000365",
+            "c0000361",
+            "c0000362",
+            "c0000363",
+            "c0000447",
+            "c0000448",
+            "c0000370",
+            "c0000369",
+            "c0000403",
+            "c0000404",
+            "c0000376",
+            "c0000432",
+            "c0000433",
+            "c0000371",
+            "c0000452",
+            "c0000449",
+            "c0000414",
+            "c0000413"
+          ],
+          "provenance": [
+            "c0000419:RETRIEVED:",
+            "c0000420:STRUCTURAL:c0000419",
+            "c0000417:STRUCTURAL:c0000419",
+            "c0000421:STRUCTURAL:c0000419",
+            "c0000422:STRUCTURAL:c0000419",
+            "c0000364:RETRIEVED:",
+            "c0000365:STRUCTURAL:c0000364",
+            "c0000361:STRUCTURAL:c0000364",
+            "c0000362:RETRIEVED:",
+            "c0000363:STRUCTURAL:c0000362",
+            "c0000447:RETRIEVED:",
+            "c0000448:ADJACENT:c0000447",
+            "c0000370:RETRIEVED:",
+            "c0000369:ADJACENT:c0000370",
+            "c0000403:RETRIEVED:",
+            "c0000404:LIST_MEMBER:c0000403",
+            "c0000376:RETRIEVED:",
+            "c0000432:RETRIEVED:",
+            "c0000433:CONTINUATION:c0000432",
+            "c0000371:RETRIEVED:",
+            "c0000452:RETRIEVED:",
+            "c0000449:RETRIEVED:",
+            "c0000414:RETRIEVED:",
+            "c0000413:LIST_MEMBER:c0000414"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000433",
+            "c0000363",
+            "c0000413",
+            "c0000448",
+            "c0000432",
+            "c0000362",
+            "c0000364",
+            "c0000419"
+          ],
+          "pages": [
+            64,
+            52,
+            61,
+            66,
+            63,
+            62
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000419"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "[Page 62] states that air-entrain all concrete except drilled shafts [Page 62]. The total air content required is 4 to 6 percent in accordance with ASTM C173 [Page 62]."
+    },
+    {
+      "id": "live-grout-7000",
+      "intent": "FACT",
+      "question": "What minimum 28-day compressive strength is required for prepackaged cementitious non-shrink grout in specification 03600?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "QUANTIFIED_SENTENCE_LEAD",
+      "groundingReasons": "",
+      "prefillTokens": 0,
+      "prefillTokensPerSecond": 0,
+      "decodeTokensPerSecond": 0,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        77
+      ],
+      "modelTtftMs": 0,
+      "visibleTtftMs": 3175,
+      "totalMs": 3163,
+      "tokensPerSecond": 0,
+      "backend": "GPU",
+      "retrievedChunks": 0,
+      "contextTokens": 0,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000528",
+            "c0000530",
+            "c0000541",
+            "c0000539",
+            "c0000527",
+            "c0000533",
+            "c0000531",
+            "c0000506",
+            "c0000526",
+            "c0000513",
+            "c0000522",
+            "c0000517"
+          ],
+          "pages": [
+            77,
+            78,
+            79,
+            74,
+            76
+          ]
+        },
+        "expandedCandidates": {
+          "count": 20,
+          "chunkIds": [
+            "c0000528",
+            "c0000525",
+            "c0000530",
+            "c0000529",
+            "c0000532",
+            "c0000541",
+            "c0000539",
+            "c0000527",
+            "c0000533",
+            "c0000531",
+            "c0000534",
+            "c0000506",
+            "c0000526",
+            "c0000513",
+            "c0000522",
+            "c0000521",
+            "c0000523",
+            "c0000520",
+            "c0000519",
+            "c0000517"
+          ],
+          "provenance": [
+            "c0000528:RETRIEVED:",
+            "c0000525:STRUCTURAL:c0000528",
+            "c0000530:RETRIEVED:",
+            "c0000529:ADJACENT:c0000530",
+            "c0000532:ADJACENT:c0000530",
+            "c0000541:RETRIEVED:",
+            "c0000539:RETRIEVED:",
+            "c0000527:RETRIEVED:",
+            "c0000533:RETRIEVED:",
+            "c0000531:RETRIEVED:",
+            "c0000534:STRUCTURAL:c0000531",
+            "c0000506:RETRIEVED:",
+            "c0000526:RETRIEVED:",
+            "c0000513:RETRIEVED:",
+            "c0000522:RETRIEVED:",
+            "c0000521:STRUCTURAL:c0000522",
+            "c0000523:STRUCTURAL:c0000522",
+            "c0000520:STRUCTURAL:c0000522",
+            "c0000519:STRUCTURAL:c0000522",
+            "c0000517:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000528"
+          ],
+          "pages": [
+            77
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000528"
+          ]
+        },
+        "answer": {
+          "route": "QUANTIFIED_SENTENCE_LEAD",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "Compressive strength at 28 days: 7000 psi minimum. [Page 77]"
+    },
+    {
+      "id": "live-grout-saturate",
+      "intent": "FACT",
+      "question": "How long must a concrete surface be saturated with water before placing cement-based grout in specification 03600?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 1284,
+      "prefillTokensPerSecond": 184.74293894984234,
+      "decodeTokensPerSecond": 4.677921449926601,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        79
+      ],
+      "modelTtftMs": 9833,
+      "visibleTtftMs": 9845,
+      "totalMs": 18516,
+      "tokensPerSecond": 4.677921449926601,
+      "backend": "GPU",
+      "retrievedChunks": 5,
+      "contextTokens": 998,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000539",
+            "c0000528",
+            "c0000541",
+            "c0000531",
+            "c0000543",
+            "c0000533",
+            "c0000525",
+            "c0000526",
+            "c0000510",
+            "c0000518",
+            "c0000530",
+            "c0000515"
+          ],
+          "pages": [
+            79,
+            77,
+            78,
+            74,
+            76,
+            75
+          ]
+        },
+        "expandedCandidates": {
+          "count": 16,
+          "chunkIds": [
+            "c0000539",
+            "c0000540",
+            "c0000528",
+            "c0000541",
+            "c0000531",
+            "c0000532",
+            "c0000529",
+            "c0000534",
+            "c0000543",
+            "c0000533",
+            "c0000525",
+            "c0000526",
+            "c0000510",
+            "c0000518",
+            "c0000530",
+            "c0000515"
+          ],
+          "provenance": [
+            "c0000539:RETRIEVED:",
+            "c0000540:ADJACENT:c0000539",
+            "c0000528:RETRIEVED:",
+            "c0000541:RETRIEVED:",
+            "c0000531:RETRIEVED:",
+            "c0000532:STRUCTURAL:c0000531",
+            "c0000529:STRUCTURAL:c0000531",
+            "c0000534:STRUCTURAL:c0000531",
+            "c0000543:RETRIEVED:",
+            "c0000533:RETRIEVED:",
+            "c0000525:RETRIEVED:",
+            "c0000526:RETRIEVED:",
+            "c0000510:RETRIEVED:",
+            "c0000518:RETRIEVED:",
+            "c0000530:RETRIEVED:",
+            "c0000515:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000530",
+            "c0000540",
+            "c0000531",
+            "c0000528",
+            "c0000539"
+          ],
+          "pages": [
+            78,
+            79,
+            77
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000539"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "The concrete surface must be saturated with water for 24 hours prior to the placement of cement-based grout [Page 79]. After saturation, excess water should be removed before grouting [Page 79]."
+    },
+    {
+      "id": "live-overview",
+      "intent": "DOCUMENT_OVERVIEW",
+      "question": "Summarize this document",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "DOCUMENT_OVERVIEW",
+      "answeredBy": "OVERVIEW_LEAD",
+      "groundingReasons": "",
+      "prefillTokens": 0,
+      "prefillTokensPerSecond": 0,
+      "decodeTokensPerSecond": 0,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        13,
+        51,
+        74
+      ],
+      "modelTtftMs": 0,
+      "visibleTtftMs": 1119,
+      "totalMs": 1106,
+      "tokensPerSecond": 0,
+      "backend": "GPU",
+      "retrievedChunks": 0,
+      "contextTokens": 0,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000093",
+            "c0000351",
+            "c0000502",
+            "c0000224",
+            "c0000500",
+            "c0000504",
+            "c0000225",
+            "c0000501",
+            "c0000519",
+            "c0000226",
+            "c0000352",
+            "c0000536"
+          ],
+          "pages": [
+            13,
+            51,
+            74,
+            32,
+            73,
+            76,
+            78
+          ]
+        },
+        "expandedCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000093",
+            "c0000351",
+            "c0000502",
+            "c0000224",
+            "c0000500",
+            "c0000504",
+            "c0000225",
+            "c0000501",
+            "c0000519",
+            "c0000226",
+            "c0000352",
+            "c0000536"
+          ],
+          "provenance": [
+            "c0000093:RETRIEVED:",
+            "c0000351:RETRIEVED:",
+            "c0000502:RETRIEVED:",
+            "c0000224:RETRIEVED:",
+            "c0000500:RETRIEVED:",
+            "c0000504:RETRIEVED:",
+            "c0000225:RETRIEVED:",
+            "c0000501:RETRIEVED:",
+            "c0000519:RETRIEVED:",
+            "c0000226:RETRIEVED:",
+            "c0000352:RETRIEVED:",
+            "c0000536:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000093",
+            "c0000351",
+            "c0000502"
+          ],
+          "pages": [
+            13,
+            51,
+            74
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000093",
+            "c0000351",
+            "c0000502"
+          ]
+        },
+        "answer": {
+          "route": "OVERVIEW_LEAD",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "Document scope:\n- Specification 03300 — CAST-IN-PLACE CONCRETE [Page 13]\n- Specification 03310 — STRUCTURAL CONCRETE [Page 51]\n- Specification 03600 — STRUCTURAL [Page 74]"
+    },
+    {
+      "id": "live-plywood-class",
+      "intent": "FACT",
+      "question": "In the Concrete Formwork products section, what plywood standard and class is required?",
+      "retrievalPassed": false,
+      "answerPassed": false,
+      "stage": "RETRIEVAL",
+      "plannerIntent": "FACT",
+      "answeredBy": "STANDARD_REFERENCE_LEAD",
+      "groundingReasons": "",
+      "prefillTokens": 0,
+      "prefillTokensPerSecond": 0,
+      "decodeTokensPerSecond": 0,
+      "retrievalReasons": [
+        "expected pages [3], got [5]"
+      ],
+      "answerReasons": [
+        "missing phrases [PS 1, Class 1]"
+      ],
+      "retrievedPages": [
+        5
+      ],
+      "modelTtftMs": 0,
+      "visibleTtftMs": 2357,
+      "totalMs": 2355,
+      "tokensPerSecond": 0,
+      "backend": "GPU",
+      "retrievedChunks": 0,
+      "contextTokens": 0,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000020",
+            "c0000166",
+            "c0000018",
+            "c0000146",
+            "c0000019",
+            "c0000024",
+            "c0000201",
+            "c0000526",
+            "c0000032",
+            "c0000130",
+            "c0000371",
+            "c0000030"
+          ],
+          "pages": [
+            3,
+            23,
+            20,
+            4,
+            28,
+            77,
+            5,
+            17,
+            53
+          ]
+        },
+        "expandedCandidates": {
+          "count": 25,
+          "chunkIds": [
+            "c0000020",
+            "c0000021",
+            "c0000166",
+            "c0000167",
+            "c0000018",
+            "c0000017",
+            "c0000146",
+            "c0000147",
+            "c0000145",
+            "c0000148",
+            "c0000019",
+            "c0000024",
+            "c0000025",
+            "c0000022",
+            "c0000201",
+            "c0000526",
+            "c0000032",
+            "c0000033",
+            "c0000034",
+            "c0000029",
+            "c0000035",
+            "c0000130",
+            "c0000131",
+            "c0000371",
+            "c0000030"
+          ],
+          "provenance": [
+            "c0000020:RETRIEVED:",
+            "c0000021:LIST_MEMBER:c0000020",
+            "c0000166:RETRIEVED:",
+            "c0000167:ADJACENT:c0000166",
+            "c0000018:RETRIEVED:",
+            "c0000017:ADJACENT:c0000018",
+            "c0000146:RETRIEVED:",
+            "c0000147:LIST_MEMBER:c0000146",
+            "c0000145:LIST_MEMBER:c0000146",
+            "c0000148:LIST_MEMBER:c0000146",
+            "c0000019:RETRIEVED:",
+            "c0000024:RETRIEVED:",
+            "c0000025:LIST_MEMBER:c0000024",
+            "c0000022:STRUCTURAL:c0000024",
+            "c0000201:RETRIEVED:",
+            "c0000526:RETRIEVED:",
+            "c0000032:RETRIEVED:",
+            "c0000033:STRUCTURAL:c0000032",
+            "c0000034:STRUCTURAL:c0000032",
+            "c0000029:STRUCTURAL:c0000032",
+            "c0000035:STRUCTURAL:c0000032",
+            "c0000130:RETRIEVED:",
+            "c0000131:LIST_MEMBER:c0000130",
+            "c0000371:RETRIEVED:",
+            "c0000030:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000032"
+          ],
+          "pages": [
+            5
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000032"
+          ]
+        },
+        "answer": {
+          "route": "STANDARD_REFERENCE_LEAD",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "A. Conform to ACI 117, ACI 347 and building codes, unless more restrictive requirements are specified or shown on Drawings. Contractor shall design and engineer concrete formwork, including shoring and bracing. Design formwork for applicable gravity loads, lateral pressure, wind loads and allowable stresses. Camber formwork to compensate for anticipated deflection during placement of concrete when required to maintain specified tolerances. Design formwork to be readily removed without impact, shock or damage to concrete surfaces and adjacent materials. [Page 5]"
+    },
+    {
+      "id": "live-form-remove-75",
+      "intent": "FACT",
+      "question": "What minimum compressive strength is required before removing formwork that supports the weight of the concrete?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "QUANTIFIED_SENTENCE_LEAD",
+      "groundingReasons": "",
+      "prefillTokens": 0,
+      "prefillTokensPerSecond": 0,
+      "decodeTokensPerSecond": 0,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        47
+      ],
+      "modelTtftMs": 0,
+      "visibleTtftMs": 1847,
+      "totalMs": 1835,
+      "tokensPerSecond": 0,
+      "backend": "GPU",
+      "retrievedChunks": 0,
+      "contextTokens": 0,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000330",
+            "c0000058",
+            "c0000326",
+            "c0000054",
+            "c0000055",
+            "c0000333",
+            "c0000061",
+            "c0000325",
+            "c0000039",
+            "c0000328",
+            "c0000195",
+            "c0000127"
+          ],
+          "pages": [
+            47,
+            10,
+            46,
+            9,
+            6,
+            27,
+            17
+          ]
+        },
+        "expandedCandidates": {
+          "count": 31,
+          "chunkIds": [
+            "c0000330",
+            "c0000329",
+            "c0000331",
+            "c0000332",
+            "c0000058",
+            "c0000057",
+            "c0000059",
+            "c0000060",
+            "c0000326",
+            "c0000327",
+            "c0000324",
+            "c0000323",
+            "c0000054",
+            "c0000056",
+            "c0000055",
+            "c0000053",
+            "c0000333",
+            "c0000334",
+            "c0000335",
+            "c0000336",
+            "c0000061",
+            "c0000325",
+            "c0000039",
+            "c0000040",
+            "c0000328",
+            "c0000195",
+            "c0000127",
+            "c0000128",
+            "c0000125",
+            "c0000129",
+            "c0000130"
+          ],
+          "provenance": [
+            "c0000330:RETRIEVED:",
+            "c0000329:ADJACENT:c0000330",
+            "c0000331:ADJACENT:c0000330",
+            "c0000332:ADJACENT:c0000330",
+            "c0000058:RETRIEVED:",
+            "c0000057:ADJACENT:c0000058",
+            "c0000059:ADJACENT:c0000058",
+            "c0000060:ADJACENT:c0000058",
+            "c0000326:RETRIEVED:",
+            "c0000327:ADJACENT:c0000326",
+            "c0000324:ADJACENT:c0000326",
+            "c0000323:ADJACENT:c0000326",
+            "c0000054:RETRIEVED:",
+            "c0000056:LIST_MEMBER:c0000054",
+            "c0000055:RETRIEVED:",
+            "c0000053:ADJACENT:c0000055",
+            "c0000333:RETRIEVED:",
+            "c0000334:ADJACENT:c0000333",
+            "c0000335:ADJACENT:c0000333",
+            "c0000336:ADJACENT:c0000333",
+            "c0000061:RETRIEVED:",
+            "c0000325:RETRIEVED:",
+            "c0000039:RETRIEVED:",
+            "c0000040:LIST_MEMBER:c0000039",
+            "c0000328:RETRIEVED:",
+            "c0000195:RETRIEVED:",
+            "c0000127:RETRIEVED:",
+            "c0000128:STRUCTURAL:c0000127",
+            "c0000125:STRUCTURAL:c0000127",
+            "c0000129:STRUCTURAL:c0000127",
+            "c0000130:STRUCTURAL:c0000127"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000330"
+          ],
+          "pages": [
+            47
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000330"
+          ]
+        },
+        "answer": {
+          "route": "QUANTIFIED_SENTENCE_LEAD",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "Compressive Strengths: The minimum concrete compressive strength for removal of formwork supporting weight of concrete is 75 percent of specified minimum 28-day strength for class of concrete involved. [Page 47]"
+    },
+    {
+      "id": "live-az-factor",
+      "intent": "FACT",
+      "question": "In specification 03300 section 2.01, what AZ factor and inside concrete cover over reinforcing steel are required?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 801,
+      "prefillTokensPerSecond": 267.6748983575252,
+      "decodeTokensPerSecond": 4.982058178951921,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        16
+      ],
+      "modelTtftMs": 5511,
+      "visibleTtftMs": 5528,
+      "totalMs": 14943,
+      "tokensPerSecond": 4.982058178951921,
+      "backend": "GPU",
+      "retrievedChunks": 5,
+      "contextTokens": 438,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 3,
+          "chunkIds": [
+            "c0000117",
+            "c0000116",
+            "c0000118"
+          ],
+          "pages": [
+            16
+          ]
+        },
+        "expandedCandidates": {
+          "count": 5,
+          "chunkIds": [
+            "c0000117",
+            "c0000115",
+            "c0000119",
+            "c0000116",
+            "c0000118"
+          ],
+          "provenance": [
+            "c0000117:RETRIEVED:",
+            "c0000115:ADJACENT:c0000117",
+            "c0000119:ADJACENT:c0000117",
+            "c0000116:RETRIEVED:",
+            "c0000118:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000118",
+            "c0000116",
+            "c0000115",
+            "c0000119",
+            "c0000117"
+          ],
+          "pages": [
+            16
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000117"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": true
+      },
+      "sourceSectionId": "dad848a41c234ceb0977838f",
+      "error": null,
+      "answer": "*   The concrete shall have an AZ factor greater than or equal to 0.54 [Page 16].\n*   Provide a minimum concrete cover of 2\" over reinforcing steel on the inside of the structures [Page 16]."
+    },
+    {
+      "id": "live-rebar-grade60",
+      "intent": "FACT",
+      "question": "In specification 03300 section 2.08, which reinforcing bar grade is required when the grade is not shown on the plans?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 1280,
+      "prefillTokensPerSecond": 284.5072893860446,
+      "decodeTokensPerSecond": 4.658530216511186,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        20
+      ],
+      "modelTtftMs": 7457,
+      "visibleTtftMs": 8105,
+      "totalMs": 13543,
+      "tokensPerSecond": 4.658530216511186,
+      "backend": "GPU",
+      "retrievedChunks": 4,
+      "contextTokens": 1025,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 5,
+          "chunkIds": [
+            "c0000145",
+            "c0000147",
+            "c0000146",
+            "c0000148",
+            "c0000144"
+          ],
+          "pages": [
+            20,
+            21
+          ]
+        },
+        "expandedCandidates": {
+          "count": 6,
+          "chunkIds": [
+            "c0000145",
+            "c0000147",
+            "c0000146",
+            "c0000148",
+            "c0000149",
+            "c0000144"
+          ],
+          "provenance": [
+            "c0000145:RETRIEVED:",
+            "c0000147:RETRIEVED:",
+            "c0000146:RETRIEVED:",
+            "c0000148:RETRIEVED:",
+            "c0000149:ADJACENT:c0000148",
+            "c0000144:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000148",
+            "c0000146",
+            "c0000145",
+            "c0000147"
+          ],
+          "pages": [
+            21,
+            20
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000145"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "0d0bf16376fc42dada832d35",
+      "error": null,
+      "answer": "[Page 20] states that where the grade is not shown on Plans, Grade 60 should be used for reinforcing bars [Page 20]."
+    },
+    {
+      "id": "live-curing-solids",
+      "intent": "FACT",
+      "question": "In specification 03300 section 2.11, what minimum solids content applies to membrane-forming curing compound, and when must it be white-pigmented?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 910,
+      "prefillTokensPerSecond": 325.83529203728875,
+      "decodeTokensPerSecond": 5.185931516578245,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        24
+      ],
+      "modelTtftMs": 5165,
+      "visibleTtftMs": 5171,
+      "totalMs": 13882,
+      "tokensPerSecond": 5.185931516578245,
+      "backend": "GPU",
+      "retrievedChunks": 3,
+      "contextTokens": 666,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 3,
+          "chunkIds": [
+            "c0000169",
+            "c0000170",
+            "c0000168"
+          ],
+          "pages": [
+            24
+          ]
+        },
+        "expandedCandidates": {
+          "count": 3,
+          "chunkIds": [
+            "c0000169",
+            "c0000170",
+            "c0000168"
+          ],
+          "provenance": [
+            "c0000169:RETRIEVED:",
+            "c0000170:RETRIEVED:",
+            "c0000168:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000168",
+            "c0000170",
+            "c0000169"
+          ],
+          "pages": [
+            24
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000169"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": true
+      },
+      "sourceSectionId": "0be7bb1edfb1cb954aaee19b",
+      "error": null,
+      "answer": "*   The minimum solids content for a membrane-forming curing compound is 30 percent [Page 24].\n*   When used for liquid-containing structures, the curing compound shall be white-pigmented [Page 24]."
+    },
+    {
+      "id": "live-stirrup-spacing",
+      "intent": "FACT",
+      "question": "What placement tolerance applies to uniform spacing of stirrups and ties for reinforcement?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "TABLE_ROW_LEAD",
+      "groundingReasons": "",
+      "prefillTokens": 0,
+      "prefillTokensPerSecond": 0,
+      "decodeTokensPerSecond": 0,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        32
+      ],
+      "modelTtftMs": 0,
+      "visibleTtftMs": 2767,
+      "totalMs": 2763,
+      "tokensPerSecond": 0,
+      "backend": "GPU",
+      "retrievedChunks": 0,
+      "contextTokens": 0,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000228",
+            "c0000234",
+            "c0000226",
+            "c0000214",
+            "c0000218",
+            "c0000104",
+            "c0000196",
+            "c0000273",
+            "c0000039",
+            "c0000212",
+            "c0000282",
+            "c0000225"
+          ],
+          "pages": [
+            32,
+            33,
+            30,
+            14,
+            27,
+            39,
+            6,
+            29,
+            40
+          ]
+        },
+        "expandedCandidates": {
+          "count": 27,
+          "chunkIds": [
+            "c0000228",
+            "c0000227",
+            "c0000229",
+            "c0000234",
+            "c0000226",
+            "c0000224",
+            "c0000214",
+            "c0000218",
+            "c0000104",
+            "c0000196",
+            "c0000273",
+            "c0000272",
+            "c0000274",
+            "c0000271",
+            "c0000275",
+            "c0000270",
+            "c0000039",
+            "c0000040",
+            "c0000212",
+            "c0000210",
+            "c0000209",
+            "c0000282",
+            "c0000281",
+            "c0000283",
+            "c0000280",
+            "c0000279",
+            "c0000225"
+          ],
+          "provenance": [
+            "c0000228:RETRIEVED:",
+            "c0000227:ADJACENT:c0000228",
+            "c0000229:ADJACENT:c0000228",
+            "c0000234:RETRIEVED:",
+            "c0000226:RETRIEVED:",
+            "c0000224:STRUCTURAL:c0000226",
+            "c0000214:RETRIEVED:",
+            "c0000218:RETRIEVED:",
+            "c0000104:RETRIEVED:",
+            "c0000196:RETRIEVED:",
+            "c0000273:RETRIEVED:",
+            "c0000272:STRUCTURAL:c0000273",
+            "c0000274:STRUCTURAL:c0000273",
+            "c0000271:STRUCTURAL:c0000273",
+            "c0000275:STRUCTURAL:c0000273",
+            "c0000270:STRUCTURAL:c0000273",
+            "c0000039:RETRIEVED:",
+            "c0000040:LIST_MEMBER:c0000039",
+            "c0000212:RETRIEVED:",
+            "c0000210:STRUCTURAL:c0000212",
+            "c0000209:STRUCTURAL:c0000212",
+            "c0000282:RETRIEVED:",
+            "c0000281:STRUCTURAL:c0000282",
+            "c0000283:STRUCTURAL:c0000282",
+            "c0000280:STRUCTURAL:c0000282",
+            "c0000279:STRUCTURAL:c0000282",
+            "c0000225:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000228"
+          ],
+          "pages": [
+            32
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000228"
+          ]
+        },
+        "answer": {
+          "route": "TABLE_ROW_LEAD",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "Uniform spacing of stirrups and ties (but the required number of stirrups and ties shall not be reduced) — ±1 inches [Page 32]"
+    },
+    {
+      "id": "live-cover-exposed-beams",
+      "intent": "FACT",
+      "question": "In Table 03210B, what minimum concrete cover is required for principal reinforcement in beams and columns exposed to earth, water, sewage or weather?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "TABLE_ROW_LEAD",
+      "groundingReasons": "",
+      "prefillTokens": 0,
+      "prefillTokensPerSecond": 0,
+      "decodeTokensPerSecond": 0,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        33
+      ],
+      "modelTtftMs": 0,
+      "visibleTtftMs": 2844,
+      "totalMs": 2839,
+      "tokensPerSecond": 0,
+      "backend": "GPU",
+      "retrievedChunks": 0,
+      "contextTokens": 0,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 12,
+          "chunkIds": [
+            "c0000234",
+            "c0000079",
+            "c0000042",
+            "c0000198",
+            "c0000131",
+            "c0000127",
+            "c0000233",
+            "c0000338",
+            "c0000020",
+            "c0000258",
+            "c0000214",
+            "c0000325"
+          ],
+          "pages": [
+            33,
+            11,
+            7,
+            27,
+            18,
+            17,
+            48,
+            3,
+            37,
+            30,
+            46
+          ]
+        },
+        "expandedCandidates": {
+          "count": 34,
+          "chunkIds": [
+            "c0000234",
+            "c0000235",
+            "c0000232",
+            "c0000079",
+            "c0000078",
+            "c0000080",
+            "c0000077",
+            "c0000081",
+            "c0000076",
+            "c0000082",
+            "c0000042",
+            "c0000043",
+            "c0000044",
+            "c0000045",
+            "c0000198",
+            "c0000199",
+            "c0000131",
+            "c0000130",
+            "c0000127",
+            "c0000128",
+            "c0000125",
+            "c0000129",
+            "c0000233",
+            "c0000338",
+            "c0000337",
+            "c0000339",
+            "c0000340",
+            "c0000341",
+            "c0000020",
+            "c0000021",
+            "c0000258",
+            "c0000257",
+            "c0000214",
+            "c0000325"
+          ],
+          "provenance": [
+            "c0000234:RETRIEVED:",
+            "c0000235:ADJACENT:c0000234",
+            "c0000232:ADJACENT:c0000234",
+            "c0000079:RETRIEVED:",
+            "c0000078:STRUCTURAL:c0000079",
+            "c0000080:STRUCTURAL:c0000079",
+            "c0000077:STRUCTURAL:c0000079",
+            "c0000081:STRUCTURAL:c0000079",
+            "c0000076:STRUCTURAL:c0000079",
+            "c0000082:STRUCTURAL:c0000079",
+            "c0000042:RETRIEVED:",
+            "c0000043:STRUCTURAL:c0000042",
+            "c0000044:STRUCTURAL:c0000042",
+            "c0000045:STRUCTURAL:c0000042",
+            "c0000198:RETRIEVED:",
+            "c0000199:LIST_MEMBER:c0000198",
+            "c0000131:RETRIEVED:",
+            "c0000130:LIST_MEMBER:c0000131",
+            "c0000127:RETRIEVED:",
+            "c0000128:STRUCTURAL:c0000127",
+            "c0000125:STRUCTURAL:c0000127",
+            "c0000129:STRUCTURAL:c0000127",
+            "c0000233:RETRIEVED:",
+            "c0000338:RETRIEVED:",
+            "c0000337:STRUCTURAL:c0000338",
+            "c0000339:STRUCTURAL:c0000338",
+            "c0000340:STRUCTURAL:c0000338",
+            "c0000341:STRUCTURAL:c0000338",
+            "c0000020:RETRIEVED:",
+            "c0000021:LIST_MEMBER:c0000020",
+            "c0000258:RETRIEVED:",
+            "c0000257:LIST_MEMBER:c0000258",
+            "c0000214:RETRIEVED:",
+            "c0000325:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000234"
+          ],
+          "pages": [
+            33
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000234"
+          ]
+        },
+        "answer": {
+          "route": "TABLE_ROW_LEAD",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "",
+      "error": null,
+      "answer": "Principal reinforcement — 2 1\/2 inches [Page 33]"
+    },
+    {
+      "id": "live-03310-hot-discharge",
+      "intent": "FACT",
+      "question": "In specification 03310 section 3.03, what is the maximum time from introducing cement to the aggregates until discharge when concrete temperature is 85 degrees F or above?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "QUANTIFIED_SENTENCE_LEAD",
+      "groundingReasons": "",
+      "prefillTokens": 0,
+      "prefillTokensPerSecond": 0,
+      "decodeTokensPerSecond": 0,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        71
+      ],
+      "modelTtftMs": 0,
+      "visibleTtftMs": 2070,
+      "totalMs": 2066,
+      "tokensPerSecond": 0,
+      "backend": "GPU",
+      "retrievedChunks": 0,
+      "contextTokens": 0,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 9,
+          "chunkIds": [
+            "c0000481",
+            "c0000480",
+            "c0000478",
+            "c0000479",
+            "c0000474",
+            "c0000473",
+            "c0000477",
+            "c0000476",
+            "c0000475"
+          ],
+          "pages": [
+            71,
+            70,
+            69
+          ]
+        },
+        "expandedCandidates": {
+          "count": 10,
+          "chunkIds": [
+            "c0000481",
+            "c0000483",
+            "c0000480",
+            "c0000478",
+            "c0000479",
+            "c0000474",
+            "c0000473",
+            "c0000477",
+            "c0000476",
+            "c0000475"
+          ],
+          "provenance": [
+            "c0000481:RETRIEVED:",
+            "c0000483:ADJACENT:c0000481",
+            "c0000480:RETRIEVED:",
+            "c0000478:RETRIEVED:",
+            "c0000479:RETRIEVED:",
+            "c0000474:RETRIEVED:",
+            "c0000473:RETRIEVED:",
+            "c0000477:RETRIEVED:",
+            "c0000476:RETRIEVED:",
+            "c0000475:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000481"
+          ],
+          "pages": [
+            71
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000481"
+          ]
+        },
+        "answer": {
+          "route": "QUANTIFIED_SENTENCE_LEAD",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "2823e5096d9e699dcfba9ae0",
+      "error": null,
+      "answer": "When concrete temperature is 85 degrees F or above, do not exceed 60 minutes between introduction of cement to the aggregates and discharge. [Page 71]"
+    },
+    {
+      "id": "live-03600-base-plates",
+      "intent": "FACT",
+      "question": "In specification 03600 section 2.01, what type of grout is required under structural member base plates?",
+      "retrievalPassed": true,
+      "answerPassed": true,
+      "stage": "PASS",
+      "plannerIntent": "FACT",
+      "answeredBy": "MODEL",
+      "groundingReasons": "",
+      "prefillTokens": 715,
+      "prefillTokensPerSecond": 333.0295155521968,
+      "decodeTokensPerSecond": 2.9966215634719293,
+      "retrievalReasons": [],
+      "answerReasons": [],
+      "retrievedPages": [
+        76
+      ],
+      "modelTtftMs": 5137,
+      "visibleTtftMs": 5143,
+      "totalMs": 11584,
+      "tokensPerSecond": 2.9966215634719293,
+      "backend": "GPU",
+      "retrievedChunks": 4,
+      "contextTokens": 403,
+      "groundingFailure": false,
+      "stages": {
+        "rawCandidates": {
+          "count": 4,
+          "chunkIds": [
+            "c0000522",
+            "c0000521",
+            "c0000523",
+            "c0000520"
+          ],
+          "pages": [
+            76
+          ]
+        },
+        "expandedCandidates": {
+          "count": 5,
+          "chunkIds": [
+            "c0000522",
+            "c0000519",
+            "c0000521",
+            "c0000523",
+            "c0000520"
+          ],
+          "provenance": [
+            "c0000522:RETRIEVED:",
+            "c0000519:STRUCTURAL:c0000522",
+            "c0000521:RETRIEVED:",
+            "c0000523:RETRIEVED:",
+            "c0000520:RETRIEVED:"
+          ]
+        },
+        "selectedContext": {
+          "chunkIds": [
+            "c0000519",
+            "c0000523",
+            "c0000521",
+            "c0000522"
+          ],
+          "pages": [
+            76
+          ]
+        },
+        "answerCitations": {
+          "chunkIds": [
+            "c0000522"
+          ]
+        },
+        "answer": {
+          "route": "MODEL",
+          "groundingFailure": false
+        },
+        "evidenceCompleteness": "UNKNOWN",
+        "evidenceComplete": false,
+        "selectionComplete": false
+      },
+      "sourceSectionId": "c2adad300622ddbb945aeac7",
+      "error": null,
+      "answer": "The type of grout required under structural member base plates is Non-shrink Class II [Page 76]."
+    }
+  ]
+}

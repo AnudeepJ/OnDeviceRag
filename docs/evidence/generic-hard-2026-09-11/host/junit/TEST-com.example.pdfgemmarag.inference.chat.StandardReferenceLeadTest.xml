@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.pdfgemmarag.inference.chat.StandardReferenceLeadTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-09-11T13:25:02.803Z" hostname="redacted-local-host" time="0.0">
+  <properties/>
+  <testcase name="tied lines leave the choice to grounded generation" classname="com.example.pdfgemmarag.inference.chat.StandardReferenceLeadTest" time="0.0"/>
+  <testcase name="product standard subject beats broader high-score section standard" classname="com.example.pdfgemmarag.inference.chat.StandardReferenceLeadTest" time="0.0"/>
+  <testcase name="question without a standard cue never triggers the lead" classname="com.example.pdfgemmarag.inference.chat.StandardReferenceLeadTest" time="0.0"/>
+  <testcase name="unique standard line naming the topic is copied verbatim" classname="com.example.pdfgemmarag.inference.chat.StandardReferenceLeadTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

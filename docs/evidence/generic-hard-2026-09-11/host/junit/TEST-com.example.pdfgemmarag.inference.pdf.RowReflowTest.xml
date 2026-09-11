@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.pdfgemmarag.inference.pdf.RowReflowTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-09-11T13:25:03.904Z" hostname="redacted-local-host" time="0.004">
+  <properties/>
+  <testcase name="two short same-baseline lines without a second aligned row are left alone" classname="com.example.pdfgemmarag.inference.pdf.RowReflowTest" time="0.001"/>
+  <testcase name="single-column flow is restored from geometry" classname="com.example.pdfgemmarag.inference.pdf.RowReflowTest" time="0.0"/>
+  <testcase name="centred values bridge wrapped description cells into logical rows" classname="com.example.pdfgemmarag.inference.pdf.RowReflowTest" time="0.0"/>
+  <testcase name="wide table labels paired with narrow values are rebuilt into rows" classname="com.example.pdfgemmarag.inference.pdf.RowReflowTest" time="0.0"/>
+  <testcase name="column-wise vertical lines are rebuilt into rows" classname="com.example.pdfgemmarag.inference.pdf.RowReflowTest" time="0.001"/>
+  <testcase name="vertical stacks are detected and horizontal lines are not" classname="com.example.pdfgemmarag.inference.pdf.RowReflowTest" time="0.0"/>
+  <testcase name="one-word-per-cell output (PDFNet 12 on emulator) is rebuilt into rows" classname="com.example.pdfgemmarag.inference.pdf.RowReflowTest" time="0.0"/>
+  <testcase name="two-column body text is left alone" classname="com.example.pdfgemmarag.inference.pdf.RowReflowTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

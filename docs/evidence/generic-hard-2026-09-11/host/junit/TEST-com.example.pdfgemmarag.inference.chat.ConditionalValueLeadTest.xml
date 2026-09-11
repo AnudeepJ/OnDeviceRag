@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.pdfgemmarag.inference.chat.ConditionalValueLeadTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-09-11T13:25:02.741Z" hostname="redacted-local-host" time="0.002">
+  <properties/>
+  <testcase name="follow up naming another class copies that sentence only" classname="com.example.pdfgemmarag.inference.chat.ConditionalValueLeadTest" time="0.001"/>
+  <testcase name="typed follow up binds the adjacent value chunk" classname="com.example.pdfgemmarag.inference.chat.ConditionalValueLeadTest" time="0.0"/>
+  <testcase name="unique typed class sentence keeps the value and its qualifier" classname="com.example.pdfgemmarag.inference.chat.ConditionalValueLeadTest" time="0.0"/>
+  <testcase name="a value without a condition is not copied" classname="com.example.pdfgemmarag.inference.chat.ConditionalValueLeadTest" time="0.0"/>
+  <testcase name="questions without a typed class never trigger" classname="com.example.pdfgemmarag.inference.chat.ConditionalValueLeadTest" time="0.0"/>
+  <testcase name="two matching sentences stay unresolved" classname="com.example.pdfgemmarag.inference.chat.ConditionalValueLeadTest" time="0.0"/>
+  <testcase name="typed heading binds only its adjacent extracted value chunk" classname="com.example.pdfgemmarag.inference.chat.ConditionalValueLeadTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

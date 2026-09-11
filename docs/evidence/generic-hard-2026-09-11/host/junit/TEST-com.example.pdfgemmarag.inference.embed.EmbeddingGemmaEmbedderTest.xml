@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.pdfgemmarag.inference.embed.EmbeddingGemmaEmbedderTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-09-11T13:25:02.832Z" hostname="redacted-local-host" time="0.0">
+  <properties/>
+  <testcase name="usable signal ignores values outside selected Matryoshka dimensions" classname="com.example.pdfgemmarag.inference.embed.EmbeddingGemmaEmbedderTest" time="0.0"/>
+  <testcase name="usable signal accepts finite non-zero embedding within requested dimensions" classname="com.example.pdfgemmarag.inference.embed.EmbeddingGemmaEmbedderTest" time="0.0"/>
+  <testcase name="usable signal rejects zero and non-finite embeddings" classname="com.example.pdfgemmarag.inference.embed.EmbeddingGemmaEmbedderTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
