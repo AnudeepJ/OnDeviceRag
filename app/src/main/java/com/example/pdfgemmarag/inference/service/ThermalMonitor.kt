@@ -3,6 +3,7 @@ package com.example.pdfgemmarag.inference.service
 import android.content.Context
 import android.os.PowerManager
 import android.util.Log
+import com.example.pdfgemmarag.BuildConfig
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -21,7 +22,7 @@ class ThermalMonitor(context: Context) {
      * files/thermal_gate_disabled.marker` lets indexing proceed. Never set in production; the
      * override is logged on every pause decision so a benchmark cannot silently include it.
      */
-    private val gateDisabled = java.io.File(context.filesDir, GATE_DISABLED_MARKER).exists()
+    private val gateDisabled = BuildConfig.DEBUG && java.io.File(context.filesDir, GATE_DISABLED_MARKER).exists()
 
     private val listener = PowerManager.OnThermalStatusChangedListener { s ->
         Log.i(TAG, "thermal status -> $s")

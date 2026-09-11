@@ -123,6 +123,118 @@ class ContextSelectorTest {
         assertEquals(setOf("primary", "neighbor"), selected.excerpts.map { it.chunkId }.toSet())
     }
 
+    @Test
+    fun `expanded neighbours cannot consume the primary retrieval quota`() {
+        val candidates = buildList {
+            repeat(4) { rank ->
+                add(citation("primary-$rank", 160 + rank, "Primary evidence $rank for protective equipment policy"))
+                add(
+                    citation("neighbor-$rank-a", 160 + rank, "Adjacent detail A for result $rank")
+                        .copy(retrievalProvenance = "ADJACENT", sourceChunkId = "primary-$rank", score = 0.85),
+                )
+                add(
+                    citation("neighbor-$rank-b", 160 + rank, "Adjacent detail B for result $rank")
+                        .copy(retrievalProvenance = "ADJACENT", sourceChunkId = "primary-$rank", score = 0.85),
+                )
+            }
+        }
+
+        val selected = ContextSelector(maxFactPrimary = 4, maxFactExcerpts = 8).select(
+            "When is protective equipment required?",
+            candidates,
+            QuestionIntent.FACT,
+        )
+
+        assertTrue(selected.excerpts.map { it.chunkId }.containsAll((0..3).map { "primary-$it" }))
+    }
+
+    @Test
+    fun `list evidence is retained for an implicit enumeration question`() {
+        val candidates = buildList {
+            repeat(4) { rank ->
+                add(citation("primary-$rank", 190 + rank, "Emergency plan discussion $rank"))
+                repeat(3) { neighbor ->
+                    add(citation("neighbor-$rank-$neighbor", 190 + rank, "Adjacent detail $neighbor")
+                        .copy(retrievalProvenance = "ADJACENT", sourceChunkId = "primary-$rank", score = 0.85))
+                }
+            }
+            add(citation("emergency-items", 196, "A. Poisoning B. Fire C. Chemical spill D. Collapse E. Flood")
+                .copy(contentKind = "LIST", retrievalProvenance = "ADJACENT", sourceChunkId = "primary-2", score = 0.8))
+        }
+
+        val selected = ContextSelector(maxFactPrimary = 4, maxFactExcerpts = 8).select(
+            "What emergencies must a construction-site emergency plan consider?",
+            candidates,
+            QuestionIntent.FACT,
+        )
+
+        assertTrue(selected.excerpts.any { it.chunkId == "emergency-items" })
+    }
+
+    @Test
+    fun `exact duration evidence outranks higher scored generic training prose`() {
+        val generic = citation("generic", 44, "Safety and health training protects construction workers")
+            .copy(score = 2.0)
+        val exact = citation("exact", 45, "The training duration shall preferably be not less 48 hours")
+            .copy(score = 0.8)
+
+        val selected = ContextSelector(maxFactPrimary = 1, maxFactExcerpts = 1).select(
+            "What is the recommended minimum duration for construction workers' safety and health training?",
+            listOf(generic, exact),
+            QuestionIntent.FACT,
+        )
+
+        assertEquals(listOf("exact"), selected.excerpts.map { it.chunkId })
+    }
+
+    @Test
+    fun `constrained min max table question excludes a weaker sibling section`() {
+        val correct = citation(
+            "correct",
+            62,
+            "Concrete Type Minimum Slump Maximum Slump Portland Cement Concrete 2 inches 4 inches " +
+                "Concrete dosed with superplasticizer 1 inch 3 inches",
+        ).copy(sectionId = "mix-03300")
+        val correctNeighbor = citation("correct-table-tail", 62, "Additional slump rows")
+            .copy(sectionId = "mix-03300", retrievalProvenance = "STRUCTURAL", sourceChunkId = "correct")
+        val distractor = citation(
+            "distractor",
+            17,
+            "Minimum cement concrete criteria. Slump 3 to 4 inches. Maximum water cement ratio 0.50.",
+        ).copy(sectionId = "mix-other")
+
+        val selected = ContextSelector().select(
+            "What are the minimum and maximum slump values for Portland cement concrete and concrete dosed with superplasticizer?",
+            listOf(correct, correctNeighbor, distractor),
+            QuestionIntent.FACT,
+        )
+
+        assertTrue(selected.excerpts.any { it.chunkId == "correct" })
+        assertFalse(selected.excerpts.any { it.chunkId == "distractor" })
+    }
+
+    @Test
+    fun `mixed numeric and color question stays in the strongest section`() {
+        val target = citation(
+            "curing-material",
+            24,
+            "Membrane-forming curing compound minimum solids content 30 percent; curing compound shall be white-pigmented.",
+        ).copy(sectionId = "curing-materials")
+        val distractor = citation(
+            "curing-procedure",
+            44,
+            "After 2 days remove forms and apply curing compound to the concrete finish.",
+        ).copy(sectionId = "curing-procedure")
+
+        val selected = ContextSelector().select(
+            "What minimum solids content and color requirement apply to membrane forming curing compound?",
+            listOf(target, distractor),
+            QuestionIntent.FACT,
+        )
+
+        assertEquals(listOf("curing-material"), selected.excerpts.map { it.chunkId })
+    }
+
     private fun citation(id: String, page: Int, text: String) = Citation(
         id, "doc", page, page, 1.0, text,
         indexNamespace = "doc:v21:x", sectionId = "s1", sectionPath = "Section A",

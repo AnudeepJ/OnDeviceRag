@@ -20,6 +20,7 @@ object RetrievalEval {
         val hitAt1: Boolean,
         val hitAt5: Boolean,
         val reciprocalRank: Double,
+        val latencyMs: Long = 0,
     )
 
     data class LangSummary(val lang: String, val n: Int, val hitAt1: Double, val hitAt5: Double, val mrr: Double) {
@@ -55,7 +56,7 @@ object RetrievalEval {
         return if (idx < 0) 0.0 else 1.0 / (idx + 1)
     }
 
-    fun score(question: RetrievalEvalDataset.Question, citations: List<Citation>): QuestionResult {
+    fun score(question: RetrievalEvalDataset.Question, citations: List<Citation>, latencyMs: Long = 0): QuestionResult {
         val pages = citations.map { it.pageNumber }
         return QuestionResult(
             id = question.id,
@@ -66,6 +67,7 @@ object RetrievalEval {
             hitAt1 = pageHitAtK(pages, question.expectedPages, 1),
             hitAt5 = pageHitAtK(pages, question.expectedPages, 5),
             reciprocalRank = reciprocalRank(pages, question.expectedPages),
+            latencyMs = latencyMs,
         )
     }
 
@@ -91,11 +93,17 @@ object RetrievalEval {
         similarityFloor: Double = 0.3,
         keywordWeight: Double = 0.05,
         questions: List<RetrievalEvalDataset.Question> = RetrievalEvalDataset.questions(),
+        semanticWeight: Double = 1.0,
+        localRerankWeight: Double = 0.35,
     ): EvalReport {
         val t0 = System.currentTimeMillis()
         val results = questions.map { q ->
-            val hits = store.search(docHash, q.question, embed(q.question), topK, similarityFloor, keywordWeight)
-            score(q, hits)
+            val queryStarted = System.nanoTime()
+            val hits = store.search(
+                docHash, q.question, embed(q.question), topK, similarityFloor, keywordWeight,
+                semanticWeight = semanticWeight, localRerankWeight = localRerankWeight,
+            )
+            score(q, hits, (System.nanoTime() - queryStarted) / 1_000_000)
         }
         return summarise(results, System.currentTimeMillis() - t0)
     }

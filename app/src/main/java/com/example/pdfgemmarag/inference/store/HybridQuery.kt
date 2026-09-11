@@ -148,15 +148,23 @@ object HybridQuery {
         vectorLimit: Int,
         requiredPropertyTerm: Pair<String, String>? = null,
         withPrefixes: Boolean = true,
+        includeSemantic: Boolean = true,
+        includeKeyword: Boolean = true,
     ): String {
+        require(includeSemantic || includeKeyword) { "At least one retrieval path is required" }
         val semantic = "semanticSearch(getEmbeddingParameter(0), $similarityFloor, $vectorLimit)"
-        val retrieval = if (terms.isEmpty()) semantic else {
+        val keyword = if (terms.isEmpty()) null else {
             val exact = terms.indices.map { "getSearchStringParameter($it)" }
             // Prefix forms are inlined (tokens are alphanumeric, so no escaping is needed) and
             // widen keyword recall to morphological variants.
             val prefixes = if (withPrefixes) terms.mapNotNull(::prefixTerm).distinct() else emptyList()
-            val keyword = (exact + prefixes).joinToString(" OR ")
-            "($keyword) OR $semantic"
+            (exact + prefixes).joinToString(" OR ")
+        }
+        val retrieval = when {
+            includeSemantic && includeKeyword && keyword != null -> "($keyword) OR $semantic"
+            includeSemantic -> semantic
+            keyword != null -> "($keyword)"
+            else -> return ""
         }
         val required = requiredPropertyTerm ?: return retrieval
         require(PROPERTY_NAME.matches(required.first)) { "Unsafe AppSearch property name" }

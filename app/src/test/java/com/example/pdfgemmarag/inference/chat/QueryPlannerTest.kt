@@ -1,6 +1,7 @@
 package com.example.pdfgemmarag.inference.chat
 
 import com.example.pdfgemmarag.inference.store.DocumentStructureManifest
+import com.example.pdfgemmarag.inference.store.ListRecord
 import com.example.pdfgemmarag.inference.store.SectionRecord
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -123,6 +124,29 @@ class QueryPlannerTest {
         assertEquals(QuestionIntent.SECTION_SUMMARY, plan.intent)
         assertEquals("2.05", plan.explicitSectionNumber)
         assertEquals("a", plan.resolvedSectionId)
+    }
+
+    @Test
+    fun `missing printed subsection scopes a fact to its unique parent`() {
+        val parent = section("hazards", "", "2.3", "TYPES OF HAZARDS", 9)
+            .copy(orderedChunkIds = listOf("c0000044", "c0000045", "c0000046"))
+        val fixture = DocumentStructureManifest(
+            "doc", "doc:v21:test", DocumentStructureManifest.INDEX_VERSION, "sig", listOf(parent),
+            lists = listOf(
+                ListRecord("mechanical", "hazards", 9, 9, listOf("c0000045"), 6, true),
+                ListRecord("physical", "hazards", 9, 9, listOf("c0000046"), 5, true),
+            ),
+        )
+
+        val plan = QueryPlanner().plan(
+            "Give four examples of mechanical hazards from section 2.3.1.",
+            fixture,
+        )
+
+        assertEquals(QuestionIntent.FACT, plan.intent)
+        assertEquals("2.3.1", plan.explicitSectionNumber)
+        assertEquals("hazards", plan.resolvedSectionId)
+        assertEquals(listOf("c0000045"), AnswerQuestionUseCase.implicitSubsectionListIds(plan, fixture))
     }
 
     @Test

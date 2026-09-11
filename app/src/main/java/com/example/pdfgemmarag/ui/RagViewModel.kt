@@ -616,6 +616,6 @@ class RagViewModel(app: Application) : AndroidViewModel(app) {
         const val STATUS_READY = "READY"
         const val STATUS_FAILED = "FAILED"
         const val STATUS_REINDEX_REQUIRED = "REINDEX_REQUIRED"
-        const val CURRENT_INDEX_VERSION = 23
+        const val CURRENT_INDEX_VERSION = 29
     }
 }

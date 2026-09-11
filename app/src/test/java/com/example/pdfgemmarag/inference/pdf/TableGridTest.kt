@@ -113,6 +113,22 @@ class TableGridTest {
     }
 
     @Test
+    fun `caption survives a three-line compound header before the detected grid`() {
+        val content = StructureAnalyzer().analyse(page(listOf(
+            line(40f, 40f to "Table 1.4 Assessed Risk Response"),
+            line(52f, 40f to "Risk response categories"),
+            line(64f, 40f to "Required management action"),
+            line(76f, 40f to "Risk", 180f to "Required action"),
+            line(90f, 40f to "Extreme", 180f to "Immediate action and management approval"),
+            line(104f, 40f to "High", 180f to "Significant control measures"),
+        )))
+
+        val table = content.segments.filterIsInstance<Segment.Table>().single()
+        assertEquals("1.4", table.tableNumber)
+        assertTrue(table.caption.contains("Assessed Risk Response"))
+    }
+
+    @Test
     fun `an uppercase table caption is not a heading and stays attached to the grid`() {
         val lines = listOf(
             line(50f, 40f to "TABLE 5.1 RELATIVE RISK AND CONTROL LEVEL"),

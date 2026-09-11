@@ -133,6 +133,18 @@ Treat `APPSEARCH_AND_MULTILINGUAL_RECOMMENDATIONS.md` as proposals requiring cor
 
 - Full `:app:testDebugUnitTest`, `:app:assembleDebug`, `:app:compileDebugAndroidTestKotlin`, and `git diff --check`: passed.
 - The updated APK was installed over the existing Pixel app without clearing its indexed documents.
-- All five live QA banks ran through the production inference service. Reports are retained under `build/pixel-live-results/`.
+- All five live QA banks ran through the production inference service. The final acceptance reports are retained in the tracked evidence archive under `docs/evidence/generic-hard-2026-09-11/accepted/`.
 - The exact Type B and Type C regressions passed targeted reruns, followed by a full 23-case post-fix red-bank run.
 - The unrelated pre-existing `ModelManagerScreen.kt` worktree edit was left untouched.
+
+## Final closure update — index v29, 11 September 2026
+
+Points 1–5 are now closed with permanent tests and physical-device evidence. Nothing A001 was fully reindexed to v29 and passes 12/12 strict construction, 23/23 broader construction, and 50/50 laboratory questions for both retrieval and answers. These final runs used the normal thermal gate, reported thermal status 1, and recorded `thermalOverride=false`.
+
+The closure uncovered and fixed four additional root causes. First, the GPU delegate returned all-zero embeddings on both tested devices; startup now validates the chosen output and falls back to CPU. Second, the strategy benchmark now isolates dense and lexical candidate generation. Third, exact-count list routing uses the requested subject and rejects longer complete lists rather than truncating them. Fourth, short lowercase source continuations after headings are retained, recovering `impractical.` from SafetyManual page 14; named letter-labelled table rows also receive a bounded deterministic route.
+
+The corrected 210-question comparison reports 96.19% hit@1/96.67% hit@5 for hybrid 0.05 and 97.14%/97.62% for both 0.10 and 0.20. The production default remains 0.05 because the measured difference is two questions on one synthetic corpus. Japanese and Chinese each reach 93.33% hit@5 with hybrid 0.10, superseding the earlier figures produced with zero embeddings while still falling short of a universal multilingual claim.
+
+Pixel passes the v28 Division focused bank at 19/19 and the final generated bank at 21/21 without a timeout. The user disconnected Pixel before v29, so Pixel v29 remains a smoke/soak follow-up. Earlier v27 timeout and Binder-death evidence remains relevant until repeated-run service recovery is demonstrated.
+
+The complete host gate passes with 292 tests, three skipped and zero failures/errors. See `ROAD_AHEAD_1_TO_5_ACCEPTANCE.md` for the accepted contracts, `CURRENT_CHANGES_REVIEW_AND_NEXT_PLAN.md` for the next work, and `docs/evidence/generic-hard-2026-09-11/` for the tracked raw reports, manifest, checksums, and reproduction notes.

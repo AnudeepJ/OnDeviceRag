@@ -189,6 +189,33 @@ class QueryPlanner {
         }
         if (exactIdentity.size > 1 && summary) return ambiguous(subject, spec, section, exactIdentity, inheritedSectionId, shape, pointer)
 
+        // Some manuals print a parent heading (for example 2.3) and then lay out its numbered
+        // subtopics as adjacent lists without separate heading glyphs. Keep the user's exact
+        // reference for grounding, but bound fact retrieval to the unique printed parent instead
+        // of allowing a missing 2.3.1 node to fall back to the whole document.
+        if (!summary && explicitSection != null && '.' in explicitSection) {
+            val parentNumber = explicitSection.substringBeforeLast('.')
+            val parent = usable.filter { candidate ->
+                candidate.sectionNumber.equals(parentNumber, true) &&
+                    (spec == null || candidate.specificationNumber.equals(spec, true))
+            }.singleOrNull()
+            if (parent != null) {
+                return QuestionPlan(
+                    intent = QuestionIntent.FACT,
+                    subjectText = subject,
+                    explicitSpecificationNumber = spec,
+                    explicitSectionNumber = explicitSection,
+                    resolvedSectionId = parent.sectionId,
+                    candidateSections = listOf(parent),
+                    sectionConfidence = 1.0,
+                    inheritedSectionId = inheritedSectionId,
+                    shape = shape,
+                    resolvedTableId = resolvedTable?.tableId,
+                    candidateTables = listOfNotNull(resolvedTable),
+                )
+            }
+        }
+
         val exactTitle = usable.filter { normalizeTitle(it.title) == subject && subject.isNotBlank() }
         if (exactTitle.size > 1 && summary) return ambiguous(subject, spec, section, exactTitle, inheritedSectionId, shape, pointer)
         if (exactTitle.size == 1 && summary) {

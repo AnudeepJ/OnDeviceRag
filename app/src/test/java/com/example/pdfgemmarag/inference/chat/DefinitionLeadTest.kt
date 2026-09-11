@@ -109,6 +109,29 @@ class StandardReferenceLeadTest {
         val list = chunk(1340, "IS 3696:1987 Safety code for scaffolds and ladders\nIS 4014:1967 Code for steel tubular scaffolding")
         assertFalse(AnswerQuestionUseCase.buildStandardReferenceLead("Which standard is the safety code for scaffolding?", listOf(list)).decisive)
     }
+
+    @Test
+    fun `product standard subject beats broader high-score section standard`() {
+        val plywood = chunk(
+            20,
+            "C. Plywood: Conform to PS 1, Class 1. D. Lumber: Conform to PS 20.",
+            page = 3,
+        ).copy(score = 1.0)
+        val design = chunk(
+            32,
+            "A. Conform to ACI 117, ACI 347 and building codes, unless more restrictive requirements are specified. " +
+                "Contractor shall design and engineer concrete formwork when required.",
+            page = 5,
+        ).copy(score = 5.0)
+
+        val lead = AnswerQuestionUseCase.buildStandardReferenceLead(
+            "In the Concrete Formwork products section, what plywood standard and class is required?",
+            listOf(design, plywood),
+        )
+
+        assertTrue(lead.decisive)
+        assertEquals("C. Plywood: Conform to PS 1, Class 1. [Page 3]", lead.text)
+    }
 }
 
 class AnchorRerankTest {

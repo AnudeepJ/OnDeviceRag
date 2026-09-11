@@ -217,7 +217,9 @@ class TableClusterer(
         private const val WRAP_MAX_GAP_LINES = 1.3f
         private const val MAX_WRAPPED_LINES = 6
         private const val MAX_TRAILING_WRAPS = 2
-        private const val CAPTION_LOOKBACK = 2
+        // Multi-line headers can place the detected grid several physical lines below a strict
+        // `Table <number>` caption. Keep this bounded so ordinary prose is never used as identity.
+        private const val CAPTION_LOOKBACK = 4
         private val ENUMERATOR = Regex(
             "^(?:[A-Za-z]|[0-9]+|[ivxl]{2,6}|[IVXL]{2,6})[.)]$|^\\([A-Za-z0-9]{1,4}\\)$|^[•▪■●○◦‣⁃➢➤►✓✔➔→*\\uE000-\\uF8FF]$",
         )

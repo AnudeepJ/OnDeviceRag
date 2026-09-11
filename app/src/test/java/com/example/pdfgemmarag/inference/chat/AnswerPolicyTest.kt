@@ -15,6 +15,7 @@ class AnswerPolicyTest {
             "What must be done before starting?",
             "Describe the procedure",
         ).forEach { question -> assertTrue(question, AnswerPolicy.isProcedural(question)) }
+        assertTrue(AnswerPolicy.isProcedural("What emergencies must a construction-site emergency plan consider?"))
     }
 
     @Test

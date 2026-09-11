@@ -125,6 +125,8 @@ class IndexPdfUseCase(
 
             // 4. Embed + index in batches
             val pageCount = layouts.size
+            val listTotals = chunks.filter { it.listId.isNotBlank() }.groupBy { it.listId }
+                .mapValues { (_, members) -> members.sumOf { it.listItemCount } }
             val batch = ArrayList<PdfChunkDocument>(BATCH)
             val centroidSums = HashMap<String, FloatArray>()
             val centroidCounts = HashMap<String, Int>()
@@ -164,6 +166,11 @@ class IndexPdfUseCase(
                     tableId = chunk.tableId
                     tableNumber = chunk.tableNumber
                     tableCaption = chunk.tableCaption
+                    listId = chunk.listId
+                    listItemStart = chunk.listItemStart
+                    listItemCount = chunk.listItemCount
+                    listTotalItems = listTotals[chunk.listId] ?: 0
+                    listComplete = chunk.listComplete
                     positionInSection = chunk.positionInSection
                     continuesFromChunkIndex = chunk.continuesFromChunkIndex ?: -1
                     continuesToChunkIndex = chunk.continuesToChunkIndex ?: -1
@@ -206,6 +213,7 @@ class IndexPdfUseCase(
                 chunks = chunks,
                 tokenCount = { embedder.tokenCount("", it) },
                 centroids = centroids,
+                pageCount = pageCount,
             )
             // Publication is the commit point. Until this succeeds, every query keeps using the
             // previous complete namespace.

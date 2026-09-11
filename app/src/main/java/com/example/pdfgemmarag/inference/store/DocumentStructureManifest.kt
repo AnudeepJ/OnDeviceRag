@@ -25,6 +25,8 @@ data class SectionRecord(
     val kind: String = "",
     /** Lookup form of the printed identifier (`13` for `CHAPTER XIII`, `A`, `2.05`). */
     val printedNumber: String = "",
+    /** Explicit hierarchy edge; empty only for a root-level node. */
+    val parentSectionId: String = "",
 ) {
     /** Top-level structural nodes are the units of document breadth. */
     val isTopLevelKind: Boolean
@@ -41,6 +43,36 @@ data class TableRecord(
     val orderedRowChunkIds: List<String>,
     val aliases: List<String> = emptyList(),
     val columnHeaders: List<String> = emptyList(),
+    /** Canonical cell coordinates with exact source provenance. */
+    val cells: List<TableCellRecord> = emptyList(),
+)
+
+data class TableCellRecord(
+    val rowIndex: Int,
+    val columnIndex: Int,
+    val rowHeader: String,
+    val columnHeaderPath: List<String>,
+    val text: String,
+    val pageNumber: Int,
+    val chunkId: String,
+    /** Every embedding fragment derived from the cell's original source row. */
+    val sourceChunkIds: List<String> = listOf(chunkId),
+)
+
+data class ListRecord(
+    val listId: String,
+    val sectionId: String,
+    val startPage: Int,
+    val endPage: Int,
+    val orderedChunkIds: List<String>,
+    val itemCount: Int,
+    /** True only when extraction observed the logical list's final chunk. */
+    val complete: Boolean,
+)
+
+data class PageRecord(
+    val pageNumber: Int,
+    val orderedChunkIds: List<String>,
 )
 
 /** Deterministic invariants over a manifest; a degraded outline switches planners to safe fallbacks. */
@@ -59,10 +91,14 @@ data class DocumentStructureManifest(
     val embeddingSignature: String,
     val sections: List<SectionRecord>,
     val tables: List<TableRecord> = emptyList(),
+    val lists: List<ListRecord> = emptyList(),
+    /** Source PDF page count, independent of whether a page yielded a heading or chunk. */
+    val pageCount: Int = sections.maxOfOrNull { it.endPage } ?: 1,
+    val pages: List<PageRecord> = emptyList(),
 ) {
     val chunksInOrder: List<String> get() = sections.flatMap { it.orderedChunkIds }.distinct()
 
-    val lastPage: Int get() = sections.maxOfOrNull { it.endPage } ?: 1
+    val lastPage: Int get() = pageCount.coerceAtLeast(1)
 
     fun validate() {
         require(documentHash.isNotBlank()) { "manifest document hash is blank" }
@@ -71,7 +107,16 @@ data class DocumentStructureManifest(
         val ids = chunksInOrder
         require(ids.size == sections.sumOf { it.orderedChunkIds.size }) { "manifest contains duplicate chunk IDs" }
         require(sections.map { it.sectionId }.distinct().size == sections.size) { "manifest contains duplicate section IDs" }
-        sections.forEach { require(it.startPage in 1..it.endPage) { "invalid page span for ${it.sectionId}" } }
+        val sectionIds = sections.map { it.sectionId }.toSet()
+        val sectionOrder = sections.mapIndexed { index, section -> section.sectionId to index }.toMap()
+        sections.forEach {
+            require(it.startPage in 1..it.endPage && it.endPage <= pageCount) { "invalid page span for ${it.sectionId}" }
+            require(it.parentSectionId.isBlank() || it.parentSectionId in sectionIds) { "missing parent for ${it.sectionId}" }
+            require(it.parentSectionId != it.sectionId) { "section cannot parent itself" }
+            require(it.parentSectionId.isBlank() || sectionOrder.getValue(it.parentSectionId) < sectionOrder.getValue(it.sectionId)) {
+                "parent must precede child for ${it.sectionId}"
+            }
+        }
         require(tables.map { it.tableId }.distinct().size == tables.size) { "manifest contains duplicate table IDs" }
         val known = ids.toHashSet()
         tables.forEach { table ->
@@ -80,6 +125,27 @@ data class DocumentStructureManifest(
             require(table.orderedRowChunkIds.isNotEmpty()) { "table ${table.tableId} has no row chunks" }
             val missing = table.orderedRowChunkIds.filterNot(known::contains)
             require(missing.isEmpty()) { "table ${table.tableId} references missing chunks" }
+            require(table.cells.all {
+                it.chunkId in table.orderedRowChunkIds &&
+                    it.sourceChunkIds.isNotEmpty() && it.sourceChunkIds.all(table.orderedRowChunkIds::contains) &&
+                    it.pageNumber in table.startPage..table.endPage
+            }) {
+                "table ${table.tableId} has invalid cell provenance"
+            }
+        }
+        require(lists.map { it.listId }.distinct().size == lists.size) { "manifest contains duplicate list IDs" }
+        lists.forEach { list ->
+            require(list.orderedChunkIds.isNotEmpty() && list.orderedChunkIds.all(known::contains)) { "invalid list ${list.listId}" }
+            require(list.sectionId in sectionIds) { "list ${list.listId} has unknown section" }
+            require(list.startPage in 1..list.endPage && list.endPage <= pageCount) { "invalid list page span for ${list.listId}" }
+            require(list.itemCount > 0) { "list ${list.listId} has no items" }
+        }
+        if (pages.isNotEmpty()) {
+            require(pages.map { it.pageNumber } == (1..pageCount).toList()) { "manifest page records are incomplete" }
+            val pageChunkIds = pages.flatMap { it.orderedChunkIds }
+            require(pageChunkIds.size == pageChunkIds.distinct().size && pageChunkIds.toSet() == known) {
+                "page records must cover every chunk exactly once"
+            }
         }
     }
 
@@ -89,6 +155,11 @@ data class DocumentStructureManifest(
      */
     fun topLevelSections(): List<SectionRecord> {
         val titled = sections.filter { it.title.isNotBlank() && it.orderedChunkIds.isNotEmpty() }
+        if (indexVersion >= 24) {
+            val roots = titled.filter { it.parentSectionId.isBlank() }
+            val structuralRoots = roots.filter { it.isTopLevelKind }
+            return (structuralRoots.ifEmpty { roots }).sortedBy { it.startPage }
+        }
         val byKind = titled.filter { it.isTopLevelKind }
         if (byKind.isNotEmpty()) {
             // Specifications nest PART under SECTION; a chapter-based manual has no SECTION rows.
@@ -108,9 +179,29 @@ data class DocumentStructureManifest(
 
     /** The node plus every section whose path continues under it, in manifest order. */
     fun descendantsOf(section: SectionRecord): List<SectionRecord> {
+        val children = sections.groupBy { it.parentSectionId }
+        val ids = LinkedHashSet<String>()
+        fun visit(id: String) {
+            if (!ids.add(id)) return
+            children[id].orEmpty().forEach { visit(it.sectionId) }
+        }
+        visit(section.sectionId)
         val prefix = section.path + " > "
-        return sections.filter { it.sectionId == section.sectionId || it.path.startsWith(prefix) }
+        return sections.filter {
+            it.sectionId in ids ||
+                (indexVersion < 24 && section.parentSectionId.isBlank() && ids.size == 1 && it.path.startsWith(prefix))
+        }
             .sortedWith(compareBy<SectionRecord> { it.startPage }.thenBy { it.orderedChunkIds.firstOrNull() })
+    }
+
+    /** Bounded reading-order sample that preserves the start and end of a long subtree. */
+    fun boundedSubtreeChunkIds(section: SectionRecord, limit: Int): List<String> {
+        val ids = descendantsOf(section).flatMap { it.orderedChunkIds }.distinct()
+        if (ids.size <= limit) return ids
+        if (limit <= 1) return ids.take(limit.coerceAtLeast(0))
+        return (0 until limit).map { slot ->
+            ids[(slot * ids.lastIndex.toDouble() / (limit - 1)).toInt()]
+        }.distinct()
     }
 
     fun health(): ManifestHealth {
@@ -136,7 +227,7 @@ data class DocumentStructureManifest(
     }
 
     companion object {
-        const val INDEX_VERSION = 23
+        const val INDEX_VERSION = 29
 
         fun fromChunks(
             documentHash: String,
@@ -145,6 +236,7 @@ data class DocumentStructureManifest(
             chunks: List<Chunk>,
             tokenCount: (String) -> Int,
             centroids: Map<String, FloatArray> = emptyMap(),
+            pageCount: Int = chunks.maxOfOrNull { it.pageNumber } ?: 1,
         ): DocumentStructureManifest {
             val sections = chunks.groupBy { it.sectionId }.values.map { group ->
                 val first = group.first()
@@ -162,10 +254,25 @@ data class DocumentStructureManifest(
                     level = first.sectionLevel,
                     kind = first.sectionKind,
                     printedNumber = first.sectionPrintedNumber,
+                    parentSectionId = first.parentSectionId,
                 )
             }.sortedWith(compareBy<SectionRecord> { it.startPage }.thenBy { it.orderedChunkIds.firstOrNull() })
             val tables = chunks.filter { it.tableId.isNotBlank() }.groupBy { it.tableId }.values.map { group ->
                 val first = group.first()
+                val headers = group.firstNotNullOfOrNull { chunk ->
+                    TableIdentity.headersFromMarkdown(chunk.bodyText).takeIf { it.isNotEmpty() }
+                }.orEmpty()
+                val fragments = group.groupBy { it.tableFragmentGroupId.ifBlank { "chunk:${it.chunkIndex}" } }
+                val cells = group.sortedBy { it.chunkIndex }.flatMap { chunk ->
+                    val groupId = chunk.tableFragmentGroupId.ifBlank { "chunk:${chunk.chunkIndex}" }
+                    val sourceIds = fragments.getValue(groupId).sortedBy { it.chunkIndex }.map { chunkId(it.chunkIndex) }
+                    chunk.tableCells.map { cell ->
+                        TableCellRecord(
+                            cell.rowIndex, cell.columnIndex, cell.rowHeader, cell.columnHeaderPath,
+                            cell.text, chunk.pageNumber, sourceIds.first(), sourceIds,
+                        )
+                    }
+                }
                 TableRecord(
                     tableId = first.tableId,
                     tableNumber = first.tableNumber,
@@ -174,10 +281,28 @@ data class DocumentStructureManifest(
                     endPage = group.maxOf { it.pageNumber },
                     orderedRowChunkIds = group.sortedBy { it.chunkIndex }.map { chunkId(it.chunkIndex) },
                     aliases = TableIdentity.aliases(first.tableCaption, first.tableNumber),
-                    columnHeaders = TableIdentity.headersFromMarkdown(first.bodyText),
+                    columnHeaders = headers,
+                    cells = cells,
                 )
             }.sortedWith(compareBy<TableRecord> { it.startPage }.thenBy { it.tableNumber })
-            return DocumentStructureManifest(documentHash, namespace, INDEX_VERSION, signature, sections, tables).also { it.validate() }
+            val lists = chunks.filter { it.listId.isNotBlank() }.groupBy { it.listId }.values.map { group ->
+                val ordered = group.sortedBy { it.chunkIndex }
+                ListRecord(
+                    listId = ordered.first().listId,
+                    sectionId = ordered.first().sectionId,
+                    startPage = ordered.minOf { it.pageNumber },
+                    endPage = ordered.maxOf { it.pageNumber },
+                    orderedChunkIds = ordered.map { chunkId(it.chunkIndex) },
+                    itemCount = ordered.sumOf { it.listItemCount },
+                    complete = ordered.last().listComplete,
+                )
+            }.sortedBy { it.orderedChunkIds.first() }
+            val pages = (1..pageCount).map { page ->
+                PageRecord(page, chunks.filter { it.pageNumber == page }.sortedBy { it.chunkIndex }.map { chunkId(it.chunkIndex) })
+            }
+            return DocumentStructureManifest(
+                documentHash, namespace, INDEX_VERSION, signature, sections, tables, lists, pageCount, pages,
+            ).also { it.validate() }
         }
 
         fun chunkId(index: Int): String = "c" + index.toString().padStart(7, '0')
@@ -244,6 +369,7 @@ class DocumentStructureManifestStore(context: Context) {
         put("indexNamespace", manifest.indexNamespace)
         put("indexVersion", manifest.indexVersion)
         put("embeddingSignature", manifest.embeddingSignature)
+        put("pageCount", manifest.pageCount)
         put("sections", JSONArray().apply {
             manifest.sections.forEach { section ->
                 put(JSONObject().apply {
@@ -259,6 +385,7 @@ class DocumentStructureManifestStore(context: Context) {
                     put("level", section.level)
                     put("kind", section.kind)
                     put("printedNumber", section.printedNumber)
+                    put("parentSectionId", section.parentSectionId)
                     section.centroid?.let { values -> put("centroid", JSONArray(values.toList())) }
                 })
             }
@@ -274,6 +401,41 @@ class DocumentStructureManifestStore(context: Context) {
                     put("orderedRowChunkIds", JSONArray(table.orderedRowChunkIds))
                     put("aliases", JSONArray(table.aliases))
                     put("columnHeaders", JSONArray(table.columnHeaders))
+                    put("cells", JSONArray().apply {
+                        table.cells.forEach { cell ->
+                            put(JSONObject().apply {
+                                put("rowIndex", cell.rowIndex)
+                                put("columnIndex", cell.columnIndex)
+                                put("rowHeader", cell.rowHeader)
+                                put("columnHeaderPath", JSONArray(cell.columnHeaderPath))
+                                put("text", cell.text)
+                                put("pageNumber", cell.pageNumber)
+                                put("chunkId", cell.chunkId)
+                                put("sourceChunkIds", JSONArray(cell.sourceChunkIds))
+                            })
+                        }
+                    })
+                })
+            }
+        })
+        put("lists", JSONArray().apply {
+            manifest.lists.forEach { list ->
+                put(JSONObject().apply {
+                    put("listId", list.listId)
+                    put("sectionId", list.sectionId)
+                    put("startPage", list.startPage)
+                    put("endPage", list.endPage)
+                    put("orderedChunkIds", JSONArray(list.orderedChunkIds))
+                    put("itemCount", list.itemCount)
+                    put("complete", list.complete)
+                })
+            }
+        })
+        put("pages", JSONArray().apply {
+            manifest.pages.forEach { page ->
+                put(JSONObject().apply {
+                    put("pageNumber", page.pageNumber)
+                    put("orderedChunkIds", JSONArray(page.orderedChunkIds))
                 })
             }
         })
@@ -300,6 +462,7 @@ class DocumentStructureManifestStore(context: Context) {
                 level = section.optInt("level", section.optString("path").split(" > ").count { it.isNotBlank() }),
                 kind = section.optString("kind"),
                 printedNumber = section.optString("printedNumber"),
+                parentSectionId = section.optString("parentSectionId"),
             )
         }
         val tablesJson = json.optJSONArray("tables")
@@ -308,6 +471,7 @@ class DocumentStructureManifestStore(context: Context) {
             val ids = table.getJSONArray("orderedRowChunkIds")
             val aliases = table.optJSONArray("aliases")
             val headers = table.optJSONArray("columnHeaders")
+            val cellsJson = table.optJSONArray("cells")
             TableRecord(
                 tableId = table.getString("tableId"),
                 tableNumber = table.optString("tableNumber"),
@@ -317,8 +481,52 @@ class DocumentStructureManifestStore(context: Context) {
                 orderedRowChunkIds = (0 until ids.length()).map { ids.getString(it) },
                 aliases = aliases?.let { a -> (0 until a.length()).map { a.getString(it) } }.orEmpty(),
                 columnHeaders = headers?.let { a -> (0 until a.length()).map { a.getString(it) } }.orEmpty(),
+                cells = cellsJson?.let { a ->
+                    (0 until a.length()).map { cellIndex ->
+                        val cell = a.getJSONObject(cellIndex)
+                        val path = cell.optJSONArray("columnHeaderPath")
+                        val sources = cell.optJSONArray("sourceChunkIds")
+                        TableCellRecord(
+                            rowIndex = cell.getInt("rowIndex"),
+                            columnIndex = cell.getInt("columnIndex"),
+                            rowHeader = cell.optString("rowHeader"),
+                            columnHeaderPath = path?.let { p -> (0 until p.length()).map { p.getString(it) } }.orEmpty(),
+                            text = cell.getString("text"),
+                            pageNumber = cell.getInt("pageNumber"),
+                            chunkId = cell.getString("chunkId"),
+                            sourceChunkIds = sources?.let { ids ->
+                                (0 until ids.length()).map { ids.getString(it) }
+                            } ?: listOf(cell.getString("chunkId")),
+                        )
+                    }
+                }.orEmpty(),
             )
         }
+        val listsJson = json.optJSONArray("lists")
+        val lists = listsJson?.let { a ->
+            (0 until a.length()).map { i ->
+                val list = a.getJSONObject(i)
+                val ids = list.getJSONArray("orderedChunkIds")
+                ListRecord(
+                    listId = list.getString("listId"),
+                    sectionId = list.getString("sectionId"),
+                    startPage = list.getInt("startPage"),
+                    endPage = list.getInt("endPage"),
+                    orderedChunkIds = (0 until ids.length()).map { ids.getString(it) },
+                    itemCount = list.getInt("itemCount"),
+                    complete = list.getBoolean("complete"),
+                )
+            }
+        }.orEmpty()
+        val pageCount = json.optInt("pageCount", sections.maxOfOrNull { it.endPage } ?: 1)
+        val pagesJson = json.optJSONArray("pages")
+        val pages = pagesJson?.let { a ->
+            (0 until a.length()).map { i ->
+                val page = a.getJSONObject(i)
+                val ids = page.getJSONArray("orderedChunkIds")
+                PageRecord(page.getInt("pageNumber"), (0 until ids.length()).map { ids.getString(it) })
+            }
+        }.orEmpty()
         return DocumentStructureManifest(
             documentHash = json.getString("documentHash"),
             indexNamespace = json.getString("indexNamespace"),
@@ -326,6 +534,9 @@ class DocumentStructureManifestStore(context: Context) {
             embeddingSignature = json.getString("embeddingSignature"),
             sections = sections,
             tables = tables,
+            lists = lists,
+            pageCount = pageCount,
+            pages = pages,
         )
     }
 }

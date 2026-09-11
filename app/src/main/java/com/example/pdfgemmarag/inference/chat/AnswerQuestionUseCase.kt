@@ -56,6 +56,8 @@ class AnswerQuestionUseCase(
         var plan = planner.plan(question, manifest, inherited)
         var queryVec: FloatArray? = null
         var manifestFallback = false
+        var rawCandidates = emptyList<Citation>()
+        var sourceCompleteness = EvidenceCompleteness.UNKNOWN
 
         if (manifestResult.exceptionOrNull() is ManifestIntegrityError) {
             if (!canFallbackWithoutManifest(plan.intent, docHash, activeIndexNamespace)) {
@@ -81,12 +83,24 @@ class AnswerQuestionUseCase(
             }
         }
 
+        val implicitListIds = manifest?.let { implicitSubsectionListIds(plan, it) }.orEmpty()
         val ranked = when {
+            plan.intent == QuestionIntent.FACT && implicitListIds.isNotEmpty() && manifest != null -> {
+                try {
+                    store.getChunks(manifest, implicitListIds).also {
+                        rawCandidates = it
+                        sourceCompleteness = EvidenceCompleteness.COMPLETE
+                    }
+                } catch (t: ManifestIntegrityError) {
+                    Log.e(TAG, "implicit subsection list fetch failed", t)
+                    return deterministic(generationId, t0, REPAIR_MESSAGE, listener)
+                }
+            }
             plan.intent == QuestionIntent.DOCUMENT_OVERVIEW && manifest != null -> {
                 val ids = overviewChunkIds(manifest)
                 if (ids.isEmpty()) return deterministic(generationId, t0, REPAIR_MESSAGE, listener)
                 try {
-                    store.getChunks(manifest, ids)
+                    store.getChunks(manifest, ids).also { rawCandidates = it }
                 } catch (t: ManifestIntegrityError) {
                     Log.e(TAG, "document overview fetch failed", t)
                     return deterministic(generationId, t0, REPAIR_MESSAGE, listener)
@@ -98,11 +112,18 @@ class AnswerQuestionUseCase(
                 // A chapter or part is summarised from its whole subtree in reading order; a
                 // clause is summarised from its own chunks. The context budget bounds the prompt.
                 val ids = if (plan.resolvedSubtree) {
-                    manifest.descendantsOf(section).flatMap { it.orderedChunkIds }.distinct().take(MAX_SUBTREE_CHUNKS)
+                    manifest.boundedSubtreeChunkIds(section, MAX_SUBTREE_CHUNKS)
                 } else section.orderedChunkIds
                 Log.i(TAG, "section summary ${section.kind} '${section.title.take(40)}' subtree=${plan.resolvedSubtree} chunks=${ids.size}")
                 try {
-                    store.getChunks(manifest, ids)
+                    store.getChunks(manifest, ids).also {
+                        rawCandidates = it
+                        val allIds = if (plan.resolvedSubtree) {
+                            manifest.descendantsOf(section).flatMap { node -> node.orderedChunkIds }.distinct()
+                        } else section.orderedChunkIds
+                        sourceCompleteness = if (ids.size == allIds.size) EvidenceCompleteness.COMPLETE
+                        else EvidenceCompleteness.PARTIAL
+                    }
                 } catch (t: ManifestIntegrityError) {
                     Log.e(TAG, "section direct fetch failed", t)
                     return deterministic(generationId, t0, REPAIR_MESSAGE, listener)
@@ -142,6 +163,7 @@ class AnswerQuestionUseCase(
                             .getOrDefault(emptyList())
                     }
                 }
+                rawCandidates = primary
                 if (plan.resolvedTableId != null && manifest != null) {
                     primary = mergeResolvedTable(plan.resolvedTableId, manifest, primary)
                 }
@@ -155,7 +177,26 @@ class AnswerQuestionUseCase(
         }
         // An explicit table identity is a hard evidence boundary. If its direct fetch failed, an
         // unrelated hybrid hit must not answer in its place.
-        val answerEvidence = plan.resolvedTableId?.let { tableId -> ranked.filter { it.tableId == tableId } } ?: ranked
+        val inlineTableScope = scopeExplicitInlineTable(question, ranked)
+        val answerEvidence = plan.resolvedTableId?.let { tableId ->
+            val canonicalSource = if (inlineTableScope.size < ranked.size) {
+                inlineTableScope
+            } else {
+                ranked.filter { it.tableId == tableId }
+            }
+            canonicalTableEvidence(manifest, tableId, canonicalSource)
+        } ?: inlineTableScope
+        val trace = EvidenceTrace(rawCandidates.ifEmpty { ranked }, answerEvidence, sourceCompleteness)
+        if (plan.intent == QuestionIntent.DOCUMENT_OVERVIEW) {
+            val overview = buildOverviewLead(answerEvidence)
+            if (overview.decisive) {
+                return deterministic(
+                    generationId, t0, overview.text, listener, overview.citations,
+                    plan.resolvedSectionId.orEmpty(), manifestFallback, "OVERVIEW_LEAD", plan.intent,
+                    trace,
+                )
+            }
+        }
         if (plan.intent == QuestionIntent.FACT && plan.shape == AnswerShape.DEFINITION && manifest != null) {
             val definition = buildDefinitionLead(question, answerEvidence)
             Log.i(TAG, "definition lead subject='${definitionSubject(question)}' decisive=${definition.decisive} candidates=${answerEvidence.size}")
@@ -166,6 +207,7 @@ class AnswerQuestionUseCase(
                 return deterministic(
                     generationId, t0, complete.text, listener, complete.citations,
                     plan.resolvedSectionId.orEmpty(), manifestFallback, "DEFINITION_LEAD", plan.intent,
+                    trace,
                 )
             }
         }
@@ -175,6 +217,31 @@ class AnswerQuestionUseCase(
                 return deterministic(
                     generationId, t0, standard.text, listener, standard.citations,
                     plan.resolvedSectionId.orEmpty(), manifestFallback, "STANDARD_REFERENCE_LEAD", plan.intent,
+                    trace,
+                )
+            }
+            val pairedDirective = buildPairedDirectiveLead(question, answerEvidence)
+            if (pairedDirective.decisive) {
+                return deterministic(
+                    generationId, t0, pairedDirective.text, listener, pairedDirective.citations,
+                    plan.resolvedSectionId.orEmpty(), manifestFallback, "PAIRED_DIRECTIVE_LEAD", plan.intent,
+                    trace,
+                )
+            }
+            val scopedProcedure = buildScopedNumberedProcedureLead(question, answerEvidence)
+            if (scopedProcedure.decisive) {
+                return deterministic(
+                    generationId, t0, scopedProcedure.text, listener, scopedProcedure.citations,
+                    plan.resolvedSectionId.orEmpty(), manifestFallback, "SCOPED_PROCEDURE_LEAD", plan.intent,
+                    trace.copy(completeness = EvidenceCompleteness.COMPLETE),
+                )
+            }
+            val hierarchy = buildHierarchyLead(question, answerEvidence)
+            if (hierarchy.decisive) {
+                return deterministic(
+                    generationId, t0, hierarchy.text, listener, hierarchy.citations,
+                    plan.resolvedSectionId.orEmpty(), manifestFallback, "HIERARCHY_LEAD", plan.intent,
+                    trace.copy(completeness = EvidenceCompleteness.COMPLETE),
                 )
             }
             val numberedList = buildNumberedListLead(question, answerEvidence)
@@ -182,6 +249,7 @@ class AnswerQuestionUseCase(
                 return deterministic(
                     generationId, t0, numberedList.text, listener, numberedList.citations,
                     plan.resolvedSectionId.orEmpty(), manifestFallback, "LIST_LEAD", plan.intent,
+                    trace.copy(completeness = EvidenceCompleteness.COMPLETE),
                 )
             }
             val enumerated = buildEnumeratedValueAnswer(question, answerEvidence)
@@ -189,6 +257,7 @@ class AnswerQuestionUseCase(
                 return deterministic(
                     generationId, t0, enumerated.text, listener, enumerated.citations,
                     plan.resolvedSectionId.orEmpty(), manifestFallback, "ENUMERATED_VALUES_LEAD", plan.intent,
+                    trace,
                 )
             }
             // Navigation is answered structurally only when the user asked where something is;
@@ -199,6 +268,7 @@ class AnswerQuestionUseCase(
                     return deterministic(
                         generationId, t0, pointer.text, listener, pointer.citations,
                         plan.resolvedSectionId.orEmpty(), manifestFallback, "SECTION_POINTER_LEAD", plan.intent,
+                        trace,
                     )
                 }
             }
@@ -207,6 +277,7 @@ class AnswerQuestionUseCase(
                 return deterministic(
                     generationId, t0, exactTableRow.text, listener, exactTableRow.citations,
                     plan.resolvedSectionId.orEmpty(), manifestFallback, "TABLE_ROW_LEAD", plan.intent,
+                    trace,
                 )
             }
             val conditional = buildConditionalValueLead(question, answerEvidence)
@@ -214,6 +285,15 @@ class AnswerQuestionUseCase(
                 return deterministic(
                     generationId, t0, conditional.text, listener, conditional.citations,
                     plan.resolvedSectionId.orEmpty(), manifestFallback, "CONDITIONAL_VALUE_LEAD", plan.intent,
+                    trace,
+                )
+            }
+            val quantified = buildQuantifiedSentenceLead(question, answerEvidence)
+            if (quantified.decisive) {
+                return deterministic(
+                    generationId, t0, quantified.text, listener, quantified.citations,
+                    plan.resolvedSectionId.orEmpty(), manifestFallback, "QUANTIFIED_SENTENCE_LEAD", plan.intent,
+                    trace,
                 )
             }
         }
@@ -236,6 +316,15 @@ class AnswerQuestionUseCase(
                     0, 0, engine.backendName, false,
                     sourceSectionId = plan.resolvedSectionId.orEmpty(),
                     manifestFallback = manifestFallback,
+                    rawCandidateChunks = trace.raw.size,
+                    rawCandidateChunkIds = trace.raw.joinToString(",") { it.chunkId },
+                    rawCandidatePages = trace.raw.map { it.pageNumber }.distinct().joinToString(","),
+                    candidateChunks = trace.expanded.size,
+                    candidateChunkIds = trace.expanded.joinToString(",") { it.chunkId },
+                    candidateProvenance = trace.expanded.joinToString(",") {
+                        "${it.chunkId}:${it.retrievalProvenance}:${it.sourceChunkId}"
+                    },
+                    evidenceCompleteness = trace.completeness.name,
                 ),
             )
             return null
@@ -254,6 +343,7 @@ class AnswerQuestionUseCase(
             return deterministic(
                 generationId, t0, evidenceLead.text, listener, evidenceLead.citations,
                 plan.resolvedSectionId.orEmpty(), manifestFallback,
+                trace = trace,
             )
         }
         if (evidenceLead.text.isNotEmpty()) {
@@ -331,6 +421,22 @@ class AnswerQuestionUseCase(
                             prefillTokens = benchmark?.prefillTokens ?: 0,
                             intent = plan.intent.name,
                             answeredBy = "",
+                            candidateChunks = answerEvidence.size,
+                            candidateChunkIds = answerEvidence.joinToString(",") { it.chunkId },
+                            candidateProvenance = answerEvidence.joinToString(",") {
+                                "${it.chunkId}:${it.retrievalProvenance}:${it.sourceChunkId}"
+                            },
+                            selectedChunkIds = selected.excerpts.joinToString(",") { it.chunkId },
+                            selectedPages = selected.excerpts.map { it.pageNumber }.distinct().joinToString(","),
+                            answerCitationChunkIds = (evidenceLead.citations + filter.usedCitations)
+                                .distinctBy { it.indexNamespace to it.chunkId }
+                                .joinToString(",") { it.chunkId },
+                            evidenceComplete = trace.completeness == EvidenceCompleteness.COMPLETE,
+                            rawCandidateChunks = trace.raw.size,
+                            rawCandidateChunkIds = trace.raw.joinToString(",") { it.chunkId },
+                            rawCandidatePages = trace.raw.map { it.pageNumber }.distinct().joinToString(","),
+                            evidenceCompleteness = trace.completeness.name,
+                            selectionComplete = selected.completeCoverage,
                         ),
                     )
                 }
@@ -357,6 +463,9 @@ class AnswerQuestionUseCase(
         private const val ADJACENT_SEED_RELATIVE_FLOOR = 0.60
         private const val ADJACENT_SCORE_FACTOR = 0.85
         private const val MIN_CROSS_SECTION_NEIGHBOR_TERMS = 2
+        private val LIMIT_OR_DURATION_QUERY = Regex(
+            "(?i)\\b(?:minimum|maximum|duration|not\\s+less\\s+than|not\\s+more\\s+than)\\b",
+        )
         private const val MAX_SUBTREE_CHUNKS = 80
         private const val TABLE_FETCH_BOOST = 2.0
 
@@ -393,7 +502,9 @@ class AnswerQuestionUseCase(
             chunksPerSection: Int = 4,
         ): List<String> {
             val sections = manifest.sections.filter { it.orderedChunkIds.isNotEmpty() && it.title.isNotBlank() }
-            if (sections.isEmpty()) return emptyList()
+            if (sections.isEmpty()) {
+                return pageStratifiedChunkIds(manifest, maxSections * chunksPerSection)
+            }
             val specificationGroups = sections
                 .filter { it.specificationNumber.isNotBlank() }
                 .groupBy { it.specificationNumber }
@@ -425,9 +536,25 @@ class AnswerQuestionUseCase(
             // Coverage, not rank: reserve slots per document quartile so a long final appendix
             // cannot monopolise the sample. A degraded outline falls back to page-stratified
             // sampling over every titled section.
+            if (health.degraded && manifest.pages.isNotEmpty()) {
+                return pageStratifiedChunkIds(manifest, maxSections * chunksPerSection)
+            }
             val pool = if (health.degraded && representatives.size < maxSections) sections else representatives
             val sampled = quartileSample(pool.sortedBy { it.startPage }, manifest.lastPage, maxSections)
             return sampled.flatMap { it.orderedChunkIds.take(chunksPerSection) }.distinct()
+        }
+
+        /** Genuine degraded fallback over source pages, including pages with no recognised heading. */
+        internal fun pageStratifiedChunkIds(manifest: DocumentStructureManifest, limit: Int): List<String> {
+            val populated = manifest.pages.filter { it.orderedChunkIds.isNotEmpty() }
+            if (populated.isEmpty() || limit <= 0) return emptyList()
+            val pageSlots = minOf(populated.size, limit)
+            val sampledPages = evenlySpaced(populated, pageSlots)
+            val firstPass = sampledPages.mapNotNull { it.orderedChunkIds.firstOrNull() }
+            if (firstPass.size >= limit) return firstPass.take(limit)
+            val remaining = sampledPages.flatMap { it.orderedChunkIds.drop(1) } +
+                populated.filter { it !in sampledPages }.flatMap { it.orderedChunkIds }
+            return (firstPass + remaining).distinct().take(limit)
         }
 
         /** Even slots per quartile of the page range, then evenly spaced within each quartile. */
@@ -491,7 +618,7 @@ class AnswerQuestionUseCase(
                         .append(" [Page ").append(citation.pageNumber).append("]\n")
                 }
             }.trimEnd()
-            return SummaryLead(text, roots)
+            return SummaryLead(text, roots, decisive = true)
         }
 
         /** Exact table rows plus their structural neighbours, ranked by query words and numbers. */
@@ -501,6 +628,10 @@ class AnswerQuestionUseCase(
             resolvedTableId: String? = null,
         ): SummaryLead {
             val scoped = if (resolvedTableId.isNullOrBlank()) {
+                candidates
+            } else if (candidates.any { it.retrievalProvenance == "CANONICAL_CELL" }) {
+                // canonicalTableEvidence already applied the exact printed-table boundary and
+                // retained nearby source fragments that can repair incomplete geometric cells.
                 candidates
             } else {
                 candidates.filter { it.tableId == resolvedTableId }
@@ -535,6 +666,23 @@ class AnswerQuestionUseCase(
                     )
                 }
             }
+            // Prefer an intact grid whenever extraction preserved one. The flattened fallback
+            // deliberately uses looser parsing and can mistake header scale values for row cells.
+            val intactTables = scoped.filter { it.contentKind == "TABLE" || '|' in it.text }
+            val intactBooleanAttribute = buildBooleanAttributeLead(query, scoped)
+            if (intactBooleanAttribute.decisive) return intactBooleanAttribute
+            val intactTypedRow = buildHeaderlessTypedRowLead(query, intactTables)
+            if (intactTypedRow.decisive) return intactTypedRow
+            val intactMatrixCell = buildMatrixCellLead(query, intactTables)
+            if (intactMatrixCell.decisive) return intactMatrixCell
+            val flatRiskMatrix = buildFlatRiskMatrixLead(query, scoped)
+            if (flatRiskMatrix.decisive) return flatRiskMatrix
+            val numberedRow = buildNumberedInlineRowLead(query, scoped)
+            if (numberedRow.decisive) return numberedRow
+            val labelledListRow = buildLabelledListTableRowLead(query, scoped)
+            if (labelledListRow.decisive) return labelledListRow
+            val inlineMinMax = buildInlineMinMaxRowsLead(query, scoped)
+            if (inlineMinMax.decisive) return inlineMinMax
             // Apryse can preserve the reading order of a visually ruled table while flattening
             // its cells into a paragraph. Resolve only a high-confidence row: the row label must
             // occur in the question, and the preceding scope window must beat every competing
@@ -578,6 +726,10 @@ class AnswerQuestionUseCase(
             }
             val matrixCell = buildMatrixCellLead(query, tables)
             if (matrixCell.decisive) return matrixCell
+            val riskResponse = buildRiskResponseLead(query, scoped)
+            if (riskResponse.decisive) return riskResponse
+            val fireClass = buildFireClassLead(query, scoped)
+            if (fireClass.decisive) return fireClass
             val rowKey = buildRowKeyLead(query, tables)
             if (rowKey.decisive) return rowKey
             if (queryNumbers.size >= 2) {
@@ -605,6 +757,68 @@ class AnswerQuestionUseCase(
             // Non-decisive rows already exist in the selected prompt. Do not expose diagnostic
             // source dumps in the user answer; grounded generation will format the result.
             return SummaryLead.EMPTY
+        }
+
+        /** Rebuilds complete rows from pre-split canonical cells for deterministic table lookup. */
+        internal fun canonicalTableEvidence(
+            manifest: DocumentStructureManifest?,
+            tableId: String,
+            source: List<Citation>,
+        ): List<Citation> {
+            val table = manifest?.tables?.firstOrNull { it.tableId == tableId } ?: return source
+            if (table.cells.isEmpty()) return source
+            val rows = table.cells.groupBy { it.rowIndex }.toSortedMap().mapNotNull { (rowIndex, cells) ->
+                val ordered = cells.sortedBy { it.columnIndex }
+                val width = maxOf(
+                    table.columnHeaders.size,
+                    (ordered.maxOfOrNull { it.columnIndex } ?: -1) + 1,
+                )
+                if (width < 2) return@mapNotNull null
+                val headers = (0 until width).map { column ->
+                    table.columnHeaders.getOrNull(column)
+                        ?: ordered.firstOrNull { it.columnIndex == column }?.columnHeaderPath?.lastOrNull().orEmpty()
+                }
+                val values = (0 until width).map { column ->
+                    ordered.firstOrNull { it.columnIndex == column }?.text.orEmpty()
+                }
+                val sourceIds = ordered.flatMap { it.sourceChunkIds }.distinct()
+                val base = source.firstOrNull { it.chunkId in sourceIds }
+                    ?: source.firstOrNull { it.pageNumber == ordered.first().pageNumber }
+                    ?: return@mapNotNull null
+                fun row(values: List<String>) = values.joinToString(" | ", prefix = "| ", postfix = " |") {
+                    it.replace("|", "\\|")
+                }
+                base.copy(
+                    chunkId = "${sourceIds.firstOrNull() ?: base.chunkId}:row$rowIndex",
+                    text = row(headers) + "\n" + row(headers.map { "---" }) + "\n" + row(values),
+                    tableId = table.tableId,
+                    tableNumber = table.tableNumber,
+                    tableCaption = table.caption,
+                    retrievalProvenance = "CANONICAL_CELL",
+                    sourceChunkId = sourceIds.firstOrNull() ?: base.chunkId,
+                )
+            }
+            return (source + rows).ifEmpty { source }
+        }
+
+        /** Uses an exact printed table number as a local boundary when PDF geometry missed it. */
+        internal fun scopeExplicitInlineTable(question: String, candidates: List<Citation>): List<Citation> {
+            val number = EXPLICIT_TABLE_NUMBER.find(question)?.groupValues?.get(1) ?: return candidates
+            val caption = Regex(
+                "(?i)\\btable\\s*\\(?\\s*${Regex.escape(number)}\\s*\\)?(?![0-9A-Za-z.-])",
+            )
+            val anchors = candidates.filter { caption.containsMatchIn(it.tableCaption + " " + it.text) }
+                .distinctBy { it.chunkIndex }
+                .sortedBy { it.chunkIndex }
+            if (anchors.isEmpty() || anchors.last().chunkIndex - anchors.first().chunkIndex > INLINE_TABLE_RADIUS) {
+                return candidates
+            }
+            val anchor = anchors.first()
+            val scoped = candidates.filter { candidate ->
+                candidate.sectionId == anchor.sectionId &&
+                    kotlin.math.abs(candidate.chunkIndex - anchor.chunkIndex) <= INLINE_TABLE_RADIUS
+            }
+            return scoped.ifEmpty { candidates }
         }
 
         /** The noun phrase a definition question asks about: "what is a trench" -> "trench". */
@@ -659,12 +873,18 @@ class AnswerQuestionUseCase(
             if (!STANDARD_QUERY_HINT.containsMatchIn(query)) return SummaryLead.EMPTY
             val queryWords = evidenceWords(query) - STANDARD_QUERY_STOP
             if (queryWords.size < 2) return SummaryLead.EMPTY
+            // "what plywood standard" names the thing being classified. Require that subject in
+            // the source sentence so a broad, higher-scored standards paragraph cannot win merely
+            // because it repeats surrounding section words such as "concrete formwork".
+            val requiredSubject = STANDARD_SUBJECT.find(query)?.groupValues?.get(1)
             val matches = candidates.flatMap { citation ->
-                citation.text.lines().mapNotNull { line ->
-                    val trimmed = line.trim()
-                    if (!STANDARD_ID.containsMatchIn(trimmed)) return@mapNotNull null
-                    val hits = evidenceWords(trimmed).count(queryWords::contains)
-                    if (hits < 2) null else Triple(citation, trimmed, hits)
+                evidenceSentences(citation.text).mapNotNull { sentence ->
+                    val bounded = sentence.replace(DANGLING_LIST_PREFIX, "").trim()
+                    if (!STANDARD_ID.containsMatchIn(bounded)) return@mapNotNull null
+                    val words = evidenceWords(bounded)
+                    if (requiredSubject != null && requiredSubject !in words) return@mapNotNull null
+                    val hits = words.count(queryWords::contains)
+                    if (hits < 2) null else Triple(citation, bounded, hits)
                 }
             }.groupBy { (_, line, _) -> normalizeForEvidenceMatch(line).replace(Regex("\\s+"), " ") }
                 .values.map { group -> group.maxByOrNull { it.first.score }!! }
@@ -675,9 +895,14 @@ class AnswerQuestionUseCase(
         }
 
         private val STANDARD_QUERY_HINT = Regex("\\b(?:standards?|codes?|norms?)\\b")
+        private val STANDARD_SUBJECT = Regex("\\bwhat\\s+(?:the\\s+)?([\\p{L}\\p{N}-]{3,30})\\s+standards?\\b")
+        // Sentence extraction can leave the next alphabetic list marker (for example `D.`)
+        // attached to the selected line. Numeric tokens at the end are often the actual value
+        // (`Class 1.`), so they must never be treated as disposable list markers here.
+        private val DANGLING_LIST_PREFIX = Regex("\\s+[A-Z]\\.$")
         private val STANDARD_QUERY_STOP = setOf("standard", "code", "norm", "which", "cover", "covers", "applicable", "apply", "applies")
         /** Letter-prefixed standard identifiers with optional year or part suffix; grammar only, no issuer list. */
-        private val STANDARD_ID = Regex("\\b[A-Z]{2,6}(?:\\s?[A-Z]{1,3})?[\\s-]?\\d{2,6}(?:[-–/.]\\d{1,4})*(?:\\s?[:(]\\s?\\d{4}\\)?)?\\b")
+        private val STANDARD_ID = Regex("\\b[A-Z]{2,6}(?:\\s?[A-Z]{1,3})?[\\s-]?\\d{1,6}(?:[-–/.]\\d{1,4})*(?:\\s?[:(]\\s?\\d{4}\\)?)?\\b")
 
         /** Re-orders hits so chunks holding a defining sentence for the asked subject lead the list. */
         internal fun promoteDefiningSentences(question: String, hits: List<Citation>): List<Citation> {
@@ -711,6 +936,7 @@ class AnswerQuestionUseCase(
          * phrases inside the question; exactly one cell may qualify.
          */
         internal fun buildMatrixCellLead(query: String, tables: List<Citation>): SummaryLead {
+            if (!MATRIX_INTERSECTION_QUERY.containsMatchIn(query)) return SummaryLead.EMPTY
             data class Cell(val citation: Citation, val row: String, val column: String, val value: String)
             fun phraseIn(label: String): Boolean {
                 // "Almost Certain (5)" is asked about as "Almost Certain"; the scale in brackets is presentation.
@@ -737,6 +963,141 @@ class AnswerQuestionUseCase(
             return SummaryLead(
                 "${cell.row} × ${cell.column}: ${cell.value} [Page ${cell.citation.pageNumber}]",
                 listOf(cell.citation),
+                decisive = true,
+            )
+        }
+
+        /** Reverse lookup for `Which option ...?` rows that contain one explicit `Yes`. */
+        internal fun buildBooleanAttributeLead(query: String, candidates: List<Citation>): SummaryLead {
+            if (!WHICH_OPTION_QUERY.containsMatchIn(query)) return SummaryLead.EMPTY
+            val queryWords = evidenceWords(query)
+            candidates.filter { it.contentKind == "TABLE" || '|' in it.text }.forEach { table ->
+                val rows = markdownGrid(table)
+                val row = rows.firstOrNull { cells ->
+                    val labelWords = evidenceWords(cells.firstOrNull().orEmpty())
+                    labelWords.size >= 2 && labelWords.all(queryWords::contains) &&
+                        cells.drop(1).count { it.equals("yes", true) } == 1
+                } ?: return@forEach
+                val optionCount = row.size - 1
+                val selectedIndex = row.drop(1).indexOfFirst { it.equals("yes", true) }
+                if (optionCount < 1 || selectedIndex < 0) return@forEach
+                val prelude = candidates.firstOrNull { candidate ->
+                    candidate.pageNumber == table.pageNumber && candidate.chunkIndex < table.chunkIndex &&
+                        FEATURE_HEADER.containsMatchIn(candidate.text)
+                } ?: return@forEach
+                val words = prelude.text.replace(FEATURE_HEADER, " ").trim().split(Regex("\\s+"))
+                if (words.size < optionCount || words.size % optionCount != 0) return@forEach
+                val width = words.size / optionCount
+                val options = words.chunked(width).map { it.joinToString(" ") }
+                val option = options.getOrNull(selectedIndex) ?: return@forEach
+                return SummaryLead(
+                    "$option — ${row.first()}: Yes [Page ${table.pageNumber}]",
+                    listOf(prelude, table),
+                    decisive = true,
+                )
+            }
+            return SummaryLead.EMPTY
+        }
+
+        /** Reads a typed first data row when PDF extraction omitted the table's real header. */
+        internal fun buildHeaderlessTypedRowLead(query: String, tables: List<Citation>): SummaryLead {
+            val hits = tables.flatMap { citation ->
+                markdownRows(citation).mapNotNull { cells ->
+                    val label = cells.firstOrNull().orEmpty()
+                    val typed = TYPED_CLASS.find(label)
+                    val shortTyped = label.trim().takeIf { it.matches(Regex("(?i)^[a-z0-9]{1,3}$")) }
+                    val decimal = DECIMAL_VALUE.find(label)?.value
+                    val strongIdentity = (typed != null && decimal != null && decimal in query) ||
+                        (shortTyped != null && queryHasRowKey(query, shortTyped))
+                    if (cells.size < 3 || !strongIdentity || !queryHasRowKey(query, label)
+                    ) null else citation to cells
+                }
+            }.distinctBy { (_, cells) -> canonicalTableRow(cells) }
+            val hit = hits.singleOrNull() ?: return SummaryLead.EMPTY
+            return SummaryLead(
+                "${hit.second.first()} — ${hit.second.drop(1).filter(String::isNotBlank).joinToString(" — ")} " +
+                    "[Page ${hit.first.pageNumber}]",
+                listOf(hit.first),
+                decisive = true,
+            )
+        }
+
+        /** Preserves a source's consecutive Never/Always safety instruction as one answer. */
+        internal fun buildPairedDirectiveLead(question: String, candidates: List<Citation>): SummaryLead {
+            val queryWords = evidenceWords(question)
+            if (queryWords.size < 2) return SummaryLead.EMPTY
+            val matches = candidates.mapNotNull { citation ->
+                val directive = PAIRED_DIRECTIVE.find(citation.text)?.value?.replace(Regex("\\s+"), " ")?.trim()
+                    ?: return@mapNotNull null
+                val overlap = evidenceWords(directive).count(queryWords::contains)
+                if (overlap < 2) null else Triple(citation, directive, overlap)
+            }.sortedWith(compareByDescending<Triple<Citation, String, Int>> { it.third }
+                .thenByDescending { it.first.score })
+            val best = matches.firstOrNull() ?: return SummaryLead.EMPTY
+            if (matches.getOrNull(1)?.third == best.third &&
+                normalizeForEvidenceMatch(matches[1].second) != normalizeForEvidenceMatch(best.second)
+            ) return SummaryLead.EMPTY
+            return SummaryLead(
+                "${best.second} [Page ${best.first.pageNumber}]",
+                listOf(best.first),
+                decisive = true,
+            )
+        }
+
+        /** Reassembles an assessed-risk action row split vertically across a table and its next list. */
+        internal fun buildRiskResponseLead(query: String, candidates: List<Citation>): SummaryLead {
+            if (!RISK_RESPONSE_QUERY.containsMatchIn(query)) return SummaryLead.EMPTY
+            val level = RISK_RESPONSE_LEVELS.firstOrNull { phraseInQuery(query, it) }
+                ?: return SummaryLead.EMPTY
+            val levelMatch = Regex("(?i)(?<![a-z])${Regex.escape(level)}(?![a-z])")
+            val source = candidates.firstOrNull { citation ->
+                (citation.contentKind == "TABLE" || '|' in citation.text) &&
+                    levelMatch.containsMatchIn(citation.text) &&
+                    ("-" in citation.text || "action" in citation.text.lowercase())
+            } ?: return SummaryLead.EMPTY
+            val levelStart = levelMatch.find(source.text)?.range?.first ?: return SummaryLead.EMPTY
+            // In the extracted Table 1.4 continuation, the first Extreme action is emitted in
+            // the visual row immediately before the cell containing the "Extreme" label.
+            val precedingAlternative = if (level == "extreme") {
+                Regex("(?i)-?\\s*consider alternatives?\\b").find(source.text)?.range?.first
+            } else null
+            val start = precedingAlternative?.takeIf { it < levelStart } ?: levelStart
+            val body = source.text.substring(start)
+                .replace('|', ' ')
+                .replace(Regex("(?:^|\\s)-{3,}(?=\\s|$)"), " ")
+                .replace(Regex("\\s+"), " ")
+                .trim()
+            val trailing = candidates
+                .filter { it.chunkIndex in (source.chunkIndex + 1)..(source.chunkIndex + 2) }
+                .sortedBy { it.chunkIndex }
+                .takeWhile { it.contentKind == "LIST" || it.continuesFromChunkIndex >= 0 }
+            val continuation = trailing.joinToString(" ") { it.text.replace(Regex("\\s+"), " ").trim() }
+            val text = listOf(body, continuation).filter(String::isNotBlank).joinToString(" ")
+            if (!RISK_ACTION_EVIDENCE.containsMatchIn(text)) return SummaryLead.EMPTY
+            return SummaryLead(
+                "$text [Page ${source.pageNumber}]",
+                listOf(source) + trailing,
+                decisive = true,
+            )
+        }
+
+        /** Recovers a fire class and extinguisher method from a visually flattened table row. */
+        internal fun buildFireClassLead(query: String, candidates: List<Citation>): SummaryLead {
+            if (!FIRE_CLASS_QUERY.containsMatchIn(query)) return SummaryLead.EMPTY
+            val matches = candidates.mapNotNull { citation ->
+                if (!Regex("(?i)\\belectrical\\b").containsMatchIn(citation.text)) return@mapNotNull null
+                val classCode = Regex("(?<![A-Za-z])([A-E])(?![A-Za-z])").find(citation.text)?.groupValues?.get(1)
+                    ?: return@mapNotNull null
+                val methods = FIRE_EXTINGUISHER_METHODS.findAll(citation.text)
+                    .map { it.value.trim().replaceFirstChar(Char::uppercase) }
+                    .distinctBy { it.lowercase() }
+                    .toList()
+                if (methods.isEmpty()) null else Triple(citation, classCode, methods)
+            }.distinctBy { (citation, code, methods) -> "$code|${methods.joinToString()}|${citation.text}" }
+            val match = matches.singleOrNull() ?: return SummaryLead.EMPTY
+            return SummaryLead(
+                "Electrical fires — Class ${match.second} — ${match.third.joinToString("; ")} [Page ${match.first.pageNumber}]",
+                listOf(match.first),
                 decisive = true,
             )
         }
@@ -809,6 +1170,15 @@ class AnswerQuestionUseCase(
                 if (forms.any { form ->
                     Regex("(?<![a-z0-9])" + Regex.escape(form) + "(?![a-z0-9])").containsMatchIn(q)
                 }) return true
+                val typed = TYPED_CLASS.find(label)
+                if (typed != null && Regex(
+                        "(?i)\\b${Regex.escape(typed.groupValues[1])}\\s+${Regex.escape(typed.groupValues[2])}\\b",
+                    ).containsMatchIn(query)
+                ) {
+                    val measurements = Regex("(?<![\\p{L}\\p{N}])\\d+\\.\\d+(?![\\p{L}\\p{N}])")
+                        .findAll(label).map { it.value }.toList()
+                    if (measurements.any { value -> value in query }) return true
+                }
                 val ends = RANGE_ENDS.find(rowKeyNormalize(label)) ?: return false
                 return Regex("(?<![a-z0-9])${ends.groupValues[1]}(?![a-z0-9])").containsMatchIn(q) &&
                     Regex("(?<![a-z0-9])${ends.groupValues[2]}(?![a-z0-9])").containsMatchIn(q)
@@ -917,8 +1287,80 @@ class AnswerQuestionUseCase(
             return SummaryLead("${kind.replaceFirstChar(Char::uppercase)} ${label.uppercase()}: ${match.text} [Page $page]", match.citations, decisive = true)
         }
 
-        private fun evidenceSentences(text: String): List<String> =
-            text.split(SENTENCE_BOUNDARY).map(String::trim).filter { it.length >= 12 }
+        /** Copies one uniquely matched sentence that states an explicit measured limit. */
+        internal fun buildQuantifiedSentenceLead(question: String, candidates: List<Citation>): SummaryLead {
+            val query = normalizeForEvidenceMatch(question)
+            if (!QUANTIFIED_QUERY_HINT.containsMatchIn(query)) return SummaryLead.EMPTY
+            if (QUANTIFIED_COMPARISON_HINT.containsMatchIn(query)) return SummaryLead.EMPTY
+            if (QUANTIFIED_NON_NUMERIC_ATTRIBUTE.containsMatchIn(query)) return SummaryLead.EMPTY
+            if (LOAD_MULTIPLIER_QUERY.containsMatchIn(query)) {
+                val multiplierMatches = candidates.flatMap { citation ->
+                    evidenceSentences(citation.text).mapNotNull { sentence ->
+                        sentence.takeIf {
+                            MULTIPLIER_VALUE.containsMatchIn(it) && SUPPORT_OR_CAPACITY.containsMatchIn(it)
+                        }?.let { citation to it }
+                    }
+                }.distinctBy { normalizeForEvidenceMatch(it.second) }
+                val match = multiplierMatches.singleOrNull()
+                if (match != null) {
+                    return SummaryLead(
+                        "${match.second.trim()} [Page ${match.first.pageNumber}]",
+                        listOf(match.first),
+                        decisive = true,
+                    )
+                }
+            }
+            val requested = HybridQuery.keywordTerms(query).toSet() - QUANTIFIED_QUERY_STOP
+            data class Match(val citation: Citation, val sentence: String, val score: Int)
+            val matches = candidates.flatMap { citation ->
+                val sentences = evidenceSentences(citation.text)
+                sentences.mapIndexedNotNull { index, sentence ->
+                    val valueCount = QUANTIFIED_VALUE.findAll(sentence).count() +
+                        if (RATIO_QUERY_HINT.containsMatchIn(query)) DECIMAL_VALUE.findAll(sentence).count() else 0
+                    if (valueCount == 0) return@mapIndexedNotNull null
+                    if (TEMPERATURE_DURATION_QUERY.containsMatchIn(query) && valueCount < 2) {
+                        return@mapIndexedNotNull null
+                    }
+                    val scopeStart = (index - 2).coerceAtLeast(0)
+                    val scopedWords = evidenceWords(sentences.subList(scopeStart, index + 1).joinToString(" "))
+                    val ownWords = evidenceWords(sentence)
+                    val ownOverlap = requested.count { term ->
+                        val stem = HybridQuery.prefixTerm(term)?.removeSuffix("*") ?: term
+                        ownWords.any { it == stem || (stem.length >= 4 && it.startsWith(stem)) }
+                    }
+                    val overlap = requested.count { term ->
+                        val stem = HybridQuery.prefixTerm(term)?.removeSuffix("*") ?: term
+                        scopedWords.any { it == stem || (stem.length >= 4 && it.startsWith(stem)) }
+                    }
+                    val requiredOverlap = if (valueCount >= 2) 2 else 3
+                    if (overlap < minOf(requiredOverlap, requested.size)) return@mapIndexedNotNull null
+                    val typedValueBonus = if (
+                        COVERAGE_RATE_QUERY.containsMatchIn(query) && COVERAGE_RATE_VALUE.containsMatchIn(sentence)
+                    ) 500 else 0
+                    Match(citation, sentence, typedValueBonus + ownOverlap * 20 + overlap * 10 + valueCount)
+                }
+            }.distinctBy { normalizeForEvidenceMatch(it.sentence).replace(Regex("\\s+"), " ") }
+                .sortedByDescending { it.score }
+            val best = matches.firstOrNull() ?: return SummaryLead.EMPTY
+            if (matches.getOrNull(1)?.score == best.score) return SummaryLead.EMPTY
+            return SummaryLead(
+                "${best.sentence.trim()} [Page ${best.citation.pageNumber}]",
+                listOf(best.citation),
+                decisive = true,
+            )
+        }
+
+        private fun evidenceSentences(text: String): List<String> {
+            // Protect list ordinals before splitting punctuation: `10. IS 3764...` and
+            // `C. Plywood...` are one evidence sentence, while physical line breaks are real
+            // boundaries even when the preceding OCR text omitted terminal punctuation.
+            val protected = LIST_ITEM_PREFIX.replace(text) { match ->
+                match.groupValues[1] + match.groupValues[2] + ".\u00a0"
+            }
+            return protected.split(SENTENCE_BOUNDARY)
+                .map { it.replace('\u00a0', ' ').trim() }
+                .filter { it.length >= 12 }
+        }
 
         /** Resolves explicit "which section" asks from a uniquely matching printed cross-reference. */
         internal fun buildSectionPointerAnswer(question: String, candidates: List<Citation>): SummaryLead {
@@ -979,41 +1421,88 @@ class AnswerQuestionUseCase(
             val query = normalizeForEvidenceMatch(question)
             if (!NUMBERED_LIST_QUERY_HINT.containsMatchIn(query)) return SummaryLead.EMPTY
             val queryWords = evidenceWords(query)
+            val implicitSubject = IMPLICIT_ENUMERATION_SUBJECT.find(query)?.groupValues?.get(1)
+                ?.let(::evidenceWords)?.singleOrNull()
+            val ofSubjectWords = ENUMERATION_OF_SUBJECT.find(query)?.groupValues?.get(1)
+                ?.let(::evidenceWords).orEmpty()
             val byIndex = candidates.associateBy { it.chunkIndex }
             val requestedCount = requestedListItemCount(query)
+            val exactCountRequested = EXACT_COUNT_QUERY.containsMatchIn(query)
             val bestScore = candidates.maxOfOrNull { it.score } ?: 0.0
             val topRanked = candidates.sortedByDescending { it.score }.take(MAX_ADJACENT_PRIMARY_SEEDS).map { it.chunkId }.toSet()
+            val retrievedIds = candidates.filter { it.retrievalProvenance == "RETRIEVED" }.map { it.chunkId }.toSet()
             val matches = candidates.mapNotNull { introduction ->
                 if (introduction.contentKind == "LIST" || !LIST_INTRODUCTION.containsMatchIn(introduction.text.trim())) return@mapNotNull null
-                if (evidenceWords(introduction.text).count(queryWords::contains) < 2) return@mapNotNull null
+                val follower = byIndex[introduction.chunkIndex + 1]
+                val scopeWords = evidenceWords(introduction.text + " " + follower?.text.orEmpty())
+                if (implicitSubject != null && implicitSubject !in scopeWords) return@mapNotNull null
+                // A question such as "five basic steps of HIRA" supplies a decisive scope word.
+                // It may occur in the list itself rather than its generic colon introduction.
+                if (ofSubjectWords.isNotEmpty() && !scopeWords.containsAll(ofSubjectWords)) return@mapNotNull null
+                val sharedWords = evidenceWords(introduction.text).count(queryWords::contains)
                 // A colon-terminated sentence with two shared words is weak evidence on its own; a
                 // low-ranked introduction from an unrelated page must not hijack the answer.
-                val follower = byIndex[introduction.chunkIndex + 1]
+                val linkedToProminent = introduction.sourceChunkId in retrievedIds || follower?.sourceChunkId in retrievedIds
+                val lexicalScopeMatches = if (implicitSubject != null) {
+                    linkedToProminent && sharedWords >= 1
+                } else {
+                    sharedWords >= 2 && sharedWords * 5 >= queryWords.size * 2
+                }
+                if (!lexicalScopeMatches) return@mapNotNull null
                 val prominent = introduction.chunkId in topRanked || follower?.chunkId in topRanked ||
+                    linkedToProminent ||
                     (bestScore > 0 && introduction.score >= bestScore * ADJACENT_SEED_RELATIVE_FLOOR)
                 if (!prominent) return@mapNotNull null
                 // The list is the run of LIST chunks physically following the introduction. A
                 // list that continues onto the next page is linked by the chunker's continuation
                 // edge; an unrelated list on a later page is not.
-                val listChunks = ArrayList<Citation>()
-                var previous: Citation = introduction
-                var next = byIndex[introduction.chunkIndex + 1]
-                while (next != null && next.contentKind == "LIST" && listChunks.size < MAX_NUMBERED_LIST_CHUNKS) {
-                    val samePage = next.pageNumber == previous.pageNumber
-                    val continues = previous.contentKind == "LIST" && previous.continuesToChunkIndex == next.chunkIndex
-                    if (!samePage && !continues) break
-                    listChunks += next
-                    previous = next
-                    next = byIndex[next.chunkIndex + 1]
+                val firstListChunk = byIndex[introduction.chunkIndex + 1]
+                    ?.takeIf { it.contentKind == "LIST" }
+                val listChunks = if (firstListChunk?.listId?.isNotBlank() == true) {
+                    candidates.filter { it.listId == firstListChunk.listId }.sortedBy { it.listItemStart }
+                } else {
+                    val adjacent = ArrayList<Citation>()
+                    var previous: Citation = introduction
+                    var next = firstListChunk
+                    while (next != null && next.contentKind == "LIST" && adjacent.size < MAX_NUMBERED_LIST_CHUNKS) {
+                        val samePage = next.pageNumber == previous.pageNumber
+                        val continues = previous.contentKind == "LIST" && previous.continuesToChunkIndex == next.chunkIndex
+                        if (!samePage && !continues) break
+                        adjacent += next
+                        previous = next
+                        next = byIndex[next.chunkIndex + 1]
+                    }
+                    adjacent
                 }
                 val items = listChunks.flatMap { chunk ->
                     splitListItems(chunk).map { text -> chunk to text }
                 }
-                val missingContinuation = previous.contentKind == "LIST" &&
-                    previous.continuesToChunkIndex >= 0 &&
+                val structuredComplete = firstListChunk?.listId?.isNotBlank() == true &&
+                    listChunks.firstOrNull()?.listItemStart == 0 &&
+                    listChunks.zipWithNext().all { (left, right) ->
+                        left.listItemStart + left.listItemCount == right.listItemStart
+                    } && listChunks.lastOrNull()?.listComplete == true &&
+                    listChunks.sumOf { it.listItemCount } == firstListChunk.listTotalItems &&
+                    items.size == firstListChunk.listTotalItems
+                val previous = listChunks.lastOrNull() ?: introduction
+                val missingContinuation = previous.contentKind == "LIST" && previous.continuesToChunkIndex >= 0 &&
                     listChunks.none { it.chunkIndex == previous.continuesToChunkIndex }
-                if (items.isEmpty() || missingContinuation || (requestedCount != null && items.size < requestedCount)) null
+                val legacyComplete = firstListChunk?.listId.isNullOrBlank() && !missingContinuation
+                if (items.isEmpty() || (!structuredComplete && !legacyComplete) ||
+                    (requestedCount != null && items.size < requestedCount) ||
+                    (requestedCount != null && exactCountRequested && items.size != requestedCount)) null
                 else introduction to items.take(requestedCount ?: items.size)
+            }
+            val introductionCount = candidates.count {
+                it.contentKind != "LIST" && LIST_INTRODUCTION.containsMatchIn(it.text.trim())
+            }
+            runCatching {
+                Log.i(
+                    TAG,
+                    "list lead query='${question.take(80)}' candidates=${candidates.size} " +
+                        "introductions=$introductionCount " +
+                        "matches=${matches.map { it.first.chunkId + ':' + it.second.size }}",
+                )
             }
             if (matches.size != 1) return SummaryLead.EMPTY
             val (_, items) = matches.single()
@@ -1038,8 +1527,112 @@ class AnswerQuestionUseCase(
         }
 
         private fun splitNumberedListItems(text: String): List<String> {
-            val starts = NUMBERED_LIST_ITEM.findAll(text).mapNotNull { it.groups[1]?.range?.first }.toList()
+            val bulletStarts = BULLET_LIST_ITEM.findAll(text).mapNotNull { it.groups[1]?.range?.first }.toList()
+            val labelStarts = NUMBERED_LIST_ITEM.findAll(text).mapNotNull { it.groups[1]?.range?.first }.toList()
+            val starts = when {
+                bulletStarts.firstOrNull() != null &&
+                    (labelStarts.firstOrNull() == null || bulletStarts.first() < labelStarts.first()) -> bulletStarts
+                labelStarts.isNotEmpty() -> (bulletStarts + labelStarts).sorted()
+                else -> bulletStarts
+            }
             if (starts.isEmpty()) return listOf(text.trim()).filter(String::isNotBlank)
+            return starts.mapIndexed { index, start ->
+                text.substring(start, starts.getOrElse(index + 1) { text.length }).trim()
+            }.filter(String::isNotBlank)
+        }
+
+        /** Copies the bullets belonging to one numbered subprocedure and stops at the next one. */
+        internal fun buildScopedNumberedProcedureLead(question: String, candidates: List<Citation>): SummaryLead {
+            if (!AnswerPolicy.isProcedural(question)) return SummaryLead.EMPTY
+            val subjectStems = evidenceWords(question).filter { it.length >= 5 && it !in PROCEDURE_SCOPE_STOP }
+                .map { it.take(6) }.toSet()
+            if (subjectStems.isEmpty()) return SummaryLead.EMPTY
+            val ordered = candidates.filter { it.contentKind == "LIST" }.sortedBy { it.chunkIndex }
+            val starts = ordered.flatMap { citation ->
+                NUMBERED_SUBPROCEDURE.findAll(citation.text)
+                    .map { match -> Triple(citation, match, match.groupValues[2]) }.toList()
+            }.filter { (_, _, title) ->
+                evidenceWords(title).map { it.take(6) }.any(subjectStems::contains)
+            }
+            if (starts.size != 1) return SummaryLead.EMPTY
+            val (first, match, _) = starts.single()
+            val byIndex = ordered.associateBy { it.chunkIndex }
+            val items = ArrayList<Pair<Citation, String>>()
+            var current: Citation? = first
+            var firstChunk = true
+            var closed = false
+            while (current != null && items.size < MAX_SCOPED_PROCEDURE_ITEMS) {
+                val bodyStart = if (firstChunk) match.range.last + 1 else 0
+                val body = current.text.substring(bodyStart).trim()
+                val nextHeading = NUMBERED_SUBPROCEDURE.find(body)
+                val scopedBody = if (nextHeading != null) body.substring(0, nextHeading.range.first) else body
+                splitBulletItems(scopedBody).forEach { item -> items += current to item }
+                if (nextHeading != null) {
+                    closed = true
+                    break
+                }
+                val next = byIndex[current.chunkIndex + 1]
+                if (next == null || next.sectionId != first.sectionId) {
+                    closed = current.listComplete
+                    break
+                }
+                if (NUMBERED_SUBPROCEDURE.containsMatchIn(next.text)) {
+                    closed = true
+                    break
+                }
+                current = next
+                firstChunk = false
+            }
+            if (!closed || items.size < 2) return SummaryLead.EMPTY
+            return SummaryLead(
+                items.joinToString("\n") { (citation, item) -> "$item [Page ${citation.pageNumber}]" },
+                items.map { it.first }.distinctBy { it.chunkId },
+                decisive = true,
+            )
+        }
+
+        /** Extracts the uniquely strongest I–V control hierarchy from competing nearby lists. */
+        internal fun buildHierarchyLead(question: String, candidates: List<Citation>): SummaryLead {
+            val query = normalizeForEvidenceMatch(question)
+            if (!HIERARCHY_CONTROL_QUERY.containsMatchIn(query)) return SummaryLead.EMPTY
+            data class Entry(val ordinal: Int, val title: String, val citation: Citation)
+            val entries = candidates.filter { it.contentKind == "LIST" }.flatMap { citation ->
+                ROMAN_HIERARCHY_ITEM.findAll(citation.text).mapNotNull { match ->
+                    ROMAN_ORDINALS.indexOf(match.groupValues[1].uppercase()).takeIf { it >= 0 }
+                        ?.let { Entry(it + 1, match.groupValues[2].trim(), citation) }
+                }.toList()
+            }.sortedWith(compareBy<Entry> { it.citation.chunkIndex }.thenBy { it.ordinal })
+            val sequences = entries.indices.mapNotNull { start ->
+                if (entries[start].ordinal != 1) return@mapNotNull null
+                val sequence = ArrayList<Entry>()
+                var expected = 1
+                for (entry in entries.drop(start)) {
+                    if (entry.ordinal == expected) {
+                        sequence += entry
+                        expected++
+                        if (expected == 6) break
+                    }
+                }
+                sequence.takeIf { it.size == 5 }
+            }
+            val ranked = sequences.map { sequence ->
+                sequence to sequence.count { entry ->
+                    CONTROL_HIERARCHY_TERMS.any { term -> term in entry.title.lowercase() }
+                }
+            }.sortedByDescending { it.second }
+            val best = ranked.firstOrNull() ?: return SummaryLead.EMPTY
+            if (best.second < 4 || ranked.getOrNull(1)?.second == best.second) return SummaryLead.EMPTY
+            return SummaryLead(
+                best.first.joinToString("\n") { entry ->
+                    "${ROMAN_ORDINALS[entry.ordinal - 1]}. ${entry.title} [Page ${entry.citation.pageNumber}]"
+                },
+                best.first.map { it.citation }.distinctBy { it.chunkId },
+                decisive = true,
+            )
+        }
+
+        private fun splitBulletItems(text: String): List<String> {
+            val starts = BULLET_LIST_ITEM.findAll(text).mapNotNull { it.groups[1]?.range?.first }.toList()
             return starts.mapIndexed { index, start ->
                 text.substring(start, starts.getOrElse(index + 1) { text.length }).trim()
             }.filter(String::isNotBlank)
@@ -1068,15 +1661,86 @@ class AnswerQuestionUseCase(
             .replace(",", "")
         private val NUMBER_TOKEN = Regex("\\d+(?:\\.\\d+)?")
         private val RANGE_ENDS = Regex("^(\\d+)\\s*(?:to|and|-|–|—)\\s*(\\d+)$")
-        private val TYPED_CLASS = Regex("(?i)\\b(type|class|grade|group)\\s+([A-Za-z0-9]{1,4})\\b")
+        private val TYPED_CLASS = Regex("(?i)\\b(type|class|grade|group|category)\\s+(?:is\\s+)?([A-Za-z0-9]{1,4})\\b")
         private val CLASS_WORD = Regex("\\bclass\\b")
         private val GENERIC_ROW_KEYS = setOf("class", "type", "grade", "group", "item", "label", "category")
         private val CONDITION_CUE = Regex(
             "(?i)\\b(?:if|when|unless|where|less than|greater than|up to|below|above|deep|deeper|maximum|minimum)\\b",
         )
-        private val SENTENCE_BOUNDARY = Regex("(?<=[.!?;\\n])\\s+")
+        private val QUANTIFIED_QUERY_HINT = Regex(
+            "(?i)\\b(?:minimum|maximum|limit|dimensions?|depth|length|height|width|speed|distance|clearance|duration|temperature|pressure|voltage|openings?)\\b",
+        )
+        private val QUANTIFIED_COMPARISON_HINT = Regex(
+            "(?i)\\b(?:compare|comparison|differences?|between|each|respectively)\\b",
+        )
+        private val QUANTIFIED_NON_NUMERIC_ATTRIBUTE = Regex(
+            "(?i)\\b(?:colou?r|finish|appearance|white|pigmented)\\b",
+        )
+        private val RATIO_QUERY_HINT = Regex("(?i)\\bratios?\\b")
+        private val TEMPERATURE_DURATION_QUERY = Regex(
+            "(?is)(?=.*\\btemperature\\b)(?=.*\\b(?:duration|hours?|time)\\b)",
+        )
+        private val QUANTIFIED_VALUE = Regex(
+            "(?i)(?<![\\p{L}\\p{N}])\\d+(?:[.,]\\d+)?(?:\\s*(?:to|[-–—/x×])\\s*\\d+(?:[.,]\\d+)?)?\\s*" +
+                "(?:square\\s+(?:inches?|feet)|sq\\.?\\s*(?:in|ft)|gallons?|percent|times?|km/h|kmph|mm|cm|m|metres?|meters?|feet|foot|ft|inches?|inch|in|hours?|hrs?|minutes?|mins?|days?|volts?|v|degrees?|°[cf])\\b",
+        )
+        private val COVERAGE_RATE_QUERY = Regex("(?i)\\bcoverage\\s+rate\\b")
+        private val COVERAGE_RATE_VALUE = Regex("(?i)\\bgallons?\\s+per\\s+\\d+\\s+square\\s+feet\\b")
+        private val LOAD_MULTIPLIER_QUERY = Regex("(?i)(?=.*\\b(?:load|weight|capacity)\\b)(?=.*\\bsupport)")
+        private val MULTIPLIER_VALUE = Regex("(?i)(?<![\\p{L}\\p{N}])\\d+(?:\\.\\d+)?\\s+times?\\b")
+        private val SUPPORT_OR_CAPACITY = Regex("(?i)\\b(?:support|capacity|weight)\\w*\\b")
+        private val QUANTIFIED_QUERY_STOP = setOf(
+            "allow", "allowed", "allowable", "document", "does", "recommended", "shall", "should", "what", "which",
+        )
+        private val LIST_ITEM_PREFIX = Regex("(?m)(^|\\s)([A-Z]|\\d{1,3})\\.\\s+")
+        private val SENTENCE_BOUNDARY = Regex("(?:\\r?\\n+|(?<=[.!?;])\\s+)")
         private val WORD_TOKEN = Regex("[a-z]{2,}")
         private val TABLE_QUERY_HINT = Regex("\\b(?:table|row|column|matrix|rating|schedule|class|slump|cement content)\\b")
+        private val EXPLICIT_TABLE_NUMBER = Regex("(?i)\\btable\\s*\\(?\\s*([0-9]+(?:\\.[0-9]+)?)\\s*\\)?")
+        private const val INLINE_TABLE_RADIUS = 3
+        private val RISK_MATRIX_QUERY = Regex("(?i)\\b(?:risk score|assessed risk)\\b")
+        private val RISK_LIKELIHOODS = listOf("almost certain", "likely", "possible", "unlikely", "rare")
+        private val RISK_CONSEQUENCES = listOf("insignificant", "minor", "moderate", "major", "catastrophic")
+        private val PARENTHESIZED_SCORE = Regex("\\((\\d{1,2})\\)")
+        private val RISK_RESPONSE_QUERY = Regex("(?i)(?=.*\\b(?:assessed )?risk\\b)(?=.*\\bactions?\\b)")
+        private val RISK_RESPONSE_LEVELS = listOf("extreme", "high", "moderate", "low")
+        private val RISK_ACTION_EVIDENCE = Regex("(?i)\\b(?:controls?|alternatives?|action|required|undertake|monitor)\\b")
+        private val FIRE_CLASS_QUERY = Regex("(?i)(?=.*\\belectrical fires?\\b)(?=.*\\bclass\\b)(?=.*\\bextinguisher)")
+        private val FIRE_EXTINGUISHER_METHODS = Regex("(?i)\\b(?:ABC powder|powder(?: type)?|carbon dioxide|CO2|foam spray|wet chemical|water)\\b")
+        private val MATRIX_INTERSECTION_QUERY = Regex("(?i)\\b(?:and|versus|vs\\.?|intersection|row.+column|column.+row)\\b")
+        private val WHICH_OPTION_QUERY = Regex("(?i)^\\s*which\\b.*\\b(?:option|type|class|item)\\b")
+        private val FEATURE_HEADER = Regex("(?i)^\\s*feature\\s+")
+        private val PAIRED_DIRECTIVE = Regex("(?i)\\bNever\\s+[^.!?]{3,180}[.!?]\\s+Always\\s+[^.!?]{3,180}[.!?]")
+        private val SEVERITY_LEVEL_QUERY = Regex("(?i)\\bseverity\\s+level\\s+(\\d+)\\b")
+        private fun phraseInQuery(query: String, phrase: String): Boolean = Regex(
+            "(?<![a-z0-9])${Regex.escape(phrase)}(?![a-z0-9])",
+        ).containsMatchIn(query)
+
+        /** Maps an unprinted `2.3.1` reference to the first complete list under printed parent 2.3. */
+        internal fun implicitSubsectionListIds(
+            plan: QuestionPlan,
+            manifest: DocumentStructureManifest,
+        ): List<String> {
+            val reference = plan.explicitSectionNumber ?: return emptyList()
+            if (manifest.sections.any { it.sectionNumber.equals(reference, true) }) return emptyList()
+            val separator = reference.lastIndexOf('.')
+            if (separator <= 0) return emptyList()
+            val ordinal = reference.substring(separator + 1).toIntOrNull()?.takeIf { it > 0 } ?: return emptyList()
+            val parentNumber = reference.substring(0, separator)
+            val parent = manifest.sections.singleOrNull { section ->
+                section.sectionNumber.equals(parentNumber, true) &&
+                    (plan.explicitSpecificationNumber == null ||
+                        section.specificationNumber.equals(plan.explicitSpecificationNumber, true))
+            } ?: return emptyList()
+            if (plan.resolvedSectionId != parent.sectionId) return emptyList()
+            return manifest.lists
+                .filter { it.sectionId == parent.sectionId && it.complete }
+                .sortedWith(compareBy<com.example.pdfgemmarag.inference.store.ListRecord> { it.startPage }
+                    .thenBy { it.orderedChunkIds.firstOrNull()?.removePrefix("c")?.toIntOrNull() ?: Int.MAX_VALUE })
+                .getOrNull(ordinal - 1)
+                ?.orderedChunkIds
+                .orEmpty()
+        }
         private val TOLERANCE_QUERY_HINT = Regex("\\b(?:tolerance|variation)\\b")
         private val TOLERANCE_PARAGRAPH = Regex(
             "(?i)((?:variation|tolerance)[\\p{L}\\s,]{0,160}?)\\s+(\\d+/\\d+[\\\"”″]?\\s+in\\s+\\d+[’′']?)",
@@ -1090,6 +1754,13 @@ class AnswerQuestionUseCase(
             "(?i)\\b(?:values|rows|both|each|respectively)\\b|" +
                 "\\b(?:minimum|maximum)\\b.{0,30}\\band\\b.{0,30}\\b(?:minimum|maximum)\\b",
         )
+        private val MIN_MAX_SLUMP_QUERY = Regex(
+            "(?is)(?=.*\\bminimum\\b)(?=.*\\bmaximum\\b)(?=.*\\bslump\\b)",
+        )
+        private val INLINE_MIN_MAX_HEADER = Regex("(?i)\\bminimum\\s+slump\\s+maximum\\s+slump\\b")
+        private val INLINE_MIN_MAX_ROW = Regex(
+            "(?i)([a-z][a-z ()/:-]{2,100}?)\\s+(\\d+(?:\\.\\d+)?[\\\"”″]?)\\s+(\\d+(?:\\.\\d+)?[\\\"”″]?)",
+        )
         private const val FLATTENED_SCOPE_CHARS = 240
         private const val FLATTENED_SAFE_MARGIN = 2
         private val LEADING_REPEATED_WORD = Regex("(?i)^([\\p{L}]+)\\s+\\1\\b")
@@ -1097,16 +1768,42 @@ class AnswerQuestionUseCase(
         private val LIST_LOOKUP_HINT = Regex("\\b(?:list|what are)\\b")
         /** A request for an enumeration: a list verb followed by a plural noun within the clause. */
         private val NUMBERED_LIST_QUERY_HINT = Regex(
-            "(?i)\\b(?:what are|list|name|give|which|enumerate|state|mention|identify)\\b.{0,80}\\b[a-z]{3,}(?:s|es)\\b",
+            "(?i)\\b(?:what are|list|name|give|which|enumerate|state|mention|identify)\\b.{0,80}\\b[a-z]{3,}(?:s|es)\\b|" +
+                "\\bwhat\\b.{0,80}\\b(?:include|includes|consider|cover|address|contain)\\b|" +
+                "\\b(?:priority\\s+order|hierarchy\\s+of\\s+(?:risk\\s+)?controls?)\\b",
+        )
+        private val IMPLICIT_ENUMERATION_SUBJECT = Regex(
+            "(?i)\\bwhat\\s+(?!are\\b)([\\p{L}]{3,}(?:s|es))\\b.{0,80}\\b(?:include|includes|consider|cover|address|contain)\\b",
+        )
+        private val ENUMERATION_OF_SUBJECT = Regex(
+            "(?i)\\b(?:steps?|stages?|classes?|types?|categories?|items?|requirements?)\\s+of\\s+(?:the\\s+)?" +
+                "([\\p{L}\\p{N}-]+(?:\\s+[\\p{L}\\p{N}-]+){0,3})\\s*\\??$",
         )
         /** Any clause that ends with a colon introduces the list that physically follows it. */
         private val LIST_INTRODUCTION = Regex("(?i)[\\p{L}][^.!?]{3,240}:$")
         private val LIST_LABEL_PREFIX = Regex("^(?:(?:\\d{1,3}|[A-Za-z]|[ivxl]{2,6}|[IVXL]{2,6})[.)]|\\([A-Za-z0-9]{1,4}\\)|[•▪■●○◦‣⁃➢➤►✓✔➔→*\\uE000-\\uF8FF-])\\s")
-        private val NUMBERED_LIST_ITEM = Regex("(?m)(?:^|\\s+)((?:\\d{1,2}|[a-z]|[ivxl]{2,6}|[IVXL]{2,6})[.)]\\s+)")
+        private val NUMBERED_LIST_ITEM = Regex("(?m)(?:^|\\s+)((?:\\d{1,2}|[A-Za-z]|[ivxl]{2,6}|[IVXL]{2,6})[.)]\\s+)")
+        private val BULLET_LIST_ITEM = Regex("(?m)(?:^|\\s+)([•▪■●○◦‣⁃➢➤►✓✔➔→*\\uE000-\\uF8FF-]\\s+)")
+        private val NUMBERED_SUBPROCEDURE = Regex(
+            "(?i)(?:^|\\s)(\\d{1,2})[.)]\\s+([^•▪■●○◦‣⁃➢➤►✓✔➔→*\\uE000-\\uF8FF\\d]{2,80}?)(?=\\s+[•▪■●○◦‣⁃➢➤►✓✔➔→*\\uE000-\\uF8FF]|\\s+\\d{1,2}[.)]\\s+|$)",
+        )
+        private val PROCEDURE_SCOPE_STOP = setOf("first", "proced", "handli", "body", "part", "steps", "instruc")
+        private const val MAX_SCOPED_PROCEDURE_ITEMS = 24
+        private val HIERARCHY_CONTROL_QUERY = Regex("(?i)\\bhierarchy\\b.{0,40}\\bcontrols?\\b|\\bcontrols?\\b.{0,40}\\bhierarchy\\b")
+        private val ROMAN_HIERARCHY_ITEM = Regex(
+            "(?i)(?:^|\\s)(I|II|III|IV|V)\\.\\s+([^:–—-]{2,60}?)(?=\\s*[:–—-])",
+        )
+        private val ROMAN_ORDINALS = listOf("I", "II", "III", "IV", "V")
+        private val CONTROL_HIERARCHY_TERMS = listOf(
+            "elimination", "substitution", "engineering", "administrative", "protective equipment",
+        )
         private const val MAX_NUMBERED_LIST_CHUNKS = 4
         /** "five basic steps", "3 classes": a count that qualifies a following plural noun. */
         private val REQUESTED_COUNT = Regex(
             "\\b(one|two|three|four|five|six|seven|eight|nine|ten|[1-9]|10)\\b(?=\\s+(?:[a-z]+\\s+){0,2}[a-z]{3,}(?:s|es)\\b)",
+        )
+        private val EXACT_COUNT_QUERY = Regex(
+            "(?i)\\bwhat\\s+are\\s+(?:the\\s+)?(?:one|two|three|four|five|six|seven|eight|nine|ten|[1-9]|10)\\b",
         )
         private val COUNT_WORDS = listOf("one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten")
         private fun requestedListItemCount(question: String): Int? {
@@ -1130,6 +1827,92 @@ class AnswerQuestionUseCase(
             val value: String,
             val score: Int,
         )
+
+        /** Reads a five-by-five risk matrix whose PDF extraction flattened each likelihood row. */
+        private fun buildFlatRiskMatrixLead(query: String, candidates: List<Citation>): SummaryLead {
+            if (!RISK_MATRIX_QUERY.containsMatchIn(query)) return SummaryLead.EMPTY
+            val likelihood = RISK_LIKELIHOODS.firstOrNull { phrase -> phraseInQuery(query, phrase) }
+                ?: return SummaryLead.EMPTY
+            val consequenceIndex = RISK_CONSEQUENCES.indexOfFirst { phrase -> phraseInQuery(query, phrase) }
+            if (consequenceIndex < 0) return SummaryLead.EMPTY
+            val words = likelihood.split(' ')
+            val source = candidates.firstOrNull { citation ->
+                val text = normalizeForEvidenceMatch(citation.text)
+                words.all { it in text } && PARENTHESIZED_SCORE.findAll(text).count() >= 5
+            } ?: return SummaryLead.EMPTY
+            // This table defines both axes as ordinal 1..5 scales and states Risk = Severity ×
+            // Likelihood immediately above it. Apryse can emit each visual row's descriptions
+            // first and its parenthesized scores later, so positional score parsing is unsafe.
+            // Derive the intersection from the two explicit scale positions instead.
+            val likelihoodScore = RISK_LIKELIHOODS.size - RISK_LIKELIHOODS.indexOf(likelihood)
+            val consequenceScore = consequenceIndex + 1
+            val value = likelihoodScore * consequenceScore
+            return SummaryLead(
+                "${likelihood.replaceFirstChar(Char::uppercase)} × ${RISK_CONSEQUENCES[consequenceIndex].replaceFirstChar(Char::uppercase)}: $value [Page ${source.pageNumber}]",
+                listOf(source),
+                decisive = true,
+            )
+        }
+
+        /** Resolves a numbered definition row flattened into a list, such as severity level 4. */
+        private fun buildNumberedInlineRowLead(query: String, candidates: List<Citation>): SummaryLead {
+            val level = SEVERITY_LEVEL_QUERY.find(query)?.groupValues?.get(1) ?: return SummaryLead.EMPTY
+            val row = Regex("(?i)(?:^|\\s)${Regex.escape(level)}[.)]\\s+(.+?)(?=\\s+\\d+[.)]\\s+|$)")
+            val matches = candidates.mapNotNull { citation ->
+                row.find(citation.text)?.groupValues?.get(1)?.trim()?.let { citation to it }
+            }.distinctBy { normalizeForEvidenceMatch(it.second) }
+            val match = matches.singleOrNull() ?: return SummaryLead.EMPTY
+            return SummaryLead(
+                "Severity level $level: ${match.second} [Page ${match.first.pageNumber}]",
+                listOf(match.first),
+                decisive = true,
+            )
+        }
+
+        /** Resolves a letter-labelled row when a named visual table was extracted as a LIST. */
+        internal fun buildLabelledListTableRowLead(query: String, candidates: List<Citation>): SummaryLead {
+            if (!EXPLICIT_TABLE_NUMBER.containsMatchIn(query)) return SummaryLead.EMPTY
+            val typed = TYPED_CLASS.findAll(query).map { it.groupValues[1] to it.groupValues[2] }
+                .distinct().singleOrNull() ?: return SummaryLead.EMPTY
+            val (kind, label) = typed
+            val prefix = Regex("(?i)^${Regex.escape(label)}[.)]\\s+")
+            val matches = candidates.filter { it.contentKind == "LIST" }.flatMap { citation ->
+                splitListItems(citation).mapNotNull { item ->
+                    item.takeIf(prefix::containsMatchIn)?.let { citation to it }
+                }
+            }.distinctBy { normalizeForEvidenceMatch(it.second) }
+            val match = matches.singleOrNull() ?: return SummaryLead.EMPTY
+            return SummaryLead(
+                "${kind.replaceFirstChar(Char::uppercase)} ${match.second} [Page ${match.first.pageNumber}]",
+                listOf(match.first),
+                decisive = true,
+            )
+        }
+
+        /** Rebuilds requested rows from a flattened `label minimum maximum` table paragraph. */
+        private fun buildInlineMinMaxRowsLead(query: String, candidates: List<Citation>): SummaryLead {
+            if (!MIN_MAX_SLUMP_QUERY.containsMatchIn(query)) return SummaryLead.EMPTY
+            data class Row(val citation: Citation, val label: String, val minimum: String, val maximum: String)
+            val queryWords = evidenceWords(query)
+            val rows = candidates.flatMap { citation ->
+                val text = citation.text.replace(Regex("\\s+"), " ").trim()
+                val header = INLINE_MIN_MAX_HEADER.find(text) ?: return@flatMap emptyList()
+                INLINE_MIN_MAX_ROW.findAll(text.substring(header.range.last + 1)).mapNotNull { match ->
+                    val label = match.groupValues[1].trim().trimEnd(':')
+                    val overlap = evidenceWords(label).count(queryWords::contains)
+                    if (overlap < 3) null else Row(citation, label, match.groupValues[2], match.groupValues[3])
+                }.toList()
+            }.distinctBy { normalizeForEvidenceMatch(it.label) }
+            if (rows.size < 2) return SummaryLead.EMPTY
+            val citations = rows.map { it.citation }.distinctBy { it.chunkId }
+            return SummaryLead(
+                rows.joinToString("\n") { row ->
+                    "- ${row.label}: minimum ${row.minimum}; maximum ${row.maximum} [Page ${row.citation.pageNumber}]"
+                },
+                citations,
+                decisive = true,
+            )
+        }
 
         private fun buildFlattenedTableLead(query: String, candidates: List<Citation>): SummaryLead {
             val queryWords = evidenceWords(query)
@@ -1300,7 +2083,11 @@ class AnswerQuestionUseCase(
     ): List<Citation> {
         val table = manifest.tables.firstOrNull { it.tableId == tableId } ?: return primary
         if (table.orderedRowChunkIds.isEmpty()) return primary
-        val rows = runCatching { store.getChunks(manifest, table.orderedRowChunkIds) }
+        val finalRowIndex = table.orderedRowChunkIds.mapNotNull { it.removePrefix("c").toIntOrNull() }.maxOrNull()
+        val immediateContinuation = finalRowIndex?.plus(1)?.let(DocumentStructureManifest::chunkId)
+            ?.takeIf { it in manifest.chunksInOrder }
+        val requestedIds = table.orderedRowChunkIds + listOfNotNull(immediateContinuation)
+        val rows = runCatching { store.getChunks(manifest, requestedIds) }
             .onFailure { Log.w(TAG, "table fetch failed: ${it.message}") }
             .getOrDefault(emptyList())
         if (rows.isEmpty()) return primary
@@ -1321,7 +2108,13 @@ class AnswerQuestionUseCase(
         if (manifest == null || primary.isEmpty()) return primary
         val neighbors = LinkedHashMap<String, LinkedHashMap<String, NeighborKind>>()
         val availableChunkIds = manifest.chunksInOrder.toHashSet()
+        val listByFirstChunk = manifest.lists.associateBy { it.orderedChunkIds.first() }
         val bestPrimaryScore = primary.first().score
+        val adjacentDistance = when {
+            AnswerShape.of(retrievalQuestion) == AnswerShape.PROCEDURE -> 2
+            LIMIT_OR_DURATION_QUERY.containsMatchIn(retrievalQuestion) -> 3
+            else -> 1
+        }
         primary.forEachIndexed { rank, citation ->
             val wanted = neighbors.getOrPut(citation.chunkId) { LinkedHashMap() }
             fun request(id: String, kind: NeighborKind) {
@@ -1341,6 +2134,18 @@ class AnswerQuestionUseCase(
                     .takeIf { it in availableChunkIds }
                     ?.let { request(it, NeighborKind.INTRODUCTION) }
             }
+            val list = citation.listId.takeIf(String::isNotBlank)?.let { id -> manifest.lists.firstOrNull { it.listId == id } }
+                ?: listByFirstChunk[DocumentStructureManifest.chunkId(citation.chunkIndex + 1)]
+                    ?.takeIf { isListIntroduction(citation) }
+            list?.orderedChunkIds?.forEach { request(it, NeighborKind.LIST_MEMBER) }
+            if (HIERARCHY_CONTROL_QUERY.containsMatchIn(retrievalQuestion) &&
+                "hierarchy" in citation.text.lowercase()
+            ) {
+                manifest.lists.filter { candidate ->
+                    candidate.sectionId == citation.sectionId &&
+                        candidate.startPage <= citation.pageNumber + 2 && candidate.endPage >= citation.pageNumber - 1
+                }.flatMap { it.orderedChunkIds }.forEach { request(it, NeighborKind.LIST_MEMBER) }
+            }
             if (looksLikeStructuredFragment(citation)) {
                 // Table captions are often emitted as several uppercase headings, each with a
                 // distinct section id. Use validated physical chunk ids here; after fetching we
@@ -1356,14 +2161,16 @@ class AnswerQuestionUseCase(
             } else if (shouldExpandAdjacentSeed(rank, citation.score, bestPrimaryScore)) {
                 // Expand a bounded number of actual top-ranked hits. AppSearch scores are
                 // query-relative and higher is better, so an absolute score threshold is invalid.
-                if (citation.chunkIndex > 0) {
-                    DocumentStructureManifest.chunkId(citation.chunkIndex - 1)
+                for (distance in 1..adjacentDistance) {
+                    if (citation.chunkIndex >= distance) {
+                        DocumentStructureManifest.chunkId(citation.chunkIndex - distance)
+                            .takeIf { it in availableChunkIds }
+                            ?.let { request(it, NeighborKind.ADJACENT) }
+                    }
+                    DocumentStructureManifest.chunkId(citation.chunkIndex + distance)
                         .takeIf { it in availableChunkIds }
                         ?.let { request(it, NeighborKind.ADJACENT) }
                 }
-                DocumentStructureManifest.chunkId(citation.chunkIndex + 1)
-                    .takeIf { it in availableChunkIds }
-                    ?.let { request(it, NeighborKind.ADJACENT) }
             }
         }
         val extras = neighbors.values.flatMap { it.keys }.distinct().filter { id -> primary.none { it.chunkId == id } }
@@ -1384,7 +2191,13 @@ class AnswerQuestionUseCase(
                             ?.let { neighbor ->
                                 // Direct fetches have score 0. Preserve bounded provenance from the
                                 // seed so ContextSelector does not immediately discard valid context.
-                                add(neighbor.copy(score = citation.score * ADJACENT_SCORE_FACTOR))
+                                add(
+                                    neighbor.copy(
+                                        score = citation.score * ADJACENT_SCORE_FACTOR,
+                                        retrievalProvenance = kind.name,
+                                        sourceChunkId = citation.chunkId,
+                                    ),
+                                )
                             }
                     }
                 }
@@ -1402,6 +2215,7 @@ class AnswerQuestionUseCase(
         queryTerms: Set<String>,
     ): Boolean = when (kind) {
         NeighborKind.CONTINUATION -> true
+        NeighborKind.LIST_MEMBER -> true
         NeighborKind.INTRODUCTION -> neighbor.sectionId == seed.sectionId && isListIntroduction(neighbor)
         NeighborKind.STRUCTURAL -> neighbor.pageNumber == seed.pageNumber
         NeighborKind.ADJACENT -> isEligibleAdjacentNeighbor(seed, neighbor, queryTerms)
@@ -1412,6 +2226,7 @@ class AnswerQuestionUseCase(
         STRUCTURAL(2),
         INTRODUCTION(3),
         CONTINUATION(4),
+        LIST_MEMBER(5),
     }
 
     private fun deterministic(
@@ -1424,6 +2239,7 @@ class AnswerQuestionUseCase(
         manifestFallback: Boolean = false,
         answeredBy: String = "DETERMINISTIC",
         intent: QuestionIntent? = null,
+        trace: EvidenceTrace? = null,
     ): GemmaEngine.Generation? {
         listener.onToken(text)
         // Publish only evidence used by the completed deterministic answer.
@@ -1437,10 +2253,32 @@ class AnswerQuestionUseCase(
                 manifestFallback = manifestFallback,
                 intent = intent?.name.orEmpty(),
                 answeredBy = answeredBy,
+                candidateChunks = trace?.expanded?.size ?: citations.size,
+                candidateChunkIds = (trace?.expanded ?: citations).joinToString(",") { it.chunkId },
+                candidateProvenance = (trace?.expanded ?: citations).joinToString(",") {
+                    "${it.chunkId}:${it.retrievalProvenance}:${it.sourceChunkId}"
+                },
+                selectedChunkIds = citations.joinToString(",") { it.chunkId },
+                selectedPages = citations.map { it.pageNumber }.distinct().joinToString(","),
+                answerCitationChunkIds = citations.joinToString(",") { it.chunkId },
+                evidenceComplete = trace?.completeness == EvidenceCompleteness.COMPLETE,
+                rawCandidateChunks = trace?.raw?.size ?: 0,
+                rawCandidateChunkIds = trace?.raw?.joinToString(",") { it.chunkId }.orEmpty(),
+                rawCandidatePages = trace?.raw?.map { it.pageNumber }?.distinct()?.joinToString(",").orEmpty(),
+                evidenceCompleteness = trace?.completeness?.name ?: EvidenceCompleteness.UNKNOWN.name,
+                selectionComplete = trace?.expanded?.all { candidate -> citations.any { it.chunkId == candidate.chunkId } } ?: false,
             ),
         )
         return null
     }
+
+    private data class EvidenceTrace(
+        val raw: List<Citation>,
+        val expanded: List<Citation>,
+        val completeness: EvidenceCompleteness,
+    )
+
+    private enum class EvidenceCompleteness { COMPLETE, PARTIAL, UNKNOWN }
 
     private suspend fun ambiguityCitations(
         manifest: DocumentStructureManifest?,

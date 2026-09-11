@@ -25,6 +25,87 @@ class ScriptAwareChunkerTest {
         assertTrue(pieces.all { it.text.length / 4 + 2 <= 80 })
         assertTrue(pieces.all { it.pageNumber == 7 })
     }
+
+    @Test
+    fun `token splitting preserves list item offsets and only final completion`() {
+        val chunker = ScriptAwareChunker()
+        val chunk = Chunk(
+            chunkIndex = 0,
+            pageNumber = 4,
+            text = (1..8).joinToString("\n") { "$it. " + "requirement ".repeat(8) },
+            isTable = false,
+            script = Script.LATIN,
+            contentKind = "LIST",
+            listId = "list-1",
+            listItemStart = 10,
+            listItemCount = 8,
+            listComplete = true,
+        )
+
+        val pieces = chunker.fitToTokenWindow(chunk, maxTokens = 40) { it.length / 4 + 2 }
+
+        assertTrue(pieces.size > 1)
+        assertEquals((10 until 18).toList(), pieces.flatMap { piece ->
+            (piece.listItemStart until piece.listItemStart + piece.listItemCount).toList()
+        })
+        assertTrue(pieces.dropLast(1).none { it.listComplete })
+        assertTrue(pieces.last().listComplete)
+    }
+
+    @Test
+    fun `adjacent page list blocks share logical identity and global item offsets`() {
+        val chunks = ScriptAwareChunker(latinTarget = 80, minKeepChars = 1).chunk("doc", listOf(
+            PageContent(1, listOf(Segment.ListBlock(1, listOf(
+                Segment.ListItem("1.", "First check"), Segment.ListItem("2.", "Second check"),
+            )))),
+            PageContent(2, listOf(Segment.ListBlock(2, listOf(
+                Segment.ListItem("3.", "Third check"), Segment.ListItem("4.", "Fourth check"),
+            )))),
+        ))
+
+        assertEquals(1, chunks.map { it.listId }.distinct().size)
+        assertEquals(listOf(0, 2), chunks.map { it.listItemStart })
+        assertFalse(chunks.first().listComplete)
+        assertTrue(chunks.last().listComplete)
+    }
+
+    @Test
+    fun `inline labelled items contribute their true logical count`() {
+        val chunks = ScriptAwareChunker(minKeepChars = 1).chunk("doc", listOf(PageContent(1, listOf(
+            Segment.ListBlock(1, listOf(Segment.ListItem(
+                "A.", "Fire B. Explosion C. Chemical spill D. Electrocution E. Collapse F. Flood",
+            ))),
+        ))))
+
+        assertEquals(6, chunks.single().listItemCount)
+        assertTrue(chunks.single().listComplete)
+    }
+
+    @Test
+    fun `page continuation identity survives later same-page token fragments`() {
+        val chunks = ScriptAwareChunker().reindex(listOf(
+            Chunk(0, 1, "1. First", false, Script.LATIN, contentKind = "LIST", listId = "page-1", listItemCount = 1),
+            Chunk(1, 2, "2. Second", false, Script.LATIN, contentKind = "LIST", listId = "page-2", listItemCount = 1),
+            Chunk(2, 2, "3. Third", false, Script.LATIN, contentKind = "LIST", listId = "page-2", listItemCount = 1),
+        ))
+
+        assertEquals(listOf("page-1"), chunks.map { it.listId }.distinct())
+        assertEquals(listOf(0, 1, 2), chunks.map { it.listItemStart })
+        assertTrue(chunks.last().listComplete)
+    }
+
+    @Test
+    fun `bullet led list does not count trailing subsection label as an item`() {
+        val chunks = ScriptAwareChunker(minKeepChars = 1).chunk("doc", listOf(PageContent(1, listOf(
+            Segment.ListBlock(1, listOf(
+                Segment.ListItem("•", "Eliminate the hazard"),
+                Segment.ListItem("•", "Use engineering controls"),
+                Segment.ListItem("iii)", "Controlling Risk"),
+            )),
+        ))))
+
+        assertEquals(2, chunks.single().listItemCount)
+    }
     private val chunker = ScriptAwareChunker()
 
     private fun latinParagraph(sentences: Int) =
@@ -95,6 +176,18 @@ class ScriptAwareChunkerTest {
         assertTrue(chunks[0].text.contains("BAYTOWN"))
         assertTrue(chunks[0].text.contains("03/2020"))
         assertFalse(chunks.any { it.text == "03600-6" })
+    }
+
+    @Test
+    fun `lowercase short line after heading is retained as its continuation`() {
+        val chunks = ScriptAwareChunker().chunk("doc", listOf(PageContent(14, listOf(
+            Segment.Heading(14, "2.5.5", "Personal Protective Equipment The provision should be considered when other controls are", 3),
+            Segment.Paragraph(14, "impractical."),
+            Segment.ListBlock(14, listOf(Segment.ListItem("•", "Eyes: safety glasses"))),
+        ))))
+
+        assertTrue(chunks.first().text.endsWith("controls are impractical."))
+        assertTrue(chunks.any { "impractical" in it.text })
     }
 
     @Test

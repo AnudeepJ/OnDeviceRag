@@ -8,6 +8,22 @@ import org.junit.Test
 
 class AnswerQuestionUseCaseRankingTest {
     @Test
+    fun `named table category resolves a letter-labelled list row`() {
+        val rowList = citation(
+            59,
+            "E. Rare Will only occur in exceptional circumstances D. Unlikely Not likely to occur within the foreseeable future C. Possible May occur",
+        ).copy(contentKind = "LIST", pageNumber = 11)
+
+        val lead = AnswerQuestionUseCase.buildLabelledListTableRowLead(
+            "In Table 1.3, which probability category is D and how is it described?",
+            listOf(rowList),
+        )
+
+        assertTrue(lead.decisive)
+        assertEquals("Category D. Unlikely Not likely to occur within the foreseeable future [Page 11]", lead.text)
+    }
+
+    @Test
     fun `adjacent expansion follows rank and query-relative score rather than absolute score`() {
         assertTrue(AnswerQuestionUseCase.shouldExpandAdjacentSeed(rank = 0, score = 0.82, bestScore = 0.82))
         assertTrue(AnswerQuestionUseCase.shouldExpandAdjacentSeed(rank = 5, score = 0.66, bestScore = 0.82))
@@ -109,6 +125,34 @@ class AnswerQuestionUseCaseRankingTest {
         assertTrue(lead.text.contains("Specification 03300"))
         assertTrue(lead.text.contains("[Page 13]"))
         assertEquals(listOf("s1", "s2"), lead.citations.map { it.sectionId })
+        assertTrue(lead.decisive)
+    }
+
+    @Test
+    fun `quantified scaffold questions prefer words in the returned sentence`() {
+        val load = citation(
+            529,
+            "Scaffolds shall be designed to support at least 4 times the anticipated weight of men and material.",
+        ).copy(pageNumber = 78)
+        val dimensions = citation(
+            531,
+            "Minimum height of the first scaffold ledger shall be 2.2 meters. " +
+                "The mid rail and top rail shall be at height 600 mm and 1200 mm respectively and toe boards 150mm shall be attached. " +
+                "Wall scaffolding shall be secured every 10 meters and 8 meters. " +
+                "Minimum overlap of vertical and horizontal members shall be 600 mm with two couplers.",
+        ).copy(pageNumber = 78)
+
+        val dimensionAnswer = AnswerQuestionUseCase.buildQuantifiedSentenceLead(
+            "What are the tube-and-coupler scaffold mid rail, top rail and toe board dimensions?",
+            listOf(dimensions, load),
+        )
+        val loadAnswer = AnswerQuestionUseCase.buildQuantifiedSentenceLead(
+            "What minimum load must a scaffold be able to support?",
+            listOf(dimensions, load),
+        )
+
+        assertTrue(dimensionAnswer.text, dimensionAnswer.text.contains("600 mm") && dimensionAnswer.text.contains("1200 mm") && dimensionAnswer.text.contains("150mm"))
+        assertTrue(loadAnswer.text, loadAnswer.text.contains("4 times"))
     }
     @Test
     fun `manifest scoped fallback ranks the requested facts first`() {
@@ -371,6 +415,240 @@ class AnswerQuestionUseCaseRankingTest {
 
         assertEquals(false, answer.decisive)
         assertTrue(answer.text.isEmpty())
+    }
+
+    @Test
+    fun `flattened min max table returns every requested row`() {
+        val flattened = citation(
+            420,
+            "Concrete Type Minimum Slump Maximum Slump Portland Cement Concrete 2” 4” " +
+                "Concrete to be dosed with superplasticizer: 1” 3” " +
+                "Normal Weight Concrete after dosing with superplasticizer 4” 9”",
+        )
+
+        val answer = AnswerQuestionUseCase.buildTableLead(
+            "What are the minimum and maximum slump values for Portland cement concrete and " +
+                "concrete dosed with superplasticizer?",
+            listOf(flattened),
+        )
+
+        assertTrue(answer.text, answer.decisive)
+        assertTrue(answer.text, answer.text.contains("Portland Cement Concrete: minimum 2”"))
+        assertTrue(answer.text, answer.text.contains("Concrete to be dosed with superplasticizer: minimum 1”"))
+        assertFalse(answer.text.contains("Normal Weight"))
+    }
+
+    @Test
+    fun `printed table number scopes a caption and its local continuation`() {
+        val candidates = listOf(
+            citation(52, "Table (1.1) Risk Level Assessment"),
+            citation(53, "Almost Certain Moderate 5 High 10 High 15 Catastrophic 20 Catastrophic 25"),
+            citation(54, "Possible Low 3 Moderate 6 Moderate 9 High 12 High 15"),
+            citation(80, "Unrelated requirement from another section").copy(sectionId = "other"),
+        ).map { if (it.chunkIndex == 80) it else it.copy(sectionId = "risk") }
+
+        val scoped = AnswerQuestionUseCase.scopeExplicitInlineTable(
+            "In Table 1.1, what score results from Possible and Moderate?",
+            candidates,
+        )
+
+        assertEquals(listOf(52, 53, 54), scoped.map { it.chunkIndex })
+    }
+
+    @Test
+    fun `flattened risk matrix resolves row and consequence intersection`() {
+        val headerAndFirst = citation(
+            53,
+            "Table 1.1 Insignificant Minor Moderate Major Catastrophic Almost Moderate (5) High (10) High (15) Catastrophic (20) Certain Catastrophic (25)",
+        )
+        val remaining = citation(
+            54,
+            "Likely Moderate (4) Moderate (8) High (12) Catastrophic (18) Catastrophic (20) " +
+                "Possible Low (3) Moderate (6) Moderate (9) High (12) High (15)",
+        )
+
+        val certain = AnswerQuestionUseCase.buildTableLead(
+            "In Table 1.1, what risk score results from Almost Certain likelihood and Catastrophic consequence?",
+            listOf(headerAndFirst, remaining),
+        )
+        val possible = AnswerQuestionUseCase.buildTableLead(
+            "Using Table 1.1, what is the assessed risk for Possible likelihood and Moderate consequence?",
+            listOf(headerAndFirst, remaining),
+        )
+
+        assertTrue(certain.text, certain.decisive && certain.text.contains("25"))
+        assertTrue(possible.text, possible.decisive && possible.text.contains("9"))
+    }
+
+    @Test
+    fun `flattened risk matrix tolerates scores emitted after their descriptions`() {
+        val malformed = citation(
+            54,
+            "(5) Likelihood Likely Moderate (4) Moderate High (12) Catastrophic Catastrophic " +
+                "(4) (8) (18) (20) Possible Low (3) Moderate Moderate High (12) High (15) (3) (6) (9)",
+        )
+
+        val possible = AnswerQuestionUseCase.buildTableLead(
+            "Using Table 1.1, what is the assessed risk for Possible likelihood and Moderate consequence?",
+            listOf(malformed),
+        )
+
+        assertTrue(possible.text, possible.decisive)
+        assertTrue(possible.text, possible.text.contains("Possible × Moderate: 9"))
+    }
+
+    @Test
+    fun `risk response row includes an immediately following action list`() {
+        val table = citation(
+            62,
+            "| | If an incident occurred | - Consider alternatives to doing the activity |\n" +
+                "| Extreme | If an incident occurred | activity |\n" +
+                "| | permanent injury or death | - Significant control measures will need to be implemented |",
+        ).copy(contentKind = "TABLE", pageNumber = 12)
+        val continuation = citation(63, "- Immediate action required by Management")
+            .copy(contentKind = "LIST", pageNumber = 12)
+
+        val answer = AnswerQuestionUseCase.buildTableLead(
+            "What actions does Table 1.4 prescribe for an Extreme assessed risk?",
+            listOf(table, continuation),
+        )
+
+        assertTrue(answer.text, answer.decisive)
+        assertTrue(answer.text.contains("alternatives"))
+        assertTrue(answer.text.contains("Significant control measures"))
+        assertTrue(answer.text.contains("Immediate action"))
+    }
+
+    @Test
+    fun `boolean attribute row reverse lookup returns the option with yes`() {
+        val header = citation(101, "Feature Safety Glasses Face Shield Splash Goggles")
+            .copy(pageNumber = 19)
+        val table = citation(
+            102,
+            "| Coverage area | Eyes | Eyes face nose and mouth | Eyes orbital bones |\n" +
+                "| --- | --- | --- | --- |\n" +
+                "| Seal around eyes | No | No | Yes |",
+        ).copy(contentKind = "TABLE", pageNumber = 19)
+
+        val answer = AnswerQuestionUseCase.buildTableLead(
+            "Which eye-protection option in Table 1 seals around the eyes?",
+            listOf(header, table),
+        )
+
+        assertTrue(answer.text, answer.decisive)
+        assertTrue(answer.text, answer.text.contains("Splash Goggles"))
+        assertFalse(answer.text, answer.text.contains("Flying debris"))
+    }
+
+    @Test
+    fun `typed table row matches when class and power are reordered in the question`() {
+        val table = citation(
+            177,
+            "| Laser Class | Fire Hazard Distance | Skin Burn Distance | Flash Blindness Distance | Eye Hazard Distance |\n" +
+                "| --- | --- | --- | --- | --- |\n" +
+                "| Class 2 0.99 mW, 532 nm | 0.6 | 0.9 | 67 m | 14 m |",
+        ).copy(contentKind = "TABLE", pageNumber = 34)
+
+        val answer = AnswerQuestionUseCase.buildTableLead(
+            "For the 0.99 mW Class 2 laser in Table 5, what are the flash-blindness and eye-hazard distances?",
+            listOf(table),
+        )
+
+        assertTrue(answer.text, answer.decisive)
+        assertTrue(answer.text, answer.text.contains("67 m"))
+        assertTrue(answer.text, answer.text.contains("14 m"))
+    }
+
+    @Test
+    fun `typed first data row remains addressable when the header is missing`() {
+        val table = citation(
+            177,
+            "| Class 2 0.99 mW, 532 nm | 0.6 | 0.9 | 67 m | 14 m |\n" +
+                "| --- | --- | --- | --- | --- |\n" +
+                "| Class 3R 4.99 mW, 532 nm | 1.4 | 2.1 | 149 m | 32 m |",
+        ).copy(contentKind = "TABLE", pageNumber = 34)
+
+        val answer = AnswerQuestionUseCase.buildTableLead(
+            "For the 0.99 mW Class 2 laser in Table 5, what are the flash-blindness and eye-hazard distances?",
+            listOf(table),
+        )
+
+        assertTrue(answer.text, answer.decisive)
+        assertTrue(answer.text, answer.text.contains("67 m"))
+        assertTrue(answer.text, answer.text.contains("14 m"))
+    }
+
+    @Test
+    fun `short typed first row remains addressable when the header is missing`() {
+        val table = citation(
+            174,
+            "| 3B | Required | Required | Suggested | 5-500 mW | serious injury |\n" +
+                "| --- | --- | --- | --- | --- | --- |\n" +
+                "| 4 | Required | Required | Suggested | > 500 mW | fire hazard |",
+        ).copy(contentKind = "TABLE", pageNumber = 33)
+
+        val answer = AnswerQuestionUseCase.buildTableLead(
+            "For a Class 3B laser, what energy range and procedural requirements appear in Table 4?",
+            listOf(table),
+        )
+
+        assertTrue(answer.text, answer.decisive)
+        assertTrue(answer.text, answer.text.contains("5-500 mW"))
+        assertTrue(answer.text, answer.text.contains("Required"))
+    }
+
+    @Test
+    fun `paired never and always directive is preserved`() {
+        val source = citation(
+            124,
+            "Do not mix incompatible chemicals. Never add water to acid. Always add acid to water.",
+        ).copy(pageNumber = 24)
+
+        val answer = AnswerQuestionUseCase.buildPairedDirectiveLead(
+            "Should water be added to acid, or acid to water?",
+            listOf(source),
+        )
+
+        assertTrue(answer.text, answer.decisive)
+        assertTrue(answer.text, answer.text.contains("Never add water to acid"))
+        assertTrue(answer.text, answer.text.contains("Always add acid to water"))
+    }
+
+    @Test
+    fun `flattened electrical fire row returns explicit class and methods`() {
+        val row = citation(
+            157,
+            "Short circuit, hot electrical Powder type: Carbon dioxide Electrical components, lightning E discharge, etc.",
+        ).copy(pageNumber = 31)
+
+        val answer = AnswerQuestionUseCase.buildTableLead(
+            "What class and extinguisher types does Table 3 specify for electrical fires?",
+            listOf(row, citation(156, "| Flammable liquids | B | Foam spray |")),
+        )
+
+        assertTrue(answer.text, answer.decisive)
+        assertTrue(answer.text, answer.text.contains("Class E"))
+        assertTrue(answer.text, answer.text.contains("Carbon dioxide"))
+    }
+
+    @Test
+    fun `numbered severity row returns its full meaning`() {
+        val rows = citation(
+            57,
+            "1. Insignificant No Treatment required 2. Minor Minor injury requiring First Aid Treatment " +
+                "3. Moderate Injury requiring Medical Treatment or lost time " +
+                "4. Major Serious injury requiring special Medical Treatment and/or Hospitalization " +
+                "5. Severe Loss of life or permanent disability",
+        )
+
+        val answer = AnswerQuestionUseCase.buildTableLead(
+            "According to Table 1.2, what does severity level 4 mean?",
+            listOf(rows),
+        )
+
+        assertTrue(answer.text, answer.decisive)
+        assertTrue(answer.text.contains("Serious injury"))
+        assertTrue(answer.text.contains("Hospitalization"))
     }
 
     private fun citation(index: Int, text: String) = Citation(

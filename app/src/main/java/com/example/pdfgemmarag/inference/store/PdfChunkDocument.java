@@ -127,6 +127,25 @@ public class PdfChunkDocument {
     @NonNull
     public String tableCaption = "";
 
+    /** Logical list identity and source completeness metadata. */
+    @Document.StringProperty(
+            indexingType = AppSearchSchema.StringPropertyConfig.INDEXING_TYPE_EXACT_TERMS,
+            tokenizerType = AppSearchSchema.StringPropertyConfig.TOKENIZER_TYPE_VERBATIM)
+    @NonNull
+    public String listId = "";
+
+    @Document.LongProperty
+    public int listItemStart;
+
+    @Document.LongProperty
+    public int listItemCount;
+
+    @Document.LongProperty
+    public int listTotalItems;
+
+    @Document.BooleanProperty
+    public boolean listComplete;
+
     /** Display name of the document, stored (not indexed) for listing. */
     @Document.StringProperty(indexingType = AppSearchSchema.StringPropertyConfig.INDEXING_TYPE_NONE)
     @NonNull

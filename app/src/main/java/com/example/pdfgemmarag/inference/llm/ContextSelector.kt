@@ -33,18 +33,42 @@ class ContextSelector(
         // section's requirements. Excluding it also prevents small models from treating identifiers
         // such as "3.26" as quantities.
         val unique = if (summary) allUnique.filterNot { it.contentKind == "HEADING" } else allUnique
-        val ordered = if (summary) coverageOrder(unique) else unique
+        val constrainedSectionQuery =
+            (MIN_MAX_QUERY.containsMatchIn(question) && TABLE_SCOPE_QUERY.containsMatchIn(question)) ||
+                NON_NUMERIC_SCOPE_QUERY.containsMatchIn(question)
+        val scopedUnique = if (!summary && !overview && constrainedSectionQuery) {
+            val sectionOverlap = unique.groupBy { it.sectionId.ifBlank { "chunk:${it.chunkId}" } }
+                .mapValues { (_, group) -> group.maxOf { factLiteralOverlap(question, it) } }
+            val bestOverlap = sectionOverlap.values.maxOrNull() ?: 0
+            if (bestOverlap >= 5) {
+                unique.filter { candidate ->
+                    sectionOverlap.getValue(candidate.sectionId.ifBlank { "chunk:${candidate.chunkId}" }) >= bestOverlap - 1
+                }
+            } else unique
+        } else unique
+        // Structural expansion interleaves each hit with its neighbours. Reserve the primary
+        // evidence slots before considering those neighbours, otherwise two early hits with many
+        // adjacent chunks can crowd the third and fourth real retrieval hits out of the prompt.
+        val ordered = if (summary) coverageOrder(scopedUnique) else scopedUnique.sortedWith(
+            compareBy<Citation> { it.retrievalProvenance != "RETRIEVED" }
+                .thenBy { shape == AnswerShape.PROCEDURE && it.contentKind != "LIST" }
+                .thenByDescending { factSelectionPriority(question, it) }
+                .thenByDescending { it.score },
+        )
         val chosen = ArrayList<Citation>()
         var used = 0
+        var chosenPrimary = 0
         val best = ordered.firstOrNull()?.score ?: 0.0
         for (candidate in ordered) {
             if (!summary && !overview && chosen.size >= maxFactExcerpts) break
-            val structural = isStructuralContext(candidate, unique)
-            if (!summary && !overview && chosen.size >= maxFactPrimary && !structural) continue
+            val structural = isStructuralContext(candidate, scopedUnique)
+            val primary = candidate.retrievalProvenance == "RETRIEVED"
+            if (!summary && !overview && primary && chosenPrimary >= maxFactPrimary) continue
             if (!summary && !overview && chosen.isNotEmpty() && !structural && best > 0 && candidate.score < best * relativeScoreFloor) continue
             val cost = ContextAssembler.estimateTokens(candidate.text) + 24
             if (used + cost > budget) continue
             chosen += candidate
+            if (primary) chosenPrimary++
             used += cost
         }
         // Small on-device models give the tail of a long prompt disproportionate attention. Keep
@@ -59,7 +83,7 @@ class ContextSelector(
         val prompt = buildString {
             append("Answer using only the excerpts below. Cite every factual paragraph with its excerpt id, for example [E1]. ")
             append("Never create an excerpt id. If the excerpts do not contain the answer, say that the document does not cover it. ")
-            if ((summary || overview) && used < unique.sumOf { ContextAssembler.estimateTokens(it.text) + 24 }) {
+            if ((summary || overview) && used < scopedUnique.sumOf { ContextAssembler.estimateTokens(it.text) + 24 }) {
                 append("The context is a coverage selection; describe the result as key points rather than a complete summary. ")
             }
             if (summary) {
@@ -104,7 +128,7 @@ class ContextSelector(
             prompt,
             excerpts,
             used + ContextAssembler.estimateTokens(question) + 100,
-            completeCoverage = excerpts.size == unique.size,
+            completeCoverage = excerpts.size == scopedUnique.size,
         )
     }
 
@@ -174,6 +198,21 @@ class ContextSelector(
         )
     }
 
+    /** Literal scope and exact limits decide which retrieved hits enter the bounded fact prompt. */
+    internal fun factSelectionPriority(question: String, citation: Citation): Int {
+        val overlap = factLiteralOverlap(question, citation)
+        val text = (citation.sectionPath + " " + citation.text).lowercase()
+        val exactLimit = LIMIT_QUERY.containsMatchIn(question) && LIMIT_EVIDENCE.containsMatchIn(text)
+        return overlap + if (exactLimit) 12 else 0
+    }
+
+    private fun factLiteralOverlap(question: String, citation: Citation): Int {
+        val terms = WORD.findAll(question.lowercase()).map { it.value }
+            .filter { it.length >= 3 && it !in FACT_STOP_WORDS }.toSet()
+        val text = (citation.sectionPath + " " + citation.text).lowercase()
+        return terms.count { term -> wordBoundary(term).containsMatchIn(text) }
+    }
+
     /**
      * PDF extractors can emit a table's labels and rightmost value cells as adjacent chunks. An
      * explicitly expanded same-page neighbour is structural context even if that fragment itself
@@ -218,6 +257,13 @@ class ContextSelector(
         )
         private val STRUCTURED_HINT = Regex(
             "(?i)\\b(?:table|minimum|maximum|variation|tolerance|cross[- ]?section|dimensions|slump|strength|cement)\\b",
+        )
+        private val LIMIT_QUERY = Regex("(?i)\\b(?:minimum|maximum|duration|not\\s+less|not\\s+more)\\b")
+        private val MIN_MAX_QUERY = Regex("(?is)\\bminimum\\b.*\\bmaximum\\b|\\bmaximum\\b.*\\bminimum\\b")
+        private val TABLE_SCOPE_QUERY = Regex("(?i)\\b(?:slump|table|rows?)\\b")
+        private val NON_NUMERIC_SCOPE_QUERY = Regex("(?i)\\b(?:colou?r|finish|appearance)\\b")
+        private val LIMIT_EVIDENCE = Regex(
+            "(?i)\\b(?:minimum|maximum|duration|not\\s+less|not\\s+more)\\b|\\d+\\s*(?:hours?|hrs?|minutes?|days?)\\b",
         )
     }
 }

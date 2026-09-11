@@ -92,11 +92,16 @@ class AppSearchVectorStore private constructor(
         specificationNumber: String? = null,
         /** Trusted published namespace supplied by the UI; permits FACT recovery if the manifest is corrupt. */
         indexNamespace: String? = null,
+        semanticWeight: Double = 1.0,
+        localRerankWeight: Double = TERM_COVERAGE_WEIGHT,
     ): List<Citation> {
         val namespace = indexNamespace
             ?.takeIf { it == docHash || it.startsWith("$docHash:") }
             ?: activeNamespace(docHash)
         val terms = HybridQuery.keywordTerms(queryText)
+        val includeSemantic = semanticWeight > 0.0
+        val includeKeyword = keywordWeight > 0.0 || localRerankWeight > 0.0
+        if (!includeSemantic && (!includeKeyword || terms.isEmpty())) return emptyList()
         // Over-fetch so the local term-coverage re-rank can promote chunks whose wording differs
         // from the question; the vector function is given the same limit so more candidates
         // carry a semantic score instead of only a small keyword score.
@@ -109,8 +114,12 @@ class AppSearchVectorStore private constructor(
         val raw = try {
             executeSearch(
                 docHash, namespace,
-                HybridQuery.build(terms, similarityFloor, requested, requiredPropertyTerm),
-                terms, queryVec, requested, keywordWeight,
+                HybridQuery.build(
+                    terms, similarityFloor, requested, requiredPropertyTerm,
+                    includeSemantic = includeSemantic, includeKeyword = includeKeyword,
+                ),
+                terms.takeIf { includeKeyword }.orEmpty(),
+                queryVec.takeIf { includeSemantic }, requested, keywordWeight, semanticWeight,
             )
         } catch (t: Exception) {
             // Prefix operators are a query-language feature; fall back to exact terms if the
@@ -118,12 +127,16 @@ class AppSearchVectorStore private constructor(
             Log.w(TAG, "prefix query rejected (${t.message}); retrying with exact terms")
             executeSearch(
                 docHash, namespace,
-                HybridQuery.build(terms, similarityFloor, requested, requiredPropertyTerm, withPrefixes = false),
-                terms, queryVec, requested, keywordWeight,
+                HybridQuery.build(
+                    terms, similarityFloor, requested, requiredPropertyTerm, withPrefixes = false,
+                    includeSemantic = includeSemantic, includeKeyword = includeKeyword,
+                ),
+                terms.takeIf { includeKeyword }.orEmpty(),
+                queryVec.takeIf { includeSemantic }, requested, keywordWeight, semanticWeight,
             )
         }
         var hits = HybridQuery.rerank(
-            raw.withinRequestedScope(), terms, TERM_COVERAGE_WEIGHT,
+            raw.withinRequestedScope(), terms.takeIf { includeKeyword }.orEmpty(), localRerankWeight,
             score = { it.score }, text = { it.sectionPath + " " + it.text },
             anchors = HybridQuery.anchorTerms(queryText),
         ).map { (citation, score) -> citation.copy(score = score) }.take(topK)
@@ -140,18 +153,26 @@ class AppSearchVectorStore private constructor(
         namespace: String,
         query: String,
         terms: List<String>,
-        queryVec: FloatArray,
+        queryVec: FloatArray?,
         topK: Int,
         keywordWeight: Double,
+        semanticWeight: Double,
     ): List<Citation> {
         val spec = SearchSpec.Builder()
             .setListFilterQueryLanguageEnabled(true)
             .apply { if (terms.isNotEmpty()) addSearchStringParameters(terms) }
-            .addEmbeddingParameters(listOf(EmbeddingVector(queryVec, EmbeddingGemmaEmbedder.MODEL_SIGNATURE)))
+            .apply {
+                if (queryVec != null) {
+                    addEmbeddingParameters(listOf(EmbeddingVector(queryVec, EmbeddingGemmaEmbedder.MODEL_SIGNATURE)))
+                }
+            }
             .setDefaultEmbeddingSearchMetricType(SearchSpec.EMBEDDING_SEARCH_METRIC_TYPE_COSINE)
-            .setRankingStrategy(
-                "sum(this.matchedSemanticScores(getEmbeddingParameter(0))) + $keywordWeight * this.relevanceScore()",
-            )
+            .setRankingStrategy(when {
+                queryVec == null -> "this.relevanceScore()"
+                terms.isEmpty() -> "sum(this.matchedSemanticScores(getEmbeddingParameter(0)))"
+                else -> "$semanticWeight * sum(this.matchedSemanticScores(getEmbeddingParameter(0))) + " +
+                    "$keywordWeight * this.relevanceScore()"
+            })
             .addFilterNamespaces(namespace)
             .addFilterSchemas(PdfChunkDocument.SCHEMA_TYPE)
             .setResultCountPerPage(topK)
@@ -327,6 +348,11 @@ class AppSearchVectorStore private constructor(
         tableId = g.getPropertyString("tableId") ?: "",
         tableNumber = g.getPropertyString("tableNumber") ?: "",
         tableCaption = g.getPropertyString("tableCaption") ?: "",
+        listId = g.getPropertyString("listId") ?: "",
+        listItemStart = g.getPropertyLong("listItemStart").toInt(),
+        listItemCount = g.getPropertyLong("listItemCount").toInt(),
+        listTotalItems = g.getPropertyLong("listTotalItems").toInt(),
+        listComplete = g.getPropertyBoolean("listComplete"),
     )
 
     override fun close() = session.close()
@@ -343,6 +369,7 @@ class AppSearchVectorStore private constructor(
             "specificationNumber", "sectionNumber", "sectionTitle", "sectionPath", "contentKind",
             "continuesFromChunkIndex", "continuesToChunkIndex", "isTable",
             "tableId", "tableNumber", "tableCaption",
+            "listId", "listItemStart", "listItemCount", "listTotalItems", "listComplete",
         )
 
         val REQUIRED = listOf(

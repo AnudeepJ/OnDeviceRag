@@ -14,6 +14,7 @@ import android.os.RemoteException
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
+import com.example.pdfgemmarag.BuildConfig
 import com.example.pdfgemmarag.R
 import com.example.pdfgemmarag.RagApplication
 import com.example.pdfgemmarag.core.model.Citation
@@ -150,7 +151,7 @@ class AiInferenceService : Service() {
         allowGpu = allowGpu,
         // Experimental multi-token prediction is opted into per device via a marker file so a
         // regression can be compared on the same build: `touch files/mtp_enabled.marker`.
-        speculativeDecoding = allowGpu && java.io.File(filesDir, MTP_MARKER).exists(),
+        speculativeDecoding = BuildConfig.DEBUG && allowGpu && java.io.File(filesDir, MTP_MARKER).exists(),
         onUnrecoverableNativeTimeout = ::recycleInferenceProcess,
     )
 

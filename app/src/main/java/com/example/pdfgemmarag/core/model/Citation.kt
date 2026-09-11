@@ -30,4 +30,13 @@ data class Citation(
     val tableId: String = "",
     val tableNumber: String = "",
     val tableCaption: String = "",
+    /** Pipeline provenance used for selection diagnostics; RETRIEVED, ADJACENT, CONTINUATION, or DIRECT. */
+    val retrievalProvenance: String = "RETRIEVED",
+    /** Retrieved chunk that caused this structural neighbour to be fetched. */
+    val sourceChunkId: String = "",
+    val listId: String = "",
+    val listItemStart: Int = 0,
+    val listItemCount: Int = 0,
+    val listTotalItems: Int = 0,
+    val listComplete: Boolean = false,
 ) : Parcelable

@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
 import android.os.SystemClock
+import android.os.PowerManager
 import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -19,6 +20,7 @@ import com.example.pdfgemmarag.inference.service.AiInferenceService
 import com.example.pdfgemmarag.inference.service.IAiInferenceService
 import com.example.pdfgemmarag.inference.service.IEngineCallback
 import com.example.pdfgemmarag.inference.service.IStreamCallback
+import com.example.pdfgemmarag.inference.service.ThermalMonitor
 import com.example.pdfgemmarag.inference.service.getCitationInNamespaceAsync
 import com.example.pdfgemmarag.inference.service.listDocumentsAsync
 import com.example.pdfgemmarag.inference.store.DocumentStructureManifest
@@ -83,6 +85,18 @@ class SinglePdfBaselineDeviceTest {
         val prefillTokensPerSecond: Double = 0.0,
         val decodeTokensPerSecond: Double = 0.0,
         val prefillTokens: Int = 0,
+        val candidateChunks: Int = 0,
+        val candidateChunkIds: String = "",
+        val candidateProvenance: String = "",
+        val selectedChunkIds: String = "",
+        val selectedPages: String = "",
+        val answerCitationChunkIds: String = "",
+        val evidenceComplete: Boolean = false,
+        val rawCandidateChunks: Int = 0,
+        val rawCandidateChunkIds: String = "",
+        val rawCandidatePages: String = "",
+        val evidenceCompleteness: String = "UNKNOWN",
+        val selectionComplete: Boolean = false,
     ) {
         /** First failing pipeline stage, so a report names where to look rather than one pass flag. */
         val stage: String
@@ -127,8 +141,12 @@ class SinglePdfBaselineDeviceTest {
     private fun selectDocument(defaultHash: String? = null, defaultName: String? = null, allowPageCountFallback: Boolean = false): DocumentInfo {
         val svc = requireNotNull(service)
         val arguments = InstrumentationRegistry.getArguments()
-        val requestedHash = arguments.getString("documentHash")?.ifBlank { null } ?: defaultHash
-        val requestedName = arguments.getString("documentName")?.ifBlank { null } ?: defaultName
+        val argumentHash = arguments.getString("documentHash")?.ifBlank { null }
+        val argumentName = arguments.getString("documentName")?.ifBlank { null }
+        // An explicit caller selector outranks suite defaults. In particular, documentName must
+        // be usable when the same visible PDF was regenerated and therefore has a new content hash.
+        val requestedHash = argumentHash ?: defaultHash.takeIf { argumentName == null }
+        val requestedName = argumentName ?: defaultName
         val docs = runBlocking { svc.listDocumentsAsync() }
         val doc = (if (requestedHash != null) {
             docs.firstOrNull { it.docHash.equals(requestedHash, true) }
@@ -144,16 +162,7 @@ class SinglePdfBaselineDeviceTest {
         val svc = requireNotNull(service)
         val arguments = InstrumentationRegistry.getArguments()
         val doc = selectDocument(defaultHash = DIVISION03_HASH, allowPageCountFallback = true)
-        arguments.getString("dumpChunkRange")?.let { requested ->
-            val bounds = requested.split('-').map(String::toInt)
-            val manifest = requireNotNull(DocumentStructureManifestStore(ctx).load(doc.docHash))
-            for (index in bounds.first()..bounds.last()) {
-                val id = DocumentStructureManifest.chunkId(index)
-                val citation = runBlocking { svc.getCitationInNamespaceAsync(manifest.indexNamespace, id) } ?: continue
-                Log.i(TAG, "DUMP $id p${citation.pageNumber} kind=${citation.contentKind} section=${citation.sectionId} '${citation.text.replace('\n', ' ')}'")
-            }
-            return
-        }
+        if (dumpRequestedChunks(svc, doc)) return
         runBaseline(
             svc,
             doc,
@@ -196,7 +205,27 @@ class SinglePdfBaselineDeviceTest {
     private fun runNamedBaseline(assetName: String, defaultHash: String, defaultDocumentName: String) {
         val svc = requireNotNull(service)
         val doc = selectDocument(defaultHash = defaultHash, defaultName = defaultDocumentName)
+        if (dumpRequestedChunks(svc, doc)) return
         runBaseline(svc, doc, assetName, requestedCase = InstrumentationRegistry.getArguments().getString("caseId")?.ifBlank { null })
+    }
+
+    /** Test-only evidence inspector for diagnosing a frozen case against its exact indexed PDF. */
+    private fun dumpRequestedChunks(svc: IAiInferenceService, doc: DocumentInfo): Boolean {
+        val requested = InstrumentationRegistry.getArguments().getString("dumpChunkRange") ?: return false
+        val bounds = requested.split('-').map(String::toInt)
+        require(bounds.size == 2 && bounds.first() <= bounds.last()) { "Expected dumpChunkRange=start-end" }
+        val manifest = requireNotNull(DocumentStructureManifestStore(ctx).load(doc.docHash))
+        for (index in bounds.first()..bounds.last()) {
+            val id = DocumentStructureManifest.chunkId(index)
+            val citation = runBlocking { svc.getCitationInNamespaceAsync(manifest.indexNamespace, id) } ?: continue
+            Log.i(
+                TAG,
+                "DUMP $id p${citation.pageNumber} kind=${citation.contentKind} section=${citation.sectionId} " +
+                    "list=${citation.listId}:${citation.listItemStart}+${citation.listItemCount}/${citation.listTotalItems}:complete=${citation.listComplete} " +
+                    "links=${citation.continuesFromChunkIndex}->${citation.continuesToChunkIndex} '${citation.text.replace('\n', ' ')}'",
+            )
+        }
+        return true
     }
 
     private fun runBaseline(
@@ -210,6 +239,9 @@ class SinglePdfBaselineDeviceTest {
         check(cases.isNotEmpty()) { "Unknown baseline caseId: $requestedCase" }
         val completed = LinkedHashMap<String, Turn>()
         val reportCases = JSONArray()
+        val manifest = requireNotNull(DocumentStructureManifestStore(ctx).load(doc.docHash))
+        val packageInfo = ctx.packageManager.getPackageInfo(ctx.packageName, 0)
+        val thermalStart = ctx.getSystemService(PowerManager::class.java).currentThermalStatus
 
         for (case in cases) {
             val prior = case.historyFrom?.let(completed::get)
@@ -238,6 +270,31 @@ class SinglePdfBaselineDeviceTest {
             .put("indexNamespace", doc.activeIndexNamespace)
             .put("device", android.os.Build.MODEL)
             .put("androidRelease", android.os.Build.VERSION.RELEASE)
+            .put("appVersion", packageInfo.versionName ?: "")
+            .put("appVersionCode", packageInfo.longVersionCode)
+            .put("appLastUpdateTime", packageInfo.lastUpdateTime)
+            .put("debugBuild", com.example.pdfgemmarag.BuildConfig.DEBUG)
+            .put("embeddingSignature", manifest.embeddingSignature)
+            .put("sourcePageCount", manifest.pageCount)
+            .put("pageRecords", manifest.pages.size)
+            .put("structureSections", manifest.sections.size)
+            .put("structureTables", manifest.tables.size)
+            .put("structureLists", manifest.lists.size)
+            .put("canonicalTableCells", manifest.tables.sumOf { it.cells.size })
+            .put("thermalStatusStart", thermalStart)
+            .put("thermalStatusEnd", ctx.getSystemService(PowerManager::class.java).currentThermalStatus)
+            .put("thermalOverride", File(ctx.filesDir, ThermalMonitor.GATE_DISABLED_MARKER).exists())
+            .put("speculativeDecodingOverride", File(ctx.filesDir, AiInferenceService.MTP_MARKER).exists())
+            .put("pipelineStages", JSONObject()
+                .put("extraction", JSONObject()
+                    .put("sourcePages", manifest.pageCount)
+                    .put("pageRecords", manifest.pages.size)
+                    .put("script", doc.script))
+                .put("structure", JSONObject()
+                    .put("sections", manifest.sections.size)
+                    .put("tables", manifest.tables.size)
+                    .put("lists", manifest.lists.size)
+                    .put("canonicalTableCells", manifest.tables.sumOf { it.cells.size })))
             .put("total", completed.size)
             .put("retrievalPassed", retrievalPassed)
             .put("answerPassed", answerPassed)
@@ -389,6 +446,9 @@ class SinglePdfBaselineDeviceTest {
                 },
             )
         }
+        // The frozen retrieval contract scores the evidence delivered through onRetrieved. Raw
+        // top-k pages remain in the stage diagnostics below, where distractors can be audited
+        // without treating a candidate removed by selection as answer evidence.
         val retrievalReasons = scoreRetrieval(case, pages, pageCount)
         val groundingFailure = stats?.groundingFailure ?: false
         val answerReasons = scoreAnswer(case, text, error, groundingFailure)
@@ -416,6 +476,18 @@ class SinglePdfBaselineDeviceTest {
             prefillTokensPerSecond = stats?.prefillTokensPerSecond ?: 0.0,
             decodeTokensPerSecond = stats?.decodeTokensPerSecond ?: 0.0,
             prefillTokens = stats?.prefillTokens ?: 0,
+            candidateChunks = stats?.candidateChunks ?: 0,
+            candidateChunkIds = stats?.candidateChunkIds.orEmpty(),
+            candidateProvenance = stats?.candidateProvenance.orEmpty(),
+            selectedChunkIds = stats?.selectedChunkIds.orEmpty(),
+            selectedPages = stats?.selectedPages.orEmpty(),
+            answerCitationChunkIds = stats?.answerCitationChunkIds.orEmpty(),
+            evidenceComplete = stats?.evidenceComplete ?: false,
+            rawCandidateChunks = stats?.rawCandidateChunks ?: 0,
+            rawCandidateChunkIds = stats?.rawCandidateChunkIds.orEmpty(),
+            rawCandidatePages = stats?.rawCandidatePages.orEmpty(),
+            evidenceCompleteness = stats?.evidenceCompleteness ?: "UNKNOWN",
+            selectionComplete = stats?.selectionComplete ?: false,
         )
     }
 
@@ -528,6 +600,26 @@ class SinglePdfBaselineDeviceTest {
         .put("retrievedChunks", retrievedChunks)
         .put("contextTokens", contextTokens)
         .put("groundingFailure", groundingFailure)
+        .put("stages", JSONObject()
+            .put("rawCandidates", JSONObject()
+                .put("count", rawCandidateChunks)
+                .put("chunkIds", JSONArray(rawCandidateChunkIds.split(',').filter(String::isNotBlank)))
+                .put("pages", JSONArray(rawCandidatePages.split(',').mapNotNull(String::toIntOrNull))))
+            .put("expandedCandidates", JSONObject()
+                .put("count", candidateChunks)
+                .put("chunkIds", JSONArray(candidateChunkIds.split(',').filter(String::isNotBlank)))
+                .put("provenance", JSONArray(candidateProvenance.split(',').filter(String::isNotBlank))))
+            .put("selectedContext", JSONObject()
+                .put("chunkIds", JSONArray(selectedChunkIds.split(',').filter(String::isNotBlank)))
+                .put("pages", JSONArray(selectedPages.split(',').filter(String::isNotBlank).map(String::toInt))))
+            .put("answerCitations", JSONObject()
+                .put("chunkIds", JSONArray(answerCitationChunkIds.split(',').filter(String::isNotBlank))))
+            .put("answer", JSONObject()
+                .put("route", answeredBy.ifBlank { "MODEL" })
+                .put("groundingFailure", groundingFailure))
+            .put("evidenceCompleteness", evidenceCompleteness)
+            .put("evidenceComplete", evidenceComplete)
+            .put("selectionComplete", selectionComplete))
         .put("sourceSectionId", sourceSectionId)
         .put("error", error ?: JSONObject.NULL)
         .put("answer", answer)

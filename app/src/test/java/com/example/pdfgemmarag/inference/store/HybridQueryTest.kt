@@ -51,6 +51,28 @@ class HybridQueryTest {
     }
 
     @Test
+    fun `semantic-only mode excludes keyword candidates`() {
+        assertEquals(
+            "semanticSearch(getEmbeddingParameter(0), 0.3, 12)",
+            HybridQuery.build(
+                listOf("city", "division"), 0.3, 12,
+                includeSemantic = true, includeKeyword = false,
+            ),
+        )
+    }
+
+    @Test
+    fun `lexical-only mode excludes semantic candidates`() {
+        assertEquals(
+            "(getSearchStringParameter(0) OR getSearchStringParameter(1) OR division*)",
+            HybridQuery.build(
+                listOf("city", "division"), 0.3, 12,
+                includeSemantic = false, includeKeyword = true,
+            ),
+        )
+    }
+
+    @Test
     fun `required property scopes keyword and semantic retrieval before ranking`() {
         assertEquals(
             "specificationNumber:03310 AND ((getSearchStringParameter(0)) OR semanticSearch(getEmbeddingParameter(0), 0.3, 72))",

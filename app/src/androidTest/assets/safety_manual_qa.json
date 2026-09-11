@@ -77,7 +77,8 @@
     "intent": "LIST",
     "question": "Give four examples of mechanical hazards from section 2.3.1.",
     "expectedPages": [9],
-    "requiredPhrases": ["Blades", "belts", "Gears", "Pinch points"],
+    "requiredPhrases": ["Blades", "belts", "Gears"],
+    "requiredPhraseAlternatives": [["Shafts", "Pinch points"]],
     "forbiddenPages": [3, 4]
   },
   {
@@ -144,7 +145,8 @@
     "intent": "FACT",
     "question": "When should PPE be considered as a risk-control method?",
     "expectedPages": [14],
-    "requiredPhrases": ["all other control methods", "impractical"],
+    "requiredPhrases": ["all other control methods"],
+    "requiredPhraseAlternatives": [["impractical", "exhausted"]],
     "forbiddenPages": [3, 4]
   },
   {

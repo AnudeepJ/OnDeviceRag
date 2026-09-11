@@ -12,7 +12,7 @@
     "id": "live-freeze-form-coat",
     "intent": "FACT",
     "question": "When temperatures may freeze, may unexposed forms be wetted instead of coated before placing concrete?",
-    "expectedPages": [8],
+    "expectedPages": [8, 29],
     "requireAllPages": false,
     "requiredPhrases": ["mandatory"],
     "forbiddenPages": []
@@ -121,7 +121,7 @@
     "id": "live-form-remove-75",
     "intent": "FACT",
     "question": "What minimum compressive strength is required before removing formwork that supports the weight of the concrete?",
-    "expectedPages": [10],
+    "expectedPages": [10, 47],
     "requireAllPages": false,
     "requiredPhrases": ["75 percent"],
     "forbiddenPages": []

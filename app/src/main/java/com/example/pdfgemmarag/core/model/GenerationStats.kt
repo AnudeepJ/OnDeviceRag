@@ -32,4 +32,23 @@ data class GenerationStats(
     val intent: String = "",
     /** Deterministic lead that answered without the model, or empty when the model generated the answer. */
     val answeredBy: String = "",
+    /** Expanded candidates before prompt budgeting. */
+    val candidateChunks: Int = 0,
+    val candidateChunkIds: String = "",
+    /** `chunkId:origin:sourceChunkId` entries for retrieved and structurally expanded evidence. */
+    val candidateProvenance: String = "",
+    /** Stable comma-separated snapshots for stage-aware evaluation. */
+    val selectedChunkIds: String = "",
+    val selectedPages: String = "",
+    val answerCitationChunkIds: String = "",
+    /** Whether the selected evidence set was known complete for the requested scope. */
+    val evidenceComplete: Boolean = false,
+    /** Raw AppSearch/direct-scope result before structural expansion. */
+    val rawCandidateChunks: Int = 0,
+    val rawCandidateChunkIds: String = "",
+    val rawCandidatePages: String = "",
+    /** COMPLETE, PARTIAL, or UNKNOWN for the requested source scope. */
+    val evidenceCompleteness: String = "UNKNOWN",
+    /** Whether every expanded candidate fit the selected model context. */
+    val selectionComplete: Boolean = false,
 ) : Parcelable

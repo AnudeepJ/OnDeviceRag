@@ -13,17 +13,17 @@ class StructuralPlanningTest {
 
     private fun node(
         id: String, kind: String, printed: String, number: String, title: String, path: String,
-        start: Int, end: Int, level: Int, chunks: Int = 3,
+        start: Int, end: Int, level: Int, chunks: Int = 3, parent: String = "",
     ) = SectionRecord(
         id, "", number, title, path, start, end, (0 until chunks).map { "c$id$it" }, 100,
-        level = level, kind = kind, printedNumber = printed,
+        level = level, kind = kind, printedNumber = printed, parentSectionId = parent,
     )
 
     private val ch12 = node("12", "CHAPTER", "12", "CHAPTER 12", "CONFINED SPACE", "CHAPTER 12 CONFINED SPACE", 97, 97, 1)
-    private val ch12a = node("12a", "CLAUSE", "12.1", "12.1", "INTRODUCTION", "CHAPTER 12 CONFINED SPACE > 12.1 INTRODUCTION", 97, 99, 4)
+    private val ch12a = node("12a", "CLAUSE", "12.1", "12.1", "INTRODUCTION", "CHAPTER 12 CONFINED SPACE > 12.1 INTRODUCTION", 97, 99, 4, parent = "12")
     private val ch13 = node("13", "CHAPTER", "13", "CHAPTER 13", "EXCAVATION", "CHAPTER 13 EXCAVATION", 102, 102, 1)
-    private val ch13a = node("13a", "CLAUSE", "13.1", "13.1", "INTRODUCTION", "CHAPTER 13 EXCAVATION > 13.1 INTRODUCTION", 102, 104, 4)
-    private val ch13b = node("13b", "CLAUSE", "13.3", "13.3", "TEMPORARY PROTECTIVE STRUCTURE", "CHAPTER 13 EXCAVATION > 13.3 TEMPORARY PROTECTIVE STRUCTURE", 105, 107, 4)
+    private val ch13a = node("13a", "CLAUSE", "13.1", "13.1", "INTRODUCTION", "CHAPTER 13 EXCAVATION > 13.1 INTRODUCTION", 102, 104, 4, parent = "13")
+    private val ch13b = node("13b", "CLAUSE", "13.3", "13.3", "TEMPORARY PROTECTIVE STRUCTURE", "CHAPTER 13 EXCAVATION > 13.3 TEMPORARY PROTECTIVE STRUCTURE", 105, 107, 4, parent = "13")
     private val ch1 = node("1", "CHAPTER", "1", "CHAPTER 1", "INTRODUCTION", "CHAPTER 1 INTRODUCTION", 3, 6, 1)
     private val ch7 = node("7", "CHAPTER", "7", "CHAPTER 7", "TRAINING AND EDUCATION", "CHAPTER 7 TRAINING AND EDUCATION", 44, 51, 1)
     private val ch18 = node("18", "CHAPTER", "18", "CHAPTER 18", "CONSTRUCTION MACHINERY", "CHAPTER 18 CONSTRUCTION MACHINERY", 128, 145, 1)
